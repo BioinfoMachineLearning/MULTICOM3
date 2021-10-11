@@ -1,0 +1,54 @@
+###########################This is an option file####################################
+
+################################tools option#########################################
+
+#hhblits tool dir for generating hmm for templates
+hhblits_dir = /home/bml_casp15/BML_CASP15/tools/hh-suite/build/
+
+#jackhmmer tool dir for generating msa
+hmmer_dir = /home/bml_casp15/BML_CASP15/tools/hh-suite/build/
+
+# clustalo program path
+clustalo_program_dir = /home/bml_casp15/BML_CASP15/tools/clustalo/
+
+
+################################databases option#####################################
+
+###########################UNIPROT TO PDB database option############################
+
+# uniref database
+uniref_db = /home/bml_casp15/BML_CASP15/databases/hhblits_db/UniRef30_2020_01/UniRef30_2020_01
+
+# uniclust database
+uniclust_db = /home/bml_casp15/BML_CASP15/databases/uniclust30_2018_08/uniclust30_2018_08
+
+# uniprot id mapping file
+uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/hhblits_db/idmapping_selected.tab.2021_06
+
+###########################UNIPROT TO PDB database option############################
+
+uniprot2pdb_dir = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb
+
+uniprot2pdb_mapping_file = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/uniprot2pdb.map
+
+###########################STRING database option####################################
+
+string_dir = /home/bml_casp15/BML_CASP15/databases/STRING
+
+string_links_file = /home/bml_casp15/BML_CASP15/databases/STRING/protein.links.v11.5.txt
+
+string_aliases_file = /home/bml_casp15/BML_CASP15/databases/STRING/protein.aliases.v11.5.txt
+
+string2uniprot_map = /home/bml_casp15/BML_CASP15/databases/STRING/string2uniprot.map
+
+###########################GENO DISTANCE database option############################
+
+geno_dir = /home/bml_casp15/BML_CASP15/databases/geno_distance
+
+uniprot_to_embl_table = /home/bml_casp15/BML_CASP15/databases/geno_distance/idmapping_uniprot_embl.txt
+
+con_pro_cds_dir = /home/bml_casp15/BML_CASP15/databases/geno_distance/con_pro
+
+ena_genome_location_table = /home/bml_casp15/BML_CASP15/databases/geno_distance/cds_pro.txt
+
+genome_distance_threshold = 10000
