@@ -1,6 +1,9 @@
 import os, sys, argparse, time
 from multiprocessing import Pool
 from tqdm import tqdm
+from bml_casp15.database.uniprot2geno import *
+from bml_casp15.database.uniprot2pdb import *
+from bml_casp15.database.uniprot2string import *
 
 
 def direct_download(tools_dir, address, tool):  ####Tools don't need to be configured after downloading and configuring
@@ -72,12 +75,23 @@ if __name__ == '__main__':
 
 
     #### Generate mapping files
-    os.system(f"python SOFTWARE_PATH/bml_casp15/database/generate_mapping_geno_dist.py "
-              f"--option_file {args.option_file}")
 
-    os.system(f"python SOFTWARE_PATH/bml_casp15/database/generate_mapping_uniprot2pdb.py "
-              f"--option_file {args.option_file}")
+    UniProt2geno = uniprot2geno(params['con_pro_cds_dir'],
+                                params['uniprot_official_mapping_file'],
+                                params['uniprot_to_embl_table'],
+                                params['ena_genome_location_table'])
+    UniProt2geno.update()
 
-    os.system(f"python SOFTWARE_PATH/bml_casp15/database/generate_mapping_uniprot2string.py "
-              f"--option_file {args.option_file}")
+
+    UniProt2pdb = uniprot2pdb(params['pdb_seq_dir'],
+                              params['complex_original_seq_dir'],
+                              params['uniprot_official_mapping_file'],
+                              params['uniprot2pdb_mapping_file'])
+    UniProt2pdb.update()
+
+
+    UniProt2String = uniprot2string(params['string_links_file'],
+                                    params['string_aliases_file'],
+                                    params['string2uniprot_map'])
+    UniProt2String.update()
 
