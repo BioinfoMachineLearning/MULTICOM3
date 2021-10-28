@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from bml_casp15.alignment import alignment
 
+
 class PDB_interact:
 
     def __init__(self, uniprot2pdb_mapping_file, dimers_list):
@@ -39,7 +40,6 @@ class PDB_interact:
                     self.dimers_map[chain2] += "," + chain1
                 else:
                     self.dimers_map[chain2] = chain1
-
 
     def get_interactions(self, alignment1, alignment2):
 

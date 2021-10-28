@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 from bml_casp15.alignment import alignment
 
+
 class STRING_interact:
 
     def __init__(self, string2uniprot_map_file):
 
         self.mapping_file = string2uniprot_map_file
-
 
     def load_data(self):
 
@@ -31,7 +31,6 @@ class STRING_interact:
                     self.interaction_map[uniprotid2] += "," + uniprotid1
                 else:
                     self.interaction_map[uniprotid2] = uniprotid1
-
 
     def get_interactions(self, alignment1, alignment2):
 
