@@ -18,7 +18,8 @@ import glob
 import os
 import subprocess
 from typing import Any, Mapping, Optional, Sequence
-
+from absl import logging
+from bml_casp15.tool import utils
 
 _HHBLITS_DEFAULT_P = 20
 _HHBLITS_DEFAULT_Z = 500
@@ -72,6 +73,7 @@ class HHBlits:
     self.databases = databases
 
     for database_path in self.databases:
+      print(f"Using database: {database_path}")
       if not glob.glob(database_path + '_*'):
         logging.error('Could not find HHBlits database %s', database_path)
         raise ValueError(f'Could not find HHBlits database {database_path}')
@@ -88,15 +90,17 @@ class HHBlits:
     self.p = p
     self.z = z
 
-  def query(self, input_fasta_path: str) -> Mapping[str, Any]:
-    """Queries the database using HHblits."""
-    with utils.tmpdir_manager(base_dir='/tmp') as query_tmp_dir:
-      a3m_path = os.path.join(query_tmp_dir, 'output.a3m')
+  def query(self, input_fasta_path: str, outdir: str) -> Mapping[str, Any]:
+      """Queries the database using HHblits."""
+
+      targetname = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
+
+      a3m_path = os.path.join(outdir, f'{targetname}_hhblits.a3m')
 
       db_cmd = []
       for db_path in self.databases:
-        db_cmd.append('-d')
-        db_cmd.append(db_path)
+          db_cmd.append('-d')
+          db_cmd.append(db_path)
       cmd = [
           self.binary_path,
           '-i', input_fasta_path,
@@ -110,40 +114,36 @@ class HHBlits:
           '-maxfilt', str(self.maxfilt),
           '-min_prefilter_hits', str(self.min_prefilter_hits)]
       if self.all_seqs:
-        cmd += ['-all']
+          cmd += ['-all']
       if self.alt:
-        cmd += ['-alt', str(self.alt)]
+          cmd += ['-alt', str(self.alt)]
       if self.p != _HHBLITS_DEFAULT_P:
-        cmd += ['-p', str(self.p)]
+          cmd += ['-p', str(self.p)]
       if self.z != _HHBLITS_DEFAULT_Z:
-        cmd += ['-Z', str(self.z)]
+          cmd += ['-Z', str(self.z)]
       cmd += db_cmd
 
       logging.info('Launching subprocess "%s"', ' '.join(cmd))
-      process = subprocess.Popen(
-          cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
       with utils.timing('HHblits query'):
-        stdout, stderr = process.communicate()
-        retcode = process.wait()
+          stdout, stderr = process.communicate()
+          retcode = process.wait()
 
       if retcode:
-        # Logs have a 15k character limit, so log HHblits error line by line.
-        logging.error('HHblits failed. HHblits stderr begin:')
-        for error_line in stderr.decode('utf-8').splitlines():
-          if error_line.strip():
-            logging.error(error_line.strip())
-        logging.error('HHblits stderr end')
-        raise RuntimeError('HHblits failed\nstdout:\n%s\n\nstderr:\n%s\n' % (
-            stdout.decode('utf-8'), stderr[:500_000].decode('utf-8')))
+          # Logs have a 15k character limit, so log HHblits error line by line.
+          logging.error('HHblits failed. HHblits stderr begin:')
+          for error_line in stderr.decode('utf-8').splitlines():
+              if error_line.strip():
+                  logging.error(error_line.strip())
+          logging.error('HHblits stderr end')
+          raise RuntimeError('HHblits failed\nstdout:\n%s\n\nstderr:\n%s\n' % (
+              stdout.decode('utf-8'), stderr[:500_000].decode('utf-8')))
 
-      with open(a3m_path) as f:
-        a3m = f.read()
-
-    raw_output = dict(
-        a3m=a3m,
-        output=stdout,
-        stderr=stderr,
-        n_iter=self.n_iter,
-        e_value=self.e_value)
-    return raw_output
+      raw_output = dict(
+          a3m=a3m_path,
+          output=stdout,
+          stderr=stderr,
+          n_iter=self.n_iter,
+          e_value=self.e_value)
+      return raw_output

@@ -1,27 +1,35 @@
-from collections import OrderedDict
 import re
+from collections import namedtuple, OrderedDict, defaultdict
+from copy import deepcopy
+import numpy as np
 import pandas as pd
+
+HMMER_PREFIX_WARNING = "# WARNING: seq names have been made unique by adding a prefix of"
+
+
+class DefaultOrderedDict(OrderedDict):
+    """
+    Source:
+    http://stackoverflow.com/questions/36727877/inheriting-from-defaultddict-and-ordereddict
+    Answer by http://stackoverflow.com/users/3555845/daniel
+    Maybe this one would be better?
+    http://stackoverflow.com/questions/6190331/can-i-do-an-ordered-default-dict-in-python
+    """
+
+    def __init__(self, default_factory=None, **kwargs):
+        OrderedDict.__init__(self, **kwargs)
+        self.default_factory = default_factory
+
+    def __missing__(self, key):
+        result = self[key] = self.default_factory()
+        return result
 
 
 def read_fasta(fileobj):
-    """
-    Generator function to read a FASTA-format file
-    (includes aligned FASTA, A2M, A3M formats)
-    Parameters
-    ----------
-    fileobj : file-like object
-        FASTA alignment file
-    Returns
-    -------
-    generator of (str, str) tuples
-        Returns tuples of (sequence ID, sequence)
-    """
     current_sequence = ""
     current_id = None
 
     for line in fileobj:
-        # Start reading new entry. If we already have
-        # seen an entry before, return it first.
         if line.startswith(">"):
             if current_id is not None:
                 yield current_id, current_sequence
@@ -32,135 +40,408 @@ def read_fasta(fileobj):
         elif not line.startswith(";"):
             current_sequence += line.rstrip()
 
-    # Also do not forget last entry in file
     yield current_id, current_sequence
 
 
-def read_a3m(a3m_file, only_id=False, max_gap_fraction=0.9, prefilter=None):
+def write_fasta(sequences, fileobj):
+    for seq_id in sequences:
+        fileobj.write(f">{seq_id}\n")
+        fileobj.write(sequences[seq_id] + "\n")
 
-    seqs = OrderedDict()
-    contents = open(a3m_file, "r").readlines()
-    current_id = None
-    current_seq = ""
 
-    for line in contents:
-        if line.startswith(">"):
-            if current_id is not None:
-                add = True
-                if prefilter is not None and current_id.split('_')[-1].startswith(prefilter):
-                    add = False
+def write_aln(sequences, fileobj):
+    for seq_id in sequences:
+        fileobj.write(sequences[seq_id] + "\n")
 
-                if current_seq.count('-') / float(len(current_seq)) > max_gap_fraction:
-                    add = False
 
-                if add:
-                    seqs[current_id] = current_seq
+ID_EXTRACTION_REGEX = [
+    # example: >UniRef100_H6SNJ6/11-331
+    "^Uni\w+\_(\w+).*/",
 
-            current_id = line[1:].rstrip('\n')
-            if only_id:
-                current_id = current_id.split()[0]
+    # example: >UniRef100_H6SNJ6
+    "^Uni\w+\_(\w+).*",
+
+    # example: >Q60019|NQO8_THET8/1-365
+    "^\w+\|(\w+)\|\w+",
+
+    # example: >tr|Q1NYN0|Q1NYN0_9FLAO
+    # "^\w+\|(\w+)\|\w+\/",
+    #
+    # # example: >NQO8_THET8/1-365
+    # "^(\w+).*/.*$",
+]
+
+
+def retrieve_sequence_ids(ids, regex=None):
+    if regex is None:
+        regex = ID_EXTRACTION_REGEX
+
+    sequence_ids = []
+    id_to_full_header = defaultdict(list)
+
+    for current_id in ids:
+        for pattern in regex:
+            m = re.match(pattern, current_id)
+            # require a non-None match and at least one extracted pattern
+            if m and len(m.groups()) > 0:
+                # this extracts the parenthesized match
+                sequence_ids.append(m.group(1))
+                id_to_full_header[m.group(1)].append(current_id)
+                break
+
+    return sequence_ids, id_to_full_header
+
+
+# Holds information of a parsed Stockholm alignment file
+StockholmAlignment = namedtuple(
+    "StockholmAlignment",
+    ["seqs", "gf", "gc", "gs", "gr"]
+)
+
+
+def read_stockholm(fileobj, read_annotation=False, raise_hmmer_prefixes=True):
+    seqs = DefaultOrderedDict(str)
+
+    """
+    Markup definition: http://sonnhammer.sbc.su.se/Stockholm.html
+    #=GF <feature> <Generic per-File annotation, free text>
+    #=GC <feature> <Generic per-Column annotation, exactly 1 char per column>
+    #=GS <seqname> <feature> <Generic per-Sequence annotation, free text>
+    #=GR <seqname> <feature> <Generic per-Residue annotation, exactly 1 char per residue>
+    """
+    gf = DefaultOrderedDict(list)
+    gc = DefaultOrderedDict(str)
+    gs = DefaultOrderedDict(lambda: DefaultOrderedDict(list))
+    gr = DefaultOrderedDict(lambda: DefaultOrderedDict(str))
+
+    # line counter within current alignment (can be more than one per file)
+    i = 0
+
+    # read alignment
+    for line in fileobj:
+        if i == 0 and not line.startswith("# STOCKHOLM 1.0"):
+            raise ValueError(
+                "Not a valid Stockholm alignment: "
+                "Header missing. {}".format(line.rstrip())
+            )
+
+        if raise_hmmer_prefixes and line.startswith(HMMER_PREFIX_WARNING):
+            raise ValueError(
+                "HMMER added identifier prefixes to alignment because of non-unique "
+                "sequence identifiers. Either some sequence identifier is present "
+                "twice in the sequence database, or your target sequence identifier is "
+                "the same as an identifier in the database. In the first case, please fix "
+                "your sequence database. In the second case, please choose a different "
+                "sequence identifier for your target sequence that does not overlap with "
+                "the sequence database."
+            )
+
+        # annotation lines
+        if line.startswith("#"):
+            if read_annotation:
+                if line.startswith("#=GF"):
+                    # can have multiple lines for the same feature
+                    _, feat, val = line.rstrip().split(maxsplit=2)
+                    gf[feat].append(val)
+                elif line.startswith("#=GC"):
+                    # only one line with the same GC label
+                    _, feat, seq = line.rstrip().split(maxsplit=2)
+                    gc[feat] += seq
+                elif line.startswith("#=GS"):
+                    # can have multiple lines for the same feature
+                    _, seq_id, feat, val = line.rstrip().split(maxsplit=3)
+                    gs[seq_id][feat] = val
+                elif line.startswith("#=GR"):
+                    # per sequence, only one line with a certain GR feature
+                    _, seq_id, feat, seq = line.rstrip().split()
+                    gr[seq_id][feat] += seq
+
+            i += 1
+
+        # terminator line for current alignment;
+        # only yield once we see // to avoid reading
+        # truncated alignments
+        elif line.startswith("//"):
+            yield StockholmAlignment(seqs, gf, gc, gs, gr)
+
+            # reset counter to check for valid start of alignment
+            # once we read the next line
+            i = 0
+
+        # actual alignment lines
         else:
-            current_seq = line.rstrip('\n')
+            splitted = line.rstrip().split(maxsplit=2)
+            # there might be empty lines, so check for valid split
+            if len(splitted) == 2:
+                seq_id, seq = splitted
+                seqs[seq_id] += seq
 
-    if current_id is not None:
-        seqs[current_id] = current_seq
+            i += 1
+
+    # Do NOT yield at the end without // to avoid returning truncated alignments
+
+
+def read_a3m(fileobj, inserts="first"):
+    seqs = OrderedDict()
+
+    for i, (seq_id, seq) in enumerate(read_fasta(fileobj)):
+        # remove any insert gaps that may still be in alignment
+        # (just to be sure)
+        seq = seq.replace(".", "")
+
+        if inserts == "first":
+            # define "spacing" of uppercase columns in
+            # final alignment based on target sequence;
+            # remaining columns will be filled with insert
+            # gaps in the other sequences
+            if i == 0:
+                uppercase_cols = [
+                    j for (j, c) in enumerate(seq)
+                    if (c == c.upper() or c == "-")
+                ]
+                gap_template = np.array(["."] * len(seq))
+                filled_seq = seq
+            else:
+                uppercase_chars = [
+                    c for c in seq if c == c.upper() or c == "-"
+                ]
+                filled = np.copy(gap_template)
+                filled[uppercase_cols] = uppercase_chars
+                filled_seq = "".join(filled)
+
+        elif inserts == "delete":
+            # remove all lowercase letters and insert gaps .;
+            # since each sequence must have same number of
+            # uppercase letters or match gaps -, this gives
+            # the final sequence in alignment
+            seq = "".join([c for c in seq if c == c.upper() and c != "."])
+        else:
+            raise ValueError(
+                "Invalid option for inserts: {}".format(inserts)
+            )
+
+        seqs[seq_id] = filled_seq
 
     return seqs
 
 
 def write_a3m(sequences, fileobj):
     for seq_id in sequences:
-        fileobj.write(">{}\n".format(seq_id))
+        fileobj.write(f">{seq_id}\n")
         fileobj.write(sequences[seq_id] + "\n")
 
 
-def clean_a3m(infile, outfile):
-    contents = open(infile).readlines()
-    contents_new = []
-    for content in contents:
-        if content.startswith('>'):
-            contents_new += [content]
+def detect_format(fileobj):
+    for i, line in enumerate(fileobj):
+        # must be first line of Stockholm file by definition
+        if i == 0 and line.startswith("# STOCKHOLM 1.0"):
+            return "stockholm"
+
+        # This indicates a FASTA file
+        if line.startswith(">"):
+            return "fasta"
+
+        # Skip comment lines and empty lines for FASTA detection
+        if line.startswith(";") or line.rstrip() == "":
+            continue
+
+        # Arriving here means we could not detect format
+        return None
+
+
+def sequences_to_matrix(sequences):
+    """
+    Transforms a list of sequences into a
+    numpy array.
+    Parameters
+    ----------
+    sequences : list-like (str)
+        List of strings containing aligned sequences
+    Returns
+    -------
+    numpy.array
+        2D array containing sequence alignment
+        (first axis: sequences, second axis: columns)
+    """
+    if len(sequences) == 0:
+        raise ValueError("Need at least one sequence")
+
+    N = len(sequences)
+    L = len(next(iter(sequences)))
+    matrix = np.empty((N, L), dtype=np.str)
+
+    for i, seq in enumerate(sequences):
+        if len(seq) != L:
+            raise ValueError(
+                "Sequences have differing lengths: i={} L_0={} L_i={}".format(
+                    i, L, len(seq)
+                )
+            )
+
+        matrix[i] = np.array(list(seq))
+
+    return matrix
+
+
+class Alignment:
+
+    def __init__(self, ids, seqs, annotation=None):
+
+        self.main_id = ids[0]
+        self.main_seq = seqs[0]
+        self.L = len(seqs[0])
+
+        self.ids, self.headers = retrieve_sequence_ids(ids[1:])
+        #print(self.headers)
+        self.seqs = seqs[1:]
+        self.N = len(self.seqs)
+
+        if len(self.ids) != self.N:
+            raise ValueError(
+                f"Number of sequence IDs and length of alignment do not match: {self.N} and {len(self.ids)}"
+            )
+
+        self.id_to_index = {id_: i for i, id_ in enumerate(self.ids)}
+        self.matrix = sequences_to_matrix(seqs)
+
+        self.annotation = annotation
+        if len(self.annotation) > 1:
+            annotation_ids = deepcopy(list(self.annotation["GS"].keys()))
+            for annotation_id in annotation_ids:
+                for pattern in ID_EXTRACTION_REGEX:
+                    m = re.match(pattern, annotation_id)
+                    if m and len(m.groups()) > 0:
+                        self.annotation["GS"][m.group(1)] = self.annotation["GS"].pop(annotation_id)
+                        break
+
+    @classmethod
+    def from_dict(cls, seq_dict, annotation=None):
+        return cls(list(seq_dict.keys()), list(seq_dict.values()), annotation)
+
+    @classmethod
+    def from_file(cls, fileobj, format="fasta",
+                  a3m_inserts="first", raise_hmmer_prefixes=True):
+
+        annotation = {}
+        # read in sequence alignment from file
+
+        if format == "fasta":
+            seqs = OrderedDict()
+            for seq_id, seq in read_fasta(fileobj):
+                seqs[seq_id] = seq
+        elif format == "stockholm":
+            # only reads first Stockholm alignment contained in file
+            ali = next(
+                read_stockholm(
+                    fileobj, read_annotation=True,
+                    raise_hmmer_prefixes=raise_hmmer_prefixes
+                )
+            )
+            seqs = ali.seqs
+            annotation["GF"] = ali.gf
+            annotation["GC"] = ali.gc
+            annotation["GS"] = ali.gs
+            annotation["GR"] = ali.gr
+        elif format == "a3m":
+            seqs = read_a3m(fileobj, inserts=a3m_inserts)
         else:
-            contents_new += [c for c in content if (c == c.upper() or c == "-" or c == '\n')]
+            raise ValueError("Invalid alignment format: {}".format(format))
 
-    f = open(outfile, 'w')
-    f.writelines(contents_new)
-    f.close()
+        return cls.from_dict(seqs, annotation)
 
-
-def align_fasta(clustalo_program, fastafile):
-    results = os.popen(f"{clustalo_program} -i {fastafile}").read()
-    results = results.split("\n")
-
-    alignments = {}
-    targetname = ""
-    seq = ""
-    for i in range(len(results)):
-        line = results[i].replace('\n', '').replace('\r', '')
-        if line[0:1] == ">":
-            if len(targetname) > 0:
-                alignments[targetname] = seq
-            targetname = line[1:]
-            seq = ""
+    def __getitem__(self, index):
+        """
+        .. todo::
+            eventually this should allow fancy indexing and offer the functionality of select()
+        """
+        if index in self.id_to_index:
+            return self.seqs[self.id_to_index[index]]
+        elif index in range(self.N):
+            return self.seqs[index]
         else:
-            seq += line
+            raise KeyError(
+                "Not a valid index for sequence alignment: {}".format(index)
+            )
 
-    if len(targetname) > 0:
-        alignments[targetname] = seq
+    def __len__(self):
+        return self.N
 
-    return alignments
+    def count(self, char, axis="pos", normalize=True):
+        """
+        Count occurrences of a character in the sequence
+        alignment.
+        .. note::
+            The counts are raw counts not adjusted for
+            sequence redundancy.
+        Parameters
+        ----------
+        char : str
+            Character which is counted
+        axis : {"pos", "seq"}, optional (default="pos")
+            Count along positions or sequences
+        normalize : bool, optional (default=True)
+            Normalize count for length of axis (i.e. relative count)
+        Returns
+        -------
+        np.array
+            Vector containing counts of char along the axis
+        Raises
+        ------
+        ValueError
+            Upon invalid axis specification
+        """
+        if axis == "pos":
+            naxis = 0
+        elif axis == "seq":
+            naxis = 1
+        else:
+            raise ValueError("Invalid axis: {}".format(axis))
 
+        c = np.sum(self.matrix == char, axis=naxis)
+        if normalize:
+            c = c / self.matrix.shape[naxis]
 
-def cal_sequence_identity_from_fasta(clustalo_program, fasta1, fasta2):
-    contents1 = open(fasta1, 'r').readlines()
-    if len(contents1) < 2:
-        die(f"The format in {fasta1} is wrong!\n")
+        return c
 
-    name1 = contents1[0].replace('\n', '').replace('\r', '').split()[0]
-    seq1 = contents1[1].replace('\n', '').replace('\r', '')
+    def cal_sequence_identity_from_seq(seq1, seq2):
+        common_count = 0
+        for i in range(len(seq1)):
+            char1 = seq1[i:i + 1]
+            char2 = seq2[i:i + 1]
+            if char1 != '-' and char1 == char2:
+                common_count += 1
+        seqid = float(common_count) / float(len(seq1))
+        return seqid
 
-    contents2 = open(fasta2, 'r').readlines()
-    if len(contents2) < 2:
-        die(f"The format in {fasta2} is wrong!\n")
+    def identities_to(self, trg):
+        seqids = []
+        for seq in self.seqs:
+            seqids += [Alignment.cal_sequence_identity_from_seq(seq, trg)]
+        return pd.DataFrame({"id": self.ids, "identity_to_query": seqids})
 
-    name2 = contents2[0].replace('\n', '').replace('\r', '').split()[0]
-    seq2 = contents2[1].replace('\n', '').replace('\r', '')
-
-    with open(f"{name1[1:]}_{name2[1:]}.fasta", "w") as f:
-        f.write(f"{name1}\n{seq1}\n{name2}\n{seq2}")
-
-    alignments = align_fasta(clustalo_program, f"{name1[1:]}_{name2[1:]}.fasta")
-
-    if len(alignments.keys()) < 2:
-        die(f"The output for alignments are wrong! {clustalo_program} -i {name1[1:]}_{name2[1:]}.fasta\n")
-
-    aln1 = alignments[name1[1:]]
-    aln2 = alignments[name2[1:]]
-
-    seqid = cal_sequence_identity_from_seq(aln1, aln2)
-
-    os.system(f"rm {name1[1:]}_{name2[1:]}.fasta")
-
-    return seqid
-
-
-def cal_sequence_identity_from_seq(seq1, seq2):
-    common_count = 0
-
-    for i in range(len(seq1)):
-        char1 = seq1[i:i + 1]
-        char2 = seq2[i:i + 1]
-        if char1 != '-' and char1 == char2:
-            common_count += 1
-
-    seqid = float(common_count) / float(len(seq1))
-
-    return seqid
-
-
-def cal_identities_to_target(alns, trg):
-    seqids = []
-    for alnid in alns:
-        seqid = cal_sequence_identity_from_seq(alns[alnid], trg)
-        seqids += [seqid]
-    return pd.DataFrame({"id": [key.split()[0] for key in alns.keys()], "identity_to_query": seqids})
+    def write(self, fileobj, format="fasta"):
+        """
+        Write an alignment to a file.
+        Parameters
+        ----------
+        fileobj : file-like object
+            File to which alignment is saved
+        format : {"fasta", "aln", "a3m"}
+            Output format for alignment
+        width : int
+            Column width for fasta alignment
+        Raises
+        ------
+        ValueError
+            Upon invalid file format specification
+        """
+        if format == "fasta":
+            write_fasta(self.seqs, fileobj)
+        elif format == "a3m":
+            write_a3m(self.seqs, fileobj)
+        elif format == "aln":
+            write_aln(self.seqs, fileobj)
+        else:
+            raise ValueError(
+                "Invalid alignment format: {}".format(format)
+            )
