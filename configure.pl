@@ -15,7 +15,7 @@
 
 $install_dir = getcwd;
 $install_dir=abs_path($install_dir);
-
+print $install_dir;
 
 if(!-s $install_dir)
 {

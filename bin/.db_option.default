@@ -5,25 +5,30 @@
 # clustalo program path
 clustalo_program_dir = SOFTWARE_PATH/tools/clustalo/
 
+# hhblits program path
+hhblits_program = YOUR_ENV/bin/hhblits
+
+# jackhmmer program path
+jackhmmer_program = YOUR_ENV/bin/jackhmmer
 
 ################################databases option#####################################
 
 ###########################UNIPROT TO PDB database option############################
 
 # uniref database
-uniref_db_dir = SOFTWARE_PATH/databases/hhblits_db/UniRef30_2020_01
+uniref_db_dir = SOFTWARE_PATH/databases/UniRef30_2020_03
 
-uniref_db = UniRef30_2020_01
+uniref_db = UniRef30_2020_03
 
-uniref_fasta = UniRef90_2020_01.fasta
+uniref90_fasta = SOFTWARE_PATH/databases/uniref90_2020_03.fasta
 
 # uniclust database
-uniclust_db_dir = SOFTWARE_PATH/databases/uniclust/uniclust30_2018_08
+uniclust_db_dir = SOFTWARE_PATH/databases/uniclust30_2018_08
 
 uniclust_db = uniclust30_2018_08
 
 # uniprot id mapping file
-uniprot_official_mapping_file = SOFTWARE_PATH/databases/hhblits_db/idmapping_selected.tab.2021_06
+uniprot_official_mapping_file = SOFTWARE_PATH/databases/idmapping_selected.tab.2021_06
 
 ###########################UNIPROT TO PDB database option############################
 
@@ -31,15 +36,17 @@ uniprot2pdb_dir = SOFTWARE_PATH/databases/uniprot2pdb
 
 uniprot2pdb_mapping_file = SOFTWARE_PATH/databases/uniprot2pdb/uniprot2pdb.map
 
+dimers_list = SOFTWARE_PATH/databases/Complex/work/original/dimers_cm.list
+
 ###########################STRING database option####################################
 
 string_dir = SOFTWARE_PATH/databases/STRING
 
-string_links_file = SOFTWARE_PATH/databases/STRING/protein.links.v11.5.txt
+string_links_file = SOFTWARE_PATH/databases/string/protein.links.v11.5.txt
 
-string_aliases_file = SOFTWARE_PATH/databases/STRING/protein.aliases.v11.5.txt
+string_aliases_file = SOFTWARE_PATH/databases/string/protein.aliases.v11.5.txt
 
-string2uniprot_map = SOFTWARE_PATH/databases/STRING/string2uniprot.map
+string2uniprot_map = SOFTWARE_PATH/databases/string/string2uniprot.map
 
 ###########################GENO DISTANCE database option############################
 

@@ -2,28 +2,33 @@
 
 ################################tools option#########################################
 
-#hhblits tool dir for generating hmm for templates
-hhblits_dir = /home/bml_casp15/BML_CASP15/tools/hh-suite/build/
-
-#jackhmmer tool dir for generating msa
-hmmer_dir = /home/bml_casp15/BML_CASP15/tools/hh-suite/build/
-
 # clustalo program path
 clustalo_program_dir = /home/bml_casp15/BML_CASP15/tools/clustalo/
 
+# hhblits program path
+hhblits_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/hhblits
+
+# jackhmmer program path
+jackhmmer_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
 
 ################################databases option#####################################
 
 ###########################UNIPROT TO PDB database option############################
 
 # uniref database
-uniref_db = /home/bml_casp15/BML_CASP15/databases/hhblits_db/UniRef30_2020_01/UniRef30_2020_01
+uniref_db_dir = /home/bml_casp15/BML_CASP15/databases/UniRef30_2020_03
+
+uniref_db = UniRef30_2020_03
+
+uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90_2020_03.fasta
 
 # uniclust database
-uniclust_db = /home/bml_casp15/BML_CASP15/databases/uniclust30_2018_08/uniclust30_2018_08
+uniclust_db_dir = /home/bml_casp15/BML_CASP15/databases/uniclust30_2018_08
+
+uniclust_db = uniclust30_2018_08
 
 # uniprot id mapping file
-uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/hhblits_db/idmapping_selected.tab.2021_06
+uniprot_official_mapping_file = /data/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
 
 ###########################UNIPROT TO PDB database option############################
 
@@ -31,15 +36,17 @@ uniprot2pdb_dir = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb
 
 uniprot2pdb_mapping_file = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/uniprot2pdb.map
 
+dimers_list = /home/bml_casp15/BML_CASP15/databases/Complex/work/original/dimers_cm.list
+
 ###########################STRING database option####################################
 
 string_dir = /home/bml_casp15/BML_CASP15/databases/STRING
 
-string_links_file = /home/bml_casp15/BML_CASP15/databases/STRING/protein.links.v11.5.txt
+string_links_file = /home/bml_casp15/BML_CASP15/databases/string/protein.links.v11.5.txt
 
-string_aliases_file = /home/bml_casp15/BML_CASP15/databases/STRING/protein.aliases.v11.5.txt
+string_aliases_file = /home/bml_casp15/BML_CASP15/databases/string/protein.aliases.v11.5.txt
 
-string2uniprot_map = /home/bml_casp15/BML_CASP15/databases/STRING/string2uniprot.map
+string2uniprot_map = /home/bml_casp15/BML_CASP15/databases/string/string2uniprot.map
 
 ###########################GENO DISTANCE database option############################
 

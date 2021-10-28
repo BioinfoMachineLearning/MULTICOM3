@@ -4,6 +4,7 @@ from tqdm import tqdm
 from bml_casp15.database.uniprot2geno import *
 from bml_casp15.database.uniprot2pdb import *
 from bml_casp15.database.uniprot2string import *
+from bml_casp15.common.util import is_file
 
 
 def direct_download(tools_dir, address, tool):  ####Tools don't need to be configured after downloading and configuring
