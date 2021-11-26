@@ -13,19 +13,27 @@ jackhmmer_program = YOUR_ENV/bin/jackhmmer
 
 ################################databases option#####################################
 
+smallbfd_database = SOFTWARE_PATH/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
+
+bfd_database = SOFTWARE_PATH/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
+
+mgnify_database = SOFTWARE_PATH/databases/mgnify/mgy_clusters.fa
+
 ###########################UNIPROT TO PDB database option############################
 
 # uniref database
-uniref_db_dir = SOFTWARE_PATH/databases/UniRef30_2020_03
+uniref_db_dir = SOFTWARE_PATH/databases/UniRef30_2021_06
 
-uniref_db = UniRef30_2020_03
+uniref_db = UniRef30_2021_06
 
-uniref90_fasta = SOFTWARE_PATH/databases/uniref90_2020_03.fasta
+uniref90_fasta = SOFTWARE_PATH/databases/uniref90/uniref90_2021_06.fasta
 
 # uniclust database
 uniclust_db_dir = SOFTWARE_PATH/databases/uniclust30_2018_08
 
 uniclust_db = uniclust30_2018_08
+
+uniprot_fasta = SOFTWARE_PATH/databases/uniprot_2021_06/uniprot.fasta
 
 # uniprot id mapping file
 uniprot_official_mapping_file = SOFTWARE_PATH/databases/idmapping_selected.tab.2021_06
@@ -36,7 +44,7 @@ uniprot2pdb_dir = SOFTWARE_PATH/databases/uniprot2pdb
 
 uniprot2pdb_mapping_file = SOFTWARE_PATH/databases/uniprot2pdb/uniprot2pdb.map
 
-dimers_list = SOFTWARE_PATH/databases/Complex/work/original/dimers_cm.list
+dimers_list = SOFTWARE_PATH/databases/uniprot2pdb/dimers_cm.list
 
 ###########################STRING database option####################################
 

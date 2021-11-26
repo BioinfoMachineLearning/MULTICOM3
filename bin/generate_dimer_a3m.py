@@ -88,16 +88,16 @@ if __name__ == '__main__':
             alignment = {'chain1': chain1_a3ms, 'chain2': chain2_a3ms, 'outdir': outdir}
             alignments += [alignment]
 
-    pool = Pool(processes=5)
+    pool = Pool(processes=8)
     results = pool.map(generate_a3ms_for_single_seq, process_list)
     pool.close()
     pool.join()
 
-    print("Start to concatenate alignments for dimers")
-
-    dimer_concatenate = Concatenate(params)
-
-    alignments = dimer_concatenate.concatenate(alignments)
+    # print("Start to concatenate alignments for dimers")
+    #
+    # dimer_concatenate = Concatenate(params)
+    #
+    # alignments = dimer_concatenate.concatenate(alignments)
 
 
 

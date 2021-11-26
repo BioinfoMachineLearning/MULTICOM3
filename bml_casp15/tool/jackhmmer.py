@@ -66,12 +66,10 @@ class Jackhmmer:
     self.dom_e = dom_e
     self.get_tblout = get_tblout
 
-  def query(self, input_fasta_path: str, outdir: str)-> Mapping[str, Any]:
+  def query(self, input_fasta_path: str, output_sto_path: str)-> Mapping[str, Any]:
     """Queries the database chunk using Jackhmmer."""
 
     targetname = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
-
-    sto_path = os.path.join(outdir, f'{targetname}_jackhmmer.sto')
 
     # The F1/F2/F3 are the expected proportion to pass each of the filtering
     # stages (which get progressively more expensive), reducing these
@@ -81,7 +79,7 @@ class Jackhmmer:
     cmd_flags = [
           # Don't pollute stdout with Jackhmmer output.
           '-o', '/dev/null',
-          '-A', sto_path,
+          '-A', output_sto_path,
           '--noali',
           '--F1', str(self.filter_f1),
           '--F2', str(self.filter_f2),
@@ -93,7 +91,7 @@ class Jackhmmer:
           '-N', str(self.n_iter)
     ]
     if self.get_tblout:
-        tblout_path = os.path.join(query_tmp_dir, 'tblout.txt')
+        tblout_path = output_sto_path.replace(".sto", "tblout.txt")
         cmd_flags.extend(['--tblout', tblout_path])
 
     if self.z_value:
@@ -108,6 +106,7 @@ class Jackhmmer:
     cmd = [self.binary_path] + cmd_flags + [input_fasta_path, self.database_path]
 
     logging.info('Launching subprocess "%s"', ' '.join(cmd))
+    print(cmd)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     with utils.timing(f'Jackhmmer ({os.path.basename(self.database_path)}) query'):
         _, stderr = process.communicate()
@@ -123,7 +122,7 @@ class Jackhmmer:
             tbl = f.read()
 
     raw_output = dict(
-        sto=sto_path,
+        sto=output_sto_path,
         tbl=tbl,
         stderr=stderr,
         n_iter=self.n_iter,

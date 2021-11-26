@@ -78,12 +78,10 @@ class HHBlits:
     self.p = p
     self.z = z
 
-  def query(self, input_fasta_path: str, outdir: str) -> Mapping[str, Any]:
+  def query(self, input_fasta_path: str, output_a3m_path: str) -> Mapping[str, Any]:
       """Queries the database using HHblits."""
 
       targetname = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
-
-      a3m_path = os.path.join(outdir, f'{targetname}_hhblits.a3m')
 
       db_cmd = []
       for db_path in self.databases:
@@ -93,7 +91,7 @@ class HHBlits:
           self.binary_path,
           '-i', input_fasta_path,
           '-cpu', str(self.n_cpu),
-          '-oa3m', a3m_path,
+          '-oa3m', output_a3m_path,
           '-o', '/dev/null',
           '-n', str(self.n_iter),
           '-e', str(self.e_value),
@@ -112,6 +110,7 @@ class HHBlits:
       cmd += db_cmd
 
       logging.info('Launching subprocess "%s"', ' '.join(cmd))
+      print(cmd)
       process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
       with utils.timing('HHblits query'):
@@ -129,7 +128,7 @@ class HHBlits:
               stdout.decode('utf-8'), stderr[:500_000].decode('utf-8')))
 
       raw_output = dict(
-          a3m=a3m_path,
+          a3m=output_a3m_path,
           output=stdout,
           stderr=stderr,
           n_iter=self.n_iter,

@@ -8,24 +8,35 @@ clustalo_program_dir = /home/bml_casp15/BML_CASP15/tools/clustalo/
 # hhblits program path
 hhblits_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/hhblits
 
+# hhfilter program path
+hhfilter_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/hhfilter
+
 # jackhmmer program path
 jackhmmer_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
 
 ################################databases option#####################################
 
+smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
+
+bfd_database = /home/bml_casp15/BML_CASP15/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
+
+mgnify_database = /home/bml_casp15/BML_CASP15/databases/mgnify/mgy_clusters.fa
+
 ###########################UNIPROT TO PDB database option############################
 
 # uniref database
-uniref_db_dir = /home/bml_casp15/BML_CASP15/databases/UniRef30_2020_03
+uniref_db_dir = /home/bml_casp15/BML_CASP15/databases/UniRef30_2021_06
 
-uniref_db = UniRef30_2020_03
+uniref_db = UniRef30_2021_06
 
-uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90_2020_03.fasta
+uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90/uniref90_2021_06.fasta
 
 # uniclust database
 uniclust_db_dir = /home/bml_casp15/BML_CASP15/databases/uniclust30_2018_08
 
 uniclust_db = uniclust30_2018_08
+
+uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot_2021_06/uniprot.fasta
 
 # uniprot id mapping file
 uniprot_official_mapping_file = /data/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
@@ -36,7 +47,7 @@ uniprot2pdb_dir = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb
 
 uniprot2pdb_mapping_file = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/uniprot2pdb.map
 
-dimers_list = /home/bml_casp15/BML_CASP15/databases/Complex/work/original/dimers_cm.list
+dimers_list = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/dimers_cm.list
 
 ###########################STRING database option####################################
 
