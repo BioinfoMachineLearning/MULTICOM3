@@ -95,8 +95,13 @@ class UNIPROT_distance:
         hash1 = UNIPROT_distance.uni2idx(ids1)
         hash2 = UNIPROT_distance.uni2idx(ids2)
 
-        idx1, idx2 = np.where(np.abs(hash1[:, None] - hash2[None, :]) < 10)
-
-        return pd.DataFrame(
-            {"id_1": [ids1[i] for i in idx1], "id_2": [ids2[j] for j in idx2]}
-        )
+        df_dict = {"id_1": [], "id_2": []}
+        for i in range(len(hash1)):
+            id1 = hash1[i]
+            for j in range(len(hash2)):
+                id2 = hash2[j]
+                if abs(id1-id2) < 10:
+                    df_dict['id_1'] += [ids1[i]]
+                    df_dict['id_2'] += [ids2[j]]
+                    
+        return pd.DataFrame(df_dict)
