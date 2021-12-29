@@ -8,8 +8,14 @@ clustalo_program_dir = SOFTWARE_PATH/tools/clustalo/
 # hhblits program path
 hhblits_program = YOUR_ENV/bin/hhblits
 
+# hhfilter program path
+hhfilter_program = YOUR_ENV/bin/hhfilter
+
 # jackhmmer program path
 jackhmmer_program = YOUR_ENV/bin/jackhmmer
+
+# tmalign program path
+tmalign_program = SOFTWARE_PATH/tools/tmalign/TMalign
 
 ################################databases option#####################################
 
@@ -18,6 +24,8 @@ smallbfd_database = SOFTWARE_PATH/databases/smallbfd/bfd-first_non_consensus_seq
 bfd_database = SOFTWARE_PATH/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
 
 mgnify_database = SOFTWARE_PATH/databases/mgnify/mgy_clusters.fa
+
+###########################Complex alignment generation option#######################
 
 ###########################UNIPROT TO PDB database option############################
 
@@ -67,3 +75,27 @@ con_pro_cds_dir = SOFTWARE_PATH/databases/geno_distance/con_pro
 ena_genome_location_table = SOFTWARE_PATH/databases/geno_distance/cds_pro.txt
 
 genome_distance_threshold = 10000
+
+#######################End of Complex alignment generation option###################
+
+
+
+###########################Complex template search option###########################
+
+###########################Structure based template search option###################
+
+complex_atom_dir = SOFTWARE_PATH/databases/Complex/atom
+
+template_count = 20
+
+heterodimer_list = SOFTWARE_PATH/databases/Complex/work/heterodimers_0.4.list
+
+homodimer_list = SOFTWARE_PATH/databases/Complex/work/homodimers_0.4.list
+
+tmalign_threshold = 0.3
+
+sleep_time = 100
+
+###########################Sequence based template search option####################
+
+#######################End of Complex alignment generation option###################

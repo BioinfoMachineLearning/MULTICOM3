@@ -14,6 +14,9 @@ hhfilter_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/hhfilter
 # jackhmmer program path
 jackhmmer_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
 
+# tmalign program path
+tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
+
 ################################databases option#####################################
 
 smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
@@ -21,6 +24,8 @@ smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non
 bfd_database = /home/bml_casp15/BML_CASP15/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
 
 mgnify_database = /home/bml_casp15/BML_CASP15/databases/mgnify/mgy_clusters.fa
+
+###########################Complex alignment generation option#######################
 
 ###########################UNIPROT TO PDB database option############################
 
@@ -39,7 +44,7 @@ uniclust_db = uniclust30_2018_08
 uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot_2021_06/uniprot.fasta
 
 # uniprot id mapping file
-uniprot_official_mapping_file = /data/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
+uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
 
 ###########################UNIPROT TO PDB database option############################
 
@@ -70,3 +75,27 @@ con_pro_cds_dir = /home/bml_casp15/BML_CASP15/databases/geno_distance/con_pro
 ena_genome_location_table = /home/bml_casp15/BML_CASP15/databases/geno_distance/cds_pro.txt
 
 genome_distance_threshold = 10000
+
+#######################End of Complex alignment generation option###################
+
+
+
+###########################Complex template search option###########################
+
+###########################Structure based template search option###################
+
+complex_atom_dir = /home/jl4mc/multicom4s/multicom4s/tool/update_complex_dbs/databases/Complex/work/atom
+
+template_count = 20
+
+heterodimer_list = /home/jl4mc/multicom4s/multicom4s/tool/update_complex_dbs/databases/Complex/work/original/heterodimers.list
+
+homodimer_list = /home/jl4mc/multicom4s/multicom4s/tool/update_complex_dbs/databases/Complex/work/original/homodimers.list
+
+tmalign_threshold = 0.3
+
+sleep_time = 100
+
+###########################Sequence based template search option####################
+
+#######################End of Complex alignment generation option###################
