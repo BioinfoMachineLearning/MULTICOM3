@@ -86,7 +86,7 @@ def tmalign(inparams):
 
     cmd = f"{tmalign_program} {model1} {model2} -c > {logdir}/{modelname}.txt"
 
-    print(cmd)
+    # print(cmd)
 
     os.system(cmd)
 
@@ -115,9 +115,9 @@ class Complex_structure_based_template_search_pipeline:
 
         outdir = os.path.abspath(outdir) + "/"
 
-        dimer_list = os.path.abspath(self.params["heterodimer_list"])
+        dimer_list = os.path.abspath(self.params["template_heterodimer_list"])
         if is_homodimer:
-            dimer_list = os.path.abspath(self.params["homodimer_list"])
+            dimer_list = os.path.abspath(self.params["template_homodimer_list"])
 
         temp_specific_dimers = read_pair_file_into_array(dimer_list)
 
@@ -129,9 +129,11 @@ class Complex_structure_based_template_search_pipeline:
 
         for i in range(len(monomers)):
 
-            os.chdir(self.params['complex_atom_dir'])
+            os.chdir(self.params['template_atom_dir'])
 
             monomer = monomers[i]
+
+            print(f"Searching templates for {monomer}")
 
             os.system("cp " + monomer + " " + outdir + os.path.basename(monomer))
 
@@ -143,8 +145,8 @@ class Complex_structure_based_template_search_pipeline:
                 tm_score_dir = f'{outdir}/tmscore/{os.path.basename(monomer)}/'
                 makedir_if_not_exists(tm_score_dir)
 
-                aln_score_dir = f'{outdir}/aln/{os.path.basename(monomer)}/'
-                makedir_if_not_exists(aln_score_dir)
+                # aln_score_dir = f'{outdir}/aln/{os.path.basename(monomer)}/'
+                # makedir_if_not_exists(aln_score_dir)
 
                 process_list = []
                 for pdb in pdbs_to_compare:
@@ -170,6 +172,8 @@ class Complex_structure_based_template_search_pipeline:
                         # write2file(current_aln_dir + template_name + ".pir", aln_out)
 
                 all_scores[i] = temp_score
+
+        print(f"Comparing results with dimer database")
 
         dimer_to_be_compare = []
         with open(dimer_list) as f:
@@ -215,3 +219,5 @@ class Complex_structure_based_template_search_pipeline:
                                    'tmscore2', 'aln_temp2', 'tstart2', 'tend2', 'aln_query2', 'qstart2', 'qend2'])
 
         df.to_csv(outdir + "/structure_based_templates.csv", index=False)
+
+        print("The structure based template searching for dimers has finished!")

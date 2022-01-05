@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    dockq_program = '/data/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py'
+    dockq_program = '/home/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py'
 
     pairwise_qa = Pairwise_dockq_qa(dockq_program)
 

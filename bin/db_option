@@ -6,16 +6,28 @@
 clustalo_program_dir = /home/bml_casp15/BML_CASP15/tools/clustalo/
 
 # hhblits program path
-hhblits_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/hhblits
+hhblits_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhblits
 
 # hhfilter program path
-hhfilter_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/hhfilter
+hhfilter_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhfilter
 
 # jackhmmer program path
-jackhmmer_program = /data/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
+jackhmmer_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
 
 # tmalign program path
 tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
+
+# alphafold program path
+alphafold_program_dir = /home/bml_casp15/tools/alphafold
+
+# alphafold tertiary structure prediction script
+alphafold_program = run_alphafold_custom.py
+
+# alphafold environment directory
+alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
+
+# alphafold database directory
+alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
 ################################databases option#####################################
 
@@ -23,28 +35,31 @@ smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non
 
 bfd_database = /home/bml_casp15/BML_CASP15/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
 
-mgnify_database = /home/bml_casp15/BML_CASP15/databases/mgnify/mgy_clusters.fa
+mgnify_database = /home/bml_casp15/BML_CASP15/databases/mgnify/mgy_clusters_2018_12.fa
 
 ###########################Complex alignment generation option#######################
 
 ###########################UNIPROT TO PDB database option############################
 
 # uniref database
-uniref_db_dir = /home/bml_casp15/BML_CASP15/databases/UniRef30_2021_06
+uniref_db_dir = /home/bml_casp15/BML_CASP15/databases/UniRef30_2021_03
 
-uniref_db = UniRef30_2021_06
+uniref_db = UniRef30_2021_03
 
-uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90/uniref90_2021_06.fasta
+uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90/uniref90_2021_03.fasta
 
 # uniclust database
 uniclust_db_dir = /home/bml_casp15/BML_CASP15/databases/uniclust30_2018_08
 
 uniclust_db = uniclust30_2018_08
 
-uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot_2021_06/uniprot.fasta
+uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
 
 # uniprot id mapping file
 uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
+
+# complex alignments concatenation method
+concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance,string_interact
 
 ###########################UNIPROT TO PDB database option############################
 
@@ -84,17 +99,15 @@ genome_distance_threshold = 10000
 
 ###########################Structure based template search option###################
 
-complex_atom_dir = /home/jl4mc/multicom4s/multicom4s/tool/update_complex_dbs/databases/Complex/work/atom
+template_atom_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/work/atom
 
 template_count = 20
 
-heterodimer_list = /home/jl4mc/multicom4s/multicom4s/tool/update_complex_dbs/databases/Complex/work/original/heterodimers.list
+template_heterodimer_list = /home/bml_casp15/update_complex_dbs/databases/Complex/work/original/heterodimers.list
 
-homodimer_list = /home/jl4mc/multicom4s/multicom4s/tool/update_complex_dbs/databases/Complex/work/original/homodimers.list
+template_homodimer_list = /home/bml_casp15/update_complex_dbs/databases/Complex/work/original/homodimers.list
 
 tmalign_threshold = 0.3
-
-sleep_time = 100
 
 ###########################Sequence based template search option####################
 

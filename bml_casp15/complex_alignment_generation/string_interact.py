@@ -19,7 +19,7 @@ class STRING_interact:
         with open(self.mapping_file) as f:
             for line in f:
                 uniprotid1, uniprotid2, score = line.rstrip('\n').split()
-                if score < score_threshold:
+                if int(score) < score_threshold:
                     continue
                 uniprotid1 = uniprotid1.split('_')[1]
                 uniprotid2 = uniprotid2.split('_')[1]

@@ -6,6 +6,7 @@ import time
 from typing import Optional
 from absl import logging
 
+
 def die(msg):
     print(msg)
     sys.exit(1)
@@ -48,6 +49,10 @@ def is_dir(dirname):
         return dirname
 
 
+def check_dir(dirname):
+    return is_dir(dirname)
+
+
 def is_file(filename):
     """Checks if a file is an invalid file"""
     if not os.path.exists(filename):
@@ -55,6 +60,10 @@ def is_file(filename):
         raise argparse.ArgumentTypeError(msg)
     else:
         return filename
+
+
+def check_file(dirname):
+    return is_file(dirname)
 
 
 def makedir_if_not_exists(directory):

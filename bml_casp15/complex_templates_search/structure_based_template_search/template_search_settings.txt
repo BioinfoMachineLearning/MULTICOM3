@@ -1,7 +1,0 @@
-TM_ALIGN_DIR:/home/rsr3gt/programs/template_search/resources/TMalign
-ATOM_DIR:/home/multicom4s_data/HETERO_STD/pdb/
-INTERMEDIATE_TEMPLATE_COUNT: 10000
-HETERO_FILE:../../../../data/interaction_data//heterodimers.txt
-HOMO_FILE:../../../../data/interaction_data//homoDimer.txt
-THRESHOLD:0.3
-SLEEP_TIME:100
