@@ -127,15 +127,19 @@ class Complex_structure_based_template_search_pipeline:
 
         all_scores = {}
 
+        monomers_paths = []
         for i in range(len(monomers)):
+            monomer = monomers[i]
+            os.system("cp " + monomer + " " + outdir + os.path.basename(monomer))
+            monomers_paths += [outdir + os.path.basename(monomer)]
+
+        for i in range(len(monomers_paths)):
 
             os.chdir(self.params['template_atom_dir'])
 
-            monomer = monomers[i]
+            monomer = monomers_paths[i]
 
             print(f"Searching templates for {monomer}")
-
-            os.system("cp " + monomer + " " + outdir + os.path.basename(monomer))
 
             if is_homodimer and i > 0:
 
@@ -154,7 +158,7 @@ class Complex_structure_based_template_search_pipeline:
                             open(f"{tm_score_dir}/{pdb}.atom.txt").readlines()) == 0:
                         process_list.append([monomer, pdb + '.atom', self.params['tmalign_program'], tm_score_dir])
 
-                pool = Pool(processes=10)
+                pool = Pool(processes=20)
                 results = pool.map(tmalign, process_list)
                 pool.close()
                 pool.join()
@@ -170,9 +174,11 @@ class Complex_structure_based_template_search_pipeline:
                         #                                _temp=val[len_val - 2])
                         temp_score[val['template']] = val
                         # write2file(current_aln_dir + template_name + ".pir", aln_out)
-
+                os.system("rm -rf " + tm_score_dir)
                 all_scores[i] = temp_score
 
+        os.system(f"rm -rf {outdir}/tmscore")
+        
         print(f"Comparing results with dimer database")
 
         dimer_to_be_compare = []
@@ -198,6 +204,8 @@ class Complex_structure_based_template_search_pipeline:
             aln_query1 = all_scores[0][chain1]['aln_query']
             qstart1 = all_scores[0][chain1]['qstart']
             qend1 = all_scores[0][chain1]['qend']
+            aligned_length1 = all_scores[0][chain1]['aligned_length']
+
 
             aln_temp2 = all_scores[1][chain2]['aln_temp']
             tstart2 = all_scores[1][chain2]['tstart']
@@ -206,17 +214,20 @@ class Complex_structure_based_template_search_pipeline:
             aln_query2 = all_scores[1][chain2]['aln_query']
             qstart2 = all_scores[1][chain2]['qstart']
             qend2 = all_scores[1][chain2]['qend']
+            aligned_length2 = all_scores[1][chain2]['aligned_length']
 
             temp_scores.append([chain1, chain2, avg_score,
-                               chain1_tmscore, aln_temp1, tstart1, tend1, aln_query1, qstart1, qend1,
-                               chain2_tmscore, aln_temp2, tstart2, tend2, aln_query2, qstart2, qend2])
+                               chain1_tmscore, aln_temp1, tstart1, tend1, aln_query1, qstart1, qend1, aligned_length1,
+                               chain2_tmscore, aln_temp2, tstart2, tend2, aln_query2, qstart2, qend2, aligned_length2])
 
         temp_scores_sorted = sorted(temp_scores, key=lambda energy: float(energy[2]), reverse=True)
 
         df = pd.DataFrame(temp_scores_sorted[0:int(self.params['template_count'])],
                           columns=['chain1', 'chain2', 'avg_tmscore',
-                                   'tmscore1', 'aln_temp1', 'tstart1', 'tend1', 'aln_query1', 'qstart1', 'qend1',
-                                   'tmscore2', 'aln_temp2', 'tstart2', 'tend2', 'aln_query2', 'qstart2', 'qend2'])
+                                   'tmscore1', 'aln_temp1', 'tstart1', 'tend1',
+                                   'aln_query1', 'qstart1', 'qend1', 'aligned_length1',
+                                   'tmscore2', 'aln_temp2', 'tstart2', 'tend2',
+                                   'aln_query2', 'qstart2', 'qend2', 'aligned_length2'])
 
         df.to_csv(outdir + "/structure_based_templates.csv", index=False)
 

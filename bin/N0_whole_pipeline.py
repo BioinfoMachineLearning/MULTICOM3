@@ -6,6 +6,7 @@ from bml_casp15.monomer_alignment_generation.alignment import read_fasta, write_
 from bml_casp15.monomer_alignment_generation.pipeline import Monomer_alignment_generation_pipeline
 from bml_casp15.complex_alignment_generation.pipeline import *
 from bml_casp15.tertiary_structure_generation.pipeline import *
+from bml_casp15.complex_templates_search.structure_based_pipeline import *
 from absl import flags
 from absl import app
 
@@ -103,6 +104,16 @@ def run_concatenate_dimer_msas_pipeline(dimer, monomer_aln_dir, outputdir, param
         print("The a3ms for dimers are not complete!")
 
 
+def complete_result(outputdir):
+    complete = True
+    for i in range(0, 5):
+        model = f'{outputdir}/ranked_{i}.pdb'
+        if not os.path.exists(model):
+            complete = False
+            break
+    return complete
+
+
 def main(argv):
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
@@ -165,11 +176,17 @@ def main(argv):
         N3_outdir = dimer_outdir + '/N3_monomer_tertiary_structure_generation'
         makedir_if_not_exists(N3_outdir)
 
-        print(f"Total {len(fasta_paths)} monomers are generating structures")
-
+        to_be_processed_fasta = []
         if len(fasta_paths) > 0:
+            for fasta_path in fasta_paths:
+                outdir = N3_outdir + '/' + pathlib.Path(fasta_path).stem
+                if not complete_result(outdir):
+                    to_be_processed_fasta += [fasta_path]
+
+        if len(to_be_processed_fasta) > 0:
+            print(f"Total {len(to_be_processed_fasta)} monomers are generating structures")
             pipeline = Monomer_tertiary_structure_prediction_pipeline(params)
-            pipeline.process(fasta_paths, N1_outdir, N3_outdir)
+            pipeline.process(to_be_processed_fasta, N1_outdir, N3_outdir)
 
         print("The prediction for monomers has finished!")
 
@@ -192,6 +209,12 @@ def main(argv):
         if not os.path.exists(monomer2_pdb):
             print(f"Cannot find teritary structure for {monomer2}: {monomer2_pdb}")
             continue
+
+        os.system(f"cp {monomer1_pdb} {N4_outdir}/{monomer1}.pdb")
+        monomer1_pdb = f"{N4_outdir}/{monomer1}.pdb"
+
+        os.system(f"cp {monomer2_pdb} {N4_outdir}/{monomer2}.pdb")
+        monomer2_pdb = f"{N4_outdir}/{monomer2}.pdb"
 
         pipeline = Complex_structure_based_template_search_pipeline(params)
 

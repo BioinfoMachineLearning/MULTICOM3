@@ -45,7 +45,17 @@ def main(argv):
 
         outdir = FLAGS.output_dir + '/' + dimer
 
+        if os.path.exists(outdir + '/structure_based_templates.csv'):
+            print(f"{dimer} has been processed!")
+            continue
+
         makedir_if_not_exists(outdir)
+
+        os.system(f"cp {monomer1_pdb} {outdir}/{monomer1}.pdb")
+        monomer1_pdb = f"{outdir}/{monomer1}.pdb"
+
+        os.system(f"cp {monomer2_pdb} {outdir}/{monomer2}.pdb")
+        monomer2_pdb = f"{outdir}/{monomer2}.pdb"
 
         pipeline.search([monomer1_pdb, monomer2_pdb], outdir)
 

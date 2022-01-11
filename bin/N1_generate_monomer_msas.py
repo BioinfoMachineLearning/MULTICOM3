@@ -76,7 +76,7 @@ def main(argv):
         process_list.append([f"{outdir}/{monomer_name}", outdir, params])
 
     print(f"Total {len(process_list)} monomers to be processed")
-    pool = Pool(processes=5)
+    pool = Pool(processes=8)
     results = pool.map(generate_a3ms_for_single_seq, process_list)
     pool.close()
     pool.join()
