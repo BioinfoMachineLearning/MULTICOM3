@@ -21,7 +21,7 @@ tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
 alphafold_program_dir = /home/bml_casp15/tools/alphafold
 
 # alphafold tertiary structure prediction script
-alphafold_program = run_alphafold_custom.py
+alphafold_program = run_alphafold_custom_sim.py
 
 # alphafold environment directory
 alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
@@ -46,7 +46,7 @@ uniref_db_dir = /home/bml_casp15/BML_CASP15/databases/UniRef30_2021_03
 
 uniref_db = UniRef30_2021_03
 
-uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90/uniref90_2021_03.fasta
+uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90/uniref90.fasta
 
 # uniclust database
 uniclust_db_dir = /home/bml_casp15/BML_CASP15/databases/uniclust30_2018_08

@@ -37,15 +37,18 @@ def main(argv):
 
     fasta_paths = []
 
+    methods = ['rosettafold']
+
     for monomer in os.listdir(FLAGS.aln_dir):
-        if os.path.exists(f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"):
-            if not complete_result(FLAGS.output_dir + '/' + monomer):
-                fasta_paths += [f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"]
+        for method in methods:
+            if os.path.exists(f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"):
+                if not complete_result(FLAGS.output_dir + '/' + method + '/' + monomer):
+                    fasta_paths += [f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"]
 
     print(f"Total {len(fasta_paths)} monomers are generating structures")
 
     if len(fasta_paths) > 0:
-        pipeline = Monomer_tertiary_structure_prediction_pipeline(params)
+        pipeline = Monomer_tertiary_structure_prediction_pipeline(params, methods)
         pipeline.process(fasta_paths, FLAGS.aln_dir, FLAGS.output_dir)
 
     print("The prediction for monomers has finished!")

@@ -4,9 +4,11 @@ from tqdm import tqdm
 from bml_casp15.tool import hhblits
 from bml_casp15.tool import jackhmmer
 from bml_casp15.common.util import is_dir, is_file, read_option_file, makedir_if_not_exists
-from bml_casp15.complex.species_interact import Species_interact
-from bml_casp15.alignment.alignment import *
-from bml_casp15.complex.complex import write_concatenated_alignment
+from bml_casp15.complex_alignment_generation.species_interact import Species_interact
+from bml_casp15.monomer_alignment_generation.alignment import *
+from bml_casp15.complex_alignment_generation.pipeline import write_concatenated_alignment
+import pathlib
+
 
 def run_hhblits(inparams):
 
@@ -14,7 +16,9 @@ def run_hhblits(inparams):
 
     hhblits_runner = hhblits.HHBlits(binary_path=hhblits_binary, databases=[database])
 
-    return hhblits_runner.query(fasta, outdir)
+    outfile = outdir + '/' + pathlib.Path(fasta).stem + '.a3m'
+
+    return hhblits_runner.query(fasta, outfile)
 
 
 def run_jackhmmer(inparams):
@@ -23,7 +27,9 @@ def run_jackhmmer(inparams):
 
     jackhmmer_runner = jackhmmer.Jackhmmer(binary_path=jackhmmer_binary, database_path=database)
 
-    return jackhmmer_runner.query(fasta, outdir)
+    outfile = outdir + '/' + pathlib.Path(fasta).stem + '.sto'
+
+    return jackhmmer_runner.query(fasta, outfile)
 
 
 if __name__ == '__main__':
@@ -98,7 +104,8 @@ if __name__ == '__main__':
 
     pair_ids = Species_interact.get_interactions(aln_1, aln_2)
 
-    target_header, sequences_full, sequences_monomer_1, sequences_monomer_2 =  write_concatenated_alignment(pair_ids, aln_1, aln_2)
+    target_header, sequences_full, sequences_monomer_1, sequences_monomer_2, pair_ids =  \
+        write_concatenated_alignment(pair_ids, aln_1, aln_2)
 
     # save the alignment files
     mon_alignment_file_1 = f"{outdir}/{aln_1.main_id}_monomer_1.a3m"

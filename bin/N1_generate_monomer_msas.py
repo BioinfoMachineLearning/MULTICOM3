@@ -29,21 +29,24 @@ def generate_a3ms_for_single_seq(inparams):
     mgnify = params['mgnify_database']
 
     hhblits_binary = params['hhblits_program']
+    hhfilter_binary = params['hhfilter_program']
     jackhmmer_binary = params['jackhmmer_program']
 
     result = None
     try:
-        pipeline = Monomer_alignment_generation_pipeline(jackhmmer_binary,
-                                                         hhblits_binary,
-                                                         uniref90_fasta,
-                                                         mgnify,
-                                                         smallbfd,
-                                                         bfd,
-                                                         uniref30,
-                                                         uniclust30,
-                                                         uniprot_fasta)
+        pipeline = Monomer_alignment_generation_pipeline(jackhmmer_binary_path=jackhmmer_binary,
+                                                         hhblits_binary_path=hhblits_binary,
+                                                         hhfilter_binary_path=hhfilter_binary,
+                                                         uniref90_database_path=uniref90_fasta,
+                                                         mgnify_database_path=mgnify,
+                                                         small_bfd_database_path=smallbfd,
+                                                         bfd_database_path=bfd,
+                                                         uniref30_database_path=uniref30,
+                                                         uniclust30_database_path=uniclust30,
+                                                         uniprot_database_path=uniprot_fasta)
         result = pipeline.process(fasta, outdir)
     except Exception as e:
+        print(e)
         return result
     return result
 
@@ -74,9 +77,10 @@ def main(argv):
 
         os.system(f"cp {monomer} {outdir}")
         process_list.append([f"{outdir}/{monomer_name}", outdir, params])
+        # generate_a3ms_for_single_seq([f"{outdir}/{monomer_name}", outdir, params])
 
     print(f"Total {len(process_list)} monomers to be processed")
-    pool = Pool(processes=8)
+    pool = Pool(processes=5)
     results = pool.map(generate_a3ms_for_single_seq, process_list)
     pool.close()
     pool.join()
