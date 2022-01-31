@@ -11,11 +11,20 @@ hhblits_program = YOUR_ENV/bin/hhblits
 # hhfilter program path
 hhfilter_program = YOUR_ENV/bin/hhfilter
 
+# hhmake program path
+hhmake_program = YOUR_ENV/bin/hhmake
+
+# hhalign program path
+hhalign_program = YOUR_ENV/bin/hhalign
+
 # jackhmmer program path
 jackhmmer_program = YOUR_ENV/bin/jackhmmer
 
 # tmalign program path
 tmalign_program = SOFTWARE_PATH/tools/tmalign/TMalign
+
+# hhsearch program path
+hhsearch_program = YOUR_ENV/bin/hhsearch
 
 # alphafold program path
 alphafold_program_dir = SOFTWARE_PATH/tools/alphafold
@@ -97,11 +106,11 @@ genome_distance_threshold = 10000
 
 ###########################Complex template search option###########################
 
-###########################Structure based template search option###################
-
 template_atom_dir = SOFTWARE_PATH/databases/Complex/atom
 
 template_count = 20
+
+###########################Structure based template search option###################
 
 template_heterodimer_list = SOFTWARE_PATH/databases/Complex/work/heterodimers_0.4.list
 
@@ -110,5 +119,11 @@ template_homodimer_list = SOFTWARE_PATH/databases/Complex/work/homodimers_0.4.li
 tmalign_threshold = 0.3
 
 ###########################Sequence based template search option####################
+
+pdb_hhsuite_database = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70
+
+pdb_hhsuite_cluster_tsv = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70_clu.tsv
+
+
 
 #######################End of Complex alignment generation option###################

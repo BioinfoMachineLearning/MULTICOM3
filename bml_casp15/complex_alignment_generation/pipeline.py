@@ -345,8 +345,9 @@ def concatenate_alignments(inparams):
                                                                                  uniprot_sto_aln2, hhfilter,
                                                                                  outdir + '/uniprot_distance_uniprot_sto')
                     print(f"uniprot_distance_uniprot_sto: {len(pair_ids)} pairs")
-                    
+
     except Exception as e:
+        print(e)
         return None
 
 

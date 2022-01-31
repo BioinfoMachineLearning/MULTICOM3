@@ -171,14 +171,14 @@ class Species_interact:
         # note the identity here will be different than for the unfiltered alignment
 
         # initialize the matrix
+
         identity_mat = np.zeros((len(paralogs), len(alignment.ids)), dtype=float)
 
         for idx, paralog_id in enumerate(paralogs.id):
             # calculate the % identity of every seq in the alignment to current paralog
             identities = alignment.identities_to(alignment[alignment.id_to_index[paralog_id]])
-
             # save the results
-            identity_mat[idx, :] = identities
+            identity_mat[idx, :] = identities['identity_to_query']
 
         indices_to_keep = []
         # for every sequence in the alignment that is the most similar to the query

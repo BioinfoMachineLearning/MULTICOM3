@@ -11,11 +11,20 @@ hhblits_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhblits
 # hhfilter program path
 hhfilter_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhfilter
 
+# hhmake program path
+hhmake_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhmake
+
+# hhalign program path
+hhalign_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhalign
+
 # jackhmmer program path
 jackhmmer_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
 
 # tmalign program path
 tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
+
+# hhsearch program path
+hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
 
 # alphafold program path
 alphafold_program_dir = /home/bml_casp15/tools/alphafold
@@ -99,16 +108,22 @@ genome_distance_threshold = 10000
 
 ###########################Structure based template search option###################
 
-template_atom_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/work/atom
+template_atom_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/work/pdbs_in_complex
 
-template_count = 20
+template_count = 100
 
 template_heterodimer_list = /home/bml_casp15/update_complex_dbs/databases/Complex/work/original/heterodimers.list
 
 template_homodimer_list = /home/bml_casp15/update_complex_dbs/databases/Complex/work/original/homodimers.list
 
-tmalign_threshold = 0.3
+tmalign_threshold = 0.5
 
 ###########################Sequence based template search option####################
+
+pdb_hhsuite_database = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70
+
+pdb_hhsuite_cluster_tsv = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70_clu.tsv
+
+pdb_seqs_dir = /home/bml_casp15/tools/alphafold_databases/pdb_seqres/pdb_seqs
 
 #######################End of Complex alignment generation option###################

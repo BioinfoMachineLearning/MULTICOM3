@@ -17,6 +17,8 @@ def main(argv):
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
 
+    cwd = os.getcwd()
+
     check_file(FLAGS.option_file)
     check_dir(FLAGS.model_dir)
 
@@ -29,6 +31,8 @@ def main(argv):
     pipeline = Complex_structure_based_template_search_pipeline(params)
 
     for dimer in FLAGS.dimerlist:
+
+        os.chdir(cwd)
 
         monomer1, monomer2 = dimer.split('_')
 

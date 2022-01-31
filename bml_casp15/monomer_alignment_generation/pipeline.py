@@ -3,6 +3,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, check_dirs
 from bml_casp15.monomer_alignment_generation.alignment import *
+from bml_casp15.monomer_alignment_generation.rosettafold_msa_runner import *
 from bml_casp15.tool import hhblits
 from bml_casp15.tool import jackhmmer
 
@@ -28,6 +29,7 @@ class Monomer_alignment_generation_pipeline:
                  uniref30_database_path,
                  uniclust30_database_path,
                  uniprot_database_path,
+                 hhfilter_binary_path="",
                  mgnify_max_hits: int = 501,
                  uniref_max_hits: int = 10000,
                  use_precomputed_msas: bool = False):
@@ -43,6 +45,7 @@ class Monomer_alignment_generation_pipeline:
         self.jackhmmer_uniprot_runner = None
         self.hhblits_uniclust_folddock_runner = None
         self.jackhmmer_small_bfd_runner = None
+        self.rosettafold_msa_runner = None
 
         if len(uniref90_database_path) > 0:
             self.jackhmmer_uniref90_runner = jackhmmer.Jackhmmer(
@@ -89,6 +92,12 @@ class Monomer_alignment_generation_pipeline:
                 database_path=small_bfd_database_path,
                 get_tblout=True)
 
+        if len(uniref30_database_path) > 0 and len(bfd_database_path) > 0:
+            self.rosettafold_msa_runner = RosettaFold_Msa_runner(
+                hhblits_binary_path=hhblits_binary_path,
+                hhfilter_binary_path=hhfilter_binary_path,
+                uniref30_database_path=uniref30_database_path,
+                bfd_database_path=bfd_database_path)
 
     def process(self, input_fasta_path, msa_output_dir):
         """Runs alignment tools on the input sequence and creates features."""
@@ -99,7 +108,8 @@ class Monomer_alignment_generation_pipeline:
 
         if self.jackhmmer_uniref90_runner is not None:
             uniref90_out_path = os.path.join(msa_output_dir, f'{input_id}_uniref90.sto')
-            msa_process_list.append([self.jackhmmer_uniref90_runner, input_fasta_path, uniref90_out_path, 'uniref90_sto'])
+            msa_process_list.append(
+                [self.jackhmmer_uniref90_runner, input_fasta_path, uniref90_out_path, 'uniref90_sto'])
 
         if self.jackhmmer_mgnify_runner is not None:
             mgnify_out_path = os.path.join(msa_output_dir, f'{input_id}_mgnify.sto')
@@ -107,7 +117,8 @@ class Monomer_alignment_generation_pipeline:
 
         if self.jackhmmer_small_bfd_runner is not None:
             small_bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_smallbfd.sto')
-            msa_process_list.append([self.jackhmmer_small_bfd_runner, input_fasta_path, small_bfd_out_path, 'smallbfd_sto'])
+            msa_process_list.append(
+                [self.jackhmmer_small_bfd_runner, input_fasta_path, small_bfd_out_path, 'smallbfd_sto'])
 
         if self.hhblits_bfd_runner is not None:
             bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_bfd.a3m')
@@ -119,15 +130,23 @@ class Monomer_alignment_generation_pipeline:
 
         if self.hhblits_uniclust_runner is not None:
             uniclust30_out_path = os.path.join(msa_output_dir, f'{input_id}_uniclust30.a3m')
-            msa_process_list.append([self.hhblits_uniclust_runner, input_fasta_path, uniclust30_out_path, 'uniclust30_a3m'])
+            msa_process_list.append(
+                [self.hhblits_uniclust_runner, input_fasta_path, uniclust30_out_path, 'uniclust30_a3m'])
 
         if self.hhblits_uniclust_folddock_runner is not None:
             uniclust30_all_out_path = os.path.join(msa_output_dir, f'{input_id}_uniclust30_all.a3m')
-            msa_process_list.append([self.hhblits_uniclust_folddock_runner, input_fasta_path, uniclust30_all_out_path, 'uniclust30_all_a3m'])
+            msa_process_list.append([self.hhblits_uniclust_folddock_runner, input_fasta_path, uniclust30_all_out_path,
+                                     'uniclust30_all_a3m'])
 
         if self.jackhmmer_uniprot_runner is not None:
             uniprot_out_path = os.path.join(msa_output_dir, f'{input_id}_uniprot.sto')
             msa_process_list.append([self.jackhmmer_uniprot_runner, input_fasta_path, uniprot_out_path, 'uniprot_sto'])
+
+        if self.rosettafold_msa_runner is not None:
+            rosettafold_out_path = os.path.join(msa_output_dir, f'{input_id}_rosettafold.a3m')
+            print(rosettafold_out_path)
+            msa_process_list.append(
+                [self.rosettafold_msa_runner, input_fasta_path, rosettafold_out_path, 'rosettafold_sto'])
 
         # pool = Pool(processes=len(msa_process_list))
         # results = pool.map(run_msa_tool, msa_process_list)
