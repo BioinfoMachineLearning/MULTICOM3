@@ -258,4 +258,4 @@ class Complex_sequence_based_template_search_pipeline:
 
         concatenated_pd = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir)
 
-        concatenated_pd.to_csv(outdir + '/concatenated_template_idx.csv')
+        concatenated_pd.to_csv(outdir + '/sequence_templates.csv')

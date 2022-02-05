@@ -7,6 +7,8 @@ from bml_casp15.monomer_alignment_generation.pipeline import Monomer_alignment_g
 from bml_casp15.complex_alignment_generation.pipeline import *
 from bml_casp15.tertiary_structure_generation.pipeline import *
 from bml_casp15.complex_templates_search.structure_based_pipeline import *
+from bml_casp15.complex_templates_search.sequence_based_pipeline import *
+from bml_casp15.quaternary_structure_generation.pipeline import *
 from absl import flags
 from absl import app
 
@@ -167,7 +169,12 @@ def main(argv):
         print("2. Start to generate alignments for targets")
         N2_outdir = dimer_outdir + '/N2_complex_alignments_concatenation'
         makedir_if_not_exists(N2_outdir)
-        run_concatenate_dimer_msas_pipeline(dimer_name, N1_outdir, N2_outdir, params)
+
+        try:
+            run_concatenate_dimer_msas_pipeline(dimer_name, N1_outdir, N2_outdir, params)
+        except Exception as e:
+            print(e)
+            print("Program failed in step 2")
 
         print("#################################################################################################")
 
@@ -185,8 +192,12 @@ def main(argv):
 
         if len(to_be_processed_fasta) > 0:
             print(f"Total {len(to_be_processed_fasta)} monomers are generating structures")
-            pipeline = Monomer_tertiary_structure_prediction_pipeline(params)
-            pipeline.process(to_be_processed_fasta, N1_outdir, N3_outdir)
+            try:
+                pipeline = Monomer_tertiary_structure_prediction_pipeline(params)
+                pipeline.process(to_be_processed_fasta, N1_outdir, N3_outdir)
+            except Exception as e:
+                print(e)
+                print("Program failed in step 3")
 
         print("The prediction for monomers has finished!")
 
@@ -216,14 +227,72 @@ def main(argv):
         os.system(f"cp {monomer2_pdb} {N4_outdir}/{monomer2}.pdb")
         monomer2_pdb = f"{N4_outdir}/{monomer2}.pdb"
 
-        pipeline = Complex_structure_based_template_search_pipeline(params)
+        try:
+            pipeline = Complex_structure_based_template_search_pipeline(params)
 
-        pipeline.search([monomer1_pdb, monomer2_pdb], N4_outdir)
+            pipeline.search([monomer1_pdb, monomer2_pdb], N4_outdir)
+        except Exception as e:
+            print(e)
+            print("Program failed in step 4")
 
-        print("Complex template searching has been finished!")
+        print("Complex structure based template searching has been finished!")
 
         print("#################################################################################################")
 
+        print("#################################################################################################")
+        print("5. Start to search complex templates based on sequence similarity")
+        N5_outdir = dimer_outdir + '/N5_sequence_based_templates_search'
+        makedir_if_not_exists(N5_outdir)
+
+        monomer1_template_a3m = f"{N1_outdir}/{monomer1}/{monomer1}_uniref90.sto"
+
+        monomer2_template_a3m = f"{N1_outdir}/{monomer2}/{monomer2}_uniref90.sto"
+
+        if not os.path.exists(monomer1_template_a3m):
+            continue
+
+        if not os.path.exists(monomer2_template_a3m):
+            continue
+
+        seq1 = open(f"{N1_outdir}/{chain1}/{chain1}.fasta").readlines()[1].rstrip('\n')
+        seq2 = open(f"{N1_outdir}/{chain2}/{chain2}.fasta").readlines()[1].rstrip('\n')
+
+        monomer1_template_input = monomer_template_input(name=monomer1, msa_path=monomer1_template_a3m, seq=seq1)
+
+        monomer2_template_input = monomer_template_input(name=monomer2, msa_path=monomer2_template_a3m, seq=seq2)
+
+        try:
+            pipeline = Complex_sequence_based_template_search_pipeline(params)
+            pipeline.search([monomer1_template_input, monomer2_template_input], N5_outdir)
+        except Exception as e:
+            print(e)
+            print("Program failed in step 5")
+
+        print("Complex sequence based template searching has been finished!")
+
+        print("#################################################################################################")
+
+        print("#################################################################################################")
+        print("6. Start to generate complex quaternary structures")
+        N6_outdir = dimer_outdir + '/N6_quaternary_structure_generation'
+        makedir_if_not_exists(N6_outdir)
+
+        try:
+            pipeline = Quaternary_structure_prediction_pipeline(params)
+            result = pipeline.process(fasta_path=fasta_path,
+                                      aln_dir=N1_outdir,
+                                      complex_aln_dir=N2_outdir,
+                                      structure_template_dir=N4_outdir,
+                                      sequence_template_dir=N5_outdir,
+                                      monomer_model_dir=N3_outdir,
+                                      output_dir=N6_outdir)
+        except Exception as e:
+            print(e)
+            print("Program failed in step 6")
+
+        print("Complex quaternary structure generation has been finished!")
+
+        print("#################################################################################################")
 
 
 if __name__ == '__main__':

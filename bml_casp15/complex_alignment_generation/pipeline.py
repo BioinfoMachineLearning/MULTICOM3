@@ -131,7 +131,10 @@ def write_concatenated_alignment(id_pairing, alignment_1, alignment_2):
     return target_header, sequences_full, sequences_monomer_1, sequences_monomer_2, pd.DataFrame(filter_pair_ids)
 
 
-def write_dimer_a3ms(pair_ids, aln_1, aln_2, hhfilter, outdir):
+def write_dimer_a3ms(pair_ids, aln_1, aln_2, hhfilter, outdir, method):
+
+    outdir = outdir + '/' + method
+
     makedir_if_not_exists(outdir)
 
     target_header, sequences_full, sequences_monomer_1, sequences_monomer_2, pair_ids = write_concatenated_alignment(
@@ -148,9 +151,9 @@ def write_dimer_a3ms(pair_ids, aln_1, aln_2, hhfilter, outdir):
     with open(mon_alignment_file_2, "w") as of:
         write_a3m(sequences_monomer_2, of)
 
-    pair_ids.to_csv(f"{outdir}/{aln_1.main_id}_{aln_2.main_id}_interact.csv", index=False)
+    pair_ids.to_csv(f"{outdir}/{method}_interact.csv", index=False)
 
-    complex_ailgnment_file = f"{outdir}/{aln_1.main_id}_{aln_2.main_id}.a3m"
+    complex_ailgnment_file = f"{outdir}/{method}.a3m"
     with open(complex_ailgnment_file, "w") as of:
         write_a3m(sequences_full, of)
 
@@ -233,21 +236,24 @@ def concatenate_alignments(inparams):
                     pair_ids = runners['Geno_interact'].get_interactions(uniref_a3m_aln1, uniref_a3m_aln2)
                     alignment["geno_dist_uniref_a3m"] = write_dimer_a3ms(pair_ids, uniref_a3m_aln1, uniref_a3m_aln2,
                                                                          hhfilter,
-                                                                         outdir + '/geno_dist_uniref_a3m')
+                                                                         outdir,
+                                                                         'geno_dist_uniref_a3m')
                     print(f"geno_dist_uniref_a3m: {len(pair_ids)} pairs")
 
                 if uniref_sto_aln1 is not None and uniref_sto_aln2 is not None:
                     pair_ids = runners['Geno_interact'].get_interactions(uniref_sto_aln1, uniref_sto_aln2)
                     alignment["geno_dist_uniref_sto"] = write_dimer_a3ms(pair_ids, uniref_sto_aln1, uniref_sto_aln2,
                                                                          hhfilter,
-                                                                         outdir + '/geno_dist_uniref_sto')
+                                                                         outdir,
+                                                                         'geno_dist_uniref_sto')
                     print(f"geno_dist_uniref_sto: {len(pair_ids)} pairs")
 
                 if uniprot_sto_aln1 is not None and uniprot_sto_aln2 is not None:
                     pair_ids = runners['Geno_interact'].get_interactions(uniprot_sto_aln1, uniprot_sto_aln2)
                     alignment["geno_dist_uniprot_sto"] = write_dimer_a3ms(pair_ids, uniprot_sto_aln1,
                                                                           uniprot_sto_aln2, hhfilter,
-                                                                          outdir + '/geno_dist_uniprot_sto')
+                                                                          outdir,
+                                                                          'geno_dist_uniprot_sto')
                     print(f"geno_dist_uniprot_sto: {len(pair_ids)} pairs")
 
             elif method == "pdb_interact":
@@ -255,21 +261,24 @@ def concatenate_alignments(inparams):
                     pair_ids = runners['pdb_interact'].get_interactions(uniref_a3m_aln1, uniref_a3m_aln2)
                     alignment["pdb_interact_uniref_a3m"] = write_dimer_a3ms(pair_ids, uniref_a3m_aln1,
                                                                             uniref_a3m_aln2, hhfilter,
-                                                                            outdir + '/pdb_interact_uniref_a3m')
+                                                                            outdir,
+                                                                            'pdb_interact_uniref_a3m')
                     print(f"pdb_interact_uniref_a3m: {len(pair_ids)} pairs")
 
                 if uniref_sto_aln1 is not None and uniref_sto_aln2 is not None:
                     pair_ids = runners['pdb_interact'].get_interactions(uniref_sto_aln1, uniref_sto_aln2)
                     alignment["pdb_interact_uniref_sto"] = write_dimer_a3ms(pair_ids, uniref_sto_aln1,
                                                                             uniref_sto_aln2, hhfilter,
-                                                                            outdir + '/pdb_interact_uniref_sto')
+                                                                            outdir,
+                                                                            'pdb_interact_uniref_sto')
                     print(f"pdb_interact_uniref_sto: {len(pair_ids)} pairs")
 
                 if uniprot_sto_aln1 is not None and uniprot_sto_aln2 is not None:
                     pair_ids = runners['pdb_interact'].get_interactions(uniprot_sto_aln1, uniprot_sto_aln2)
                     alignment["pdb_interact_uniprot_sto"] = write_dimer_a3ms(pair_ids, uniprot_sto_aln1,
                                                                              uniprot_sto_aln2, hhfilter,
-                                                                             outdir + '/pdb_interact_uniprot_sto')
+                                                                             outdir,
+                                                                             'pdb_interact_uniprot_sto')
                     print(f"pdb_interact_uniprot_sto: {len(pair_ids)} pairs")
 
             elif method == "species_interact":
@@ -277,21 +286,24 @@ def concatenate_alignments(inparams):
                     pair_ids = Species_interact.get_interactions(uniref_a3m_aln1, uniref_a3m_aln2)
                     alignment["species_interact_uniref_a3m"] = write_dimer_a3ms(pair_ids, uniref_a3m_aln1,
                                                                                 uniref_a3m_aln2, hhfilter,
-                                                                                outdir + '/species_interact_uniref_a3m')
+                                                                                outdir,
+                                                                                'species_interact_uniref_a3m')
                     print(f"species_interact_uniref_a3m: {len(pair_ids)} pairs")
 
                 if uniref_sto_aln1 is not None and uniref_sto_aln2 is not None:
                     pair_ids = Species_interact.get_interactions(uniref_sto_aln1, uniref_sto_aln2)
                     alignment["species_interact_uniref_sto"] = write_dimer_a3ms(pair_ids, uniref_sto_aln1,
                                                                                 uniref_sto_aln2, hhfilter,
-                                                                                outdir + '/species_interact_uniref_sto')
+                                                                                outdir,
+                                                                                'species_interact_uniref_sto')
                     print(f"species_interact_uniref_sto: {len(pair_ids)} pairs")
 
                 if uniprot_sto_aln1 is not None and uniprot_sto_aln2 is not None:
                     pair_ids = Species_interact.get_interactions(uniprot_sto_aln1, uniprot_sto_aln2)
                     alignment["species_interact_uniprot_sto"] = write_dimer_a3ms(pair_ids, uniprot_sto_aln1,
                                                                                  uniprot_sto_aln2, hhfilter,
-                                                                                 outdir + '/species_interact_uniprot_sto')
+                                                                                 outdir,
+                                                                                 'species_interact_uniprot_sto')
                     print(f"species_interact_uniprot_sto: {len(pair_ids)} pairs")
 
             elif method == "string_interact":
@@ -299,21 +311,24 @@ def concatenate_alignments(inparams):
                     pair_ids = runners['string_interact'].get_interactions(uniref_a3m_aln1, uniref_a3m_aln2)
                     alignment["string_interact_uniref_a3m"] = write_dimer_a3ms(pair_ids, uniref_a3m_aln1,
                                                                                uniref_a3m_aln2, hhfilter,
-                                                                               outdir + '/string_interact_uniref_a3m')
+                                                                               outdir,
+                                                                               'string_interact_uniref_a3m')
                     print(f"string_interact_uniref_a3m: {len(pair_ids)} pairs")
 
                 if uniref_sto_aln1 is not None and uniref_sto_aln2 is not None:
                     pair_ids = runners['string_interact'].get_interactions(uniref_sto_aln1, uniref_sto_aln2)
                     alignment["string_interact_uniref_sto"] = write_dimer_a3ms(pair_ids, uniref_sto_aln1,
                                                                                uniref_sto_aln2, hhfilter,
-                                                                               outdir + '/string_interact_uniref_sto')
+                                                                               outdir,
+                                                                               'string_interact_uniref_sto')
                     print(f"string_interact_uniref_sto: {len(pair_ids)} pairs")
 
                 if uniprot_sto_aln1 is not None and uniprot_sto_aln2 is not None:
                     pair_ids = runners['string_interact'].get_interactions(uniprot_sto_aln1, uniprot_sto_aln2)
                     alignment["string_interact_uniprot_sto"] = write_dimer_a3ms(pair_ids, uniprot_sto_aln1,
                                                                                 uniprot_sto_aln2, hhfilter,
-                                                                                outdir + '/string_interact_uniprot_sto')
+                                                                                outdir,
+                                                                                'string_interact_uniprot_sto')
                     print(f"string_interact_uniprot_sto: {len(pair_ids)} pairs")
 
             elif method == "uniclust_oxmatch":
@@ -321,7 +336,8 @@ def concatenate_alignments(inparams):
                     pair_ids = UNICLUST_oxmatch.get_interactions(uniclust_a3m_aln1, uniclust_a3m_aln2)
                     alignment["uniclust_oxmatch_a3m"] = write_dimer_a3ms(pair_ids, uniclust_a3m_aln1,
                                                                          uniclust_a3m_aln2, hhfilter,
-                                                                         outdir + '/uniclust_oxmatch_a3m')
+                                                                         outdir,
+                                                                         'uniclust_oxmatch_a3m')
                     print(f"uniclust_oxmatch_a3m: {len(pair_ids)} pairs")
 
             elif method == "uniprot_distance":
@@ -329,21 +345,24 @@ def concatenate_alignments(inparams):
                     pair_ids = UNIPROT_distance.get_interactions(uniref_a3m_aln1, uniref_a3m_aln2)
                     alignment["uniprot_distance_uniref_a3m"] = write_dimer_a3ms(pair_ids, uniref_a3m_aln1,
                                                                                 uniref_a3m_aln2, hhfilter,
-                                                                                outdir + '/uniprot_distance_uniref_a3m')
+                                                                                outdir,
+                                                                                'uniprot_distance_uniref_a3m')
                     print(f"uniprot_distance_uniref_a3m: {len(pair_ids)} pairs")
 
                 if uniref_sto_aln1 is not None and uniref_sto_aln2 is not None:
                     pair_ids = UNIPROT_distance.get_interactions(uniref_sto_aln1, uniref_sto_aln2)
                     alignment["uniprot_distance_uniref_sto"] = write_dimer_a3ms(pair_ids, uniref_sto_aln1,
                                                                                 uniref_sto_aln2, hhfilter,
-                                                                                outdir + '/uniprot_distance_uniref_sto')
+                                                                                outdir,
+                                                                                'uniprot_distance_uniref_sto')
                     print(f"uniprot_distance_uniref_sto: {len(pair_ids)} pairs")
 
                 if uniprot_sto_aln1 is not None and uniprot_sto_aln2 is not None:
                     pair_ids = UNIPROT_distance.get_interactions(uniprot_sto_aln1, uniprot_sto_aln2)
                     alignment["uniprot_distance_uniprot_sto"] = write_dimer_a3ms(pair_ids, uniprot_sto_aln1,
                                                                                  uniprot_sto_aln2, hhfilter,
-                                                                                 outdir + '/uniprot_distance_uniprot_sto')
+                                                                                 outdir,
+                                                                                 'uniprot_distance_uniprot_sto')
                     print(f"uniprot_distance_uniprot_sto: {len(pair_ids)} pairs")
 
     except Exception as e:

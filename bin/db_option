@@ -38,6 +38,27 @@ alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
 # alphafold database directory
 alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
+################################MSA generation tool###########################
+
+colabfold_search_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabfold_search
+
+colabfold_split_msas_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabfold_split_msas
+
+colabfold_databases = /home/bml_casp15/BML_CASP15/tools/ColabFold/databases/
+
+mmseq_program = /home/bml_casp15/BML_CASP15/tools/mmseqs/bin/mmseqs
+
+################################QA option#####################################
+
+# dockq program
+dockq_program = /home/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py
+
+# qscore program
+qscore_program = /home/bml_casp15/BML_CASP15/tools/pairwiseQA/q_score
+
+# tmscore program
+tmscore_program = /home/bml_casp15/BML_CASP15/tools/TMscore
+
 ################################databases option#####################################
 
 smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non_consensus_sequences.fasta

@@ -163,7 +163,7 @@ class Complex_structure_based_template_search_pipeline:
 
         prev_df_sorted = prev_df.sort_values(by='avg_tmscore', ascending=False)
 
-        prev_df_sorted.head(int(self.params['template_count'])).to_csv(outdir + "/structure_based_templates.csv", index=False)
+        prev_df_sorted.head(int(self.params['template_count'])).to_csv(outdir + "/structure_templates.csv", index=False)
 
         print("The structure based template searching for dimers has finished!")
 

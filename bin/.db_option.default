@@ -38,6 +38,27 @@ alphafold_env_dir = YOUR_ALPHAFOLD_ENV/bin/
 # alphafold database directory
 alphafold_database_dir = SOFTWARE_PATH/tools/alphafold_databases/
 
+################################MSA generation tool###########################
+
+colabfold_search_program = YOUR_ENV/bin/colabfold_search
+
+colabfold_split_msas_program = YOUR_ENV/bin/colabfold_split_msas
+
+colabfold_databases = SOFTWARE_PATH/tools/ColabFold/databases/
+
+mmseq_program = SOFTWARE_PATH/tools/mmseqs/bin/mmseqs
+
+################################QA option#####################################
+
+# dockq program
+dockq_program = SOFTWARE_PATH/tools/DockQ/DockQ.py
+
+# qscore program
+qscore_program = SOFTWARE_PATH/tools/pairwiseQA/q_score
+
+# tmscore program
+tmscore_program = SOFTWARE_PATH/tools/TMscore
+
 ################################databases option#####################################
 
 smallbfd_database = SOFTWARE_PATH/databases/smallbfd/bfd-first_non_consensus_sequences.fasta

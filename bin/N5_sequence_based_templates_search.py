@@ -26,29 +26,21 @@ def main(argv):
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--option_file', type=is_file, required=True)
-    parser.add_argument('--dimerlist', type=is_file, required=True)
-    parser.add_argument('--aln_dir', type=is_dir, required=True)
-    parser.add_argument('--output_dir', type=str, required=True)
+    params = read_option_file(FLAGS.option_file)
 
-    args = parser.parse_args()
-
-    params = read_option_file(args.option_file)
-
-    makedir_if_not_exists(args.output_dir)
+    makedir_if_not_exists(FLAGS.output_dir)
 
     pipeline = Complex_sequence_based_template_search_pipeline(params)
 
     process_list = []
 
-    for dimer in open(args.dimerlist):
+    for dimer in FLAGS.dimerlist:
 
-        chain1, chain2 = dimer.rstrip('\n').split()
+        chain1, chain2 = dimer.split('_')
 
-        chain1_template_a3m = f"{args.aln_dir}/{chain1}/{chain1}_uniref90.sto"
+        chain1_template_a3m = f"{FLAGS.aln_dir}/{chain1}/{chain1}_uniref90.sto"
 
-        chain2_template_a3m = f"{args.aln_dir}/{chain2}/{chain2}_uniref90.sto"
+        chain2_template_a3m = f"{FLAGS.aln_dir}/{chain2}/{chain2}_uniref90.sto"
 
         if not os.path.exists(chain1_template_a3m):
             continue
@@ -56,14 +48,14 @@ def main(argv):
         if not os.path.exists(chain2_template_a3m):
             continue
 
-        seq1 = open(f"{args.aln_dir}/{chain1}/{chain1}.fasta").readlines()[1].rstrip('\n')
-        seq2 = open(f"{args.aln_dir}/{chain2}/{chain2}.fasta").readlines()[1].rstrip('\n')
+        seq1 = open(f"{FLAGS.aln_dir}/{chain1}/{chain1}.fasta").readlines()[1].rstrip('\n')
+        seq2 = open(f"{FLAGS.aln_dir}/{chain2}/{chain2}.fasta").readlines()[1].rstrip('\n')
 
         monomer1_template_input = monomer_template_input(name=chain1, msa_path=chain1_template_a3m, seq=seq1)
 
         monomer2_template_input = monomer_template_input(name=chain2, msa_path=chain2_template_a3m, seq=seq2)
 
-        dimer_outdir = f"{args.output_dir}/{chain1}_{chain2}"
+        dimer_outdir = f"{FLAGS.output_dir}/{chain1}_{chain2}"
 
         if not os.path.exists(dimer_outdir + '/concatenated_template_idx.csv'):
             process_list.append([params, [monomer1_template_input, monomer2_template_input], dimer_outdir])

@@ -4,6 +4,7 @@ from tqdm import tqdm
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, check_dirs
 from bml_casp15.monomer_alignment_generation.alignment import *
 from bml_casp15.monomer_alignment_generation.rosettafold_msa_runner import *
+from bml_casp15.monomer_alignment_generation.colabfold_msa_runner import *
 from bml_casp15.tool import hhblits
 from bml_casp15.tool import jackhmmer
 
@@ -22,6 +23,9 @@ class Monomer_alignment_generation_pipeline:
     def __init__(self,
                  jackhmmer_binary_path,
                  hhblits_binary_path,
+                 colabfold_search_binary,
+                 colabfold_split_msas_binary,
+                 mmseq_binary,
                  uniref90_database_path,
                  mgnify_database_path,
                  small_bfd_database_path,
@@ -29,6 +33,7 @@ class Monomer_alignment_generation_pipeline:
                  uniref30_database_path,
                  uniclust30_database_path,
                  uniprot_database_path,
+                 colabfold_databases,
                  hhfilter_binary_path="",
                  mgnify_max_hits: int = 501,
                  uniref_max_hits: int = 10000,
@@ -46,6 +51,7 @@ class Monomer_alignment_generation_pipeline:
         self.hhblits_uniclust_folddock_runner = None
         self.jackhmmer_small_bfd_runner = None
         self.rosettafold_msa_runner = None
+        self.colabfold_msa_runner = None
 
         if len(uniref90_database_path) > 0:
             self.jackhmmer_uniref90_runner = jackhmmer.Jackhmmer(
@@ -99,6 +105,12 @@ class Monomer_alignment_generation_pipeline:
                 uniref30_database_path=uniref30_database_path,
                 bfd_database_path=bfd_database_path)
 
+        if len(colabfold_databases) > 0:
+            self.colabfold_msa_runner = ColabFold_Msa_runner(colabfold_search_binary_path=colabfold_search_binary,
+                                                             colabfold_split_msas_binary_path=colabfold_split_msas_binary,
+                                                             mmseq_binary_path=mmseq_binary,
+                                                             colabfold_databases=colabfold_databases)
+
     def process(self, input_fasta_path, msa_output_dir):
         """Runs alignment tools on the input sequence and creates features."""
 
@@ -147,6 +159,12 @@ class Monomer_alignment_generation_pipeline:
             print(rosettafold_out_path)
             msa_process_list.append(
                 [self.rosettafold_msa_runner, input_fasta_path, rosettafold_out_path, 'rosettafold_sto'])
+
+        if self.colabfold_msa_runner is not None:
+            colabfold_out_path = os.path.join(msa_output_dir, f'{input_id}_colabfold.a3m')
+            print(colabfold_out_path)
+            msa_process_list.append(
+                [self.colabfold_msa_runner, input_fasta_path, colabfold_out_path, 'colabfold_a3m'])
 
         # pool = Pool(processes=len(msa_process_list))
         # results = pool.map(run_msa_tool, msa_process_list)

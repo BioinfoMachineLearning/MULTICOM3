@@ -32,18 +32,27 @@ def generate_a3ms_for_single_seq(inparams):
     hhfilter_binary = params['hhfilter_program']
     jackhmmer_binary = params['jackhmmer_program']
 
+    colabfold_search_binary = params['colabfold_search_program']
+    colabfold_split_msas_binary = params['colabfold_split_msas_program']
+    colabfold_databases = params['colabfold_databases']
+    mmseq_binary = params['mmseq_program']
+
     result = None
     try:
         pipeline = Monomer_alignment_generation_pipeline(jackhmmer_binary_path=jackhmmer_binary,
                                                          hhblits_binary_path=hhblits_binary,
                                                          hhfilter_binary_path=hhfilter_binary,
+                                                         colabfold_search_binary=colabfold_search_binary,
+                                                         colabfold_split_msas_binary=colabfold_split_msas_binary,
+                                                         mmseq_binary=mmseq_binary,
                                                          uniref90_database_path=uniref90_fasta,
                                                          mgnify_database_path=mgnify,
                                                          small_bfd_database_path=smallbfd,
                                                          bfd_database_path=bfd,
                                                          uniref30_database_path=uniref30,
                                                          uniclust30_database_path=uniclust30,
-                                                         uniprot_database_path=uniprot_fasta)
+                                                         uniprot_database_path=uniprot_fasta,
+                                                         colabfold_databases=colabfold_databases)
         result = pipeline.process(fasta, outdir)
     except Exception as e:
         print(e)
