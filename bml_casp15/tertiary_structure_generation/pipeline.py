@@ -85,6 +85,20 @@ class Monomer_tertiary_structure_prediction_pipeline:
                 else:
                     errormsg = errormsg + f"Cannot find rosettafold alignment for {targetname}: {rosettafold_a3m}\n"
 
+            if "colabfold" in self.run_methods:
+
+                uniref90_sto = monomer_aln_dir + '/' + targetname + '_uniref90.sto'
+                if os.path.exists(uniref90_sto):
+                    uniref90_stos += [uniref90_sto]
+                else:
+                    errormsg = errormsg + f"Cannot find uniref90 alignment for {targetname}: {uniref90_sto}\n"
+
+                colabfold_a3m = monomer_aln_dir + '/' + targetname + '_colabfold.a3m'
+                if os.path.exists(colabfold_a3m):
+                    custom_msas += [colabfold_a3m]
+                else:
+                    errormsg = errormsg + f"Cannot find rosettafold alignment for {targetname}: {colabfold_a3m}\n"
+
         if len(errormsg) > 0:
             #raise ValueError(errormsg)
             print(errormsg)
@@ -114,6 +128,16 @@ class Monomer_tertiary_structure_prediction_pipeline:
                   f"--custom_msas {','.join(custom_msas)} " \
                   f"--uniref90_stos {','.join(uniref90_stos)} " \
                   f"--output_dir {outdir}/rosettafold"
+            print(cmd)
+            os.system(cmd)
+
+        if "colabfold" in self.run_methods:
+            cmd = f"python {self.params['alphafold_program']} --fasta_paths {','.join(fasta_paths)} " \
+                  f"--env_dir {self.params['alphafold_env_dir']} " \
+                  f"--database_dir {self.params['alphafold_database_dir']} " \
+                  f"--custom_msas {','.join(custom_msas)} " \
+                  f"--uniref90_stos {','.join(uniref90_stos)} " \
+                  f"--output_dir {outdir}/colabfold"
             print(cmd)
             os.system(cmd)
 

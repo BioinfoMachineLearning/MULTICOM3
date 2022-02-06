@@ -27,7 +27,7 @@ tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
 hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
 
 # alphafold program path
-alphafold_program_dir = /home/bml_casp15/tools/alphafold
+alphafold_program_dir = /home/bml_casp15/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom_sim.py
@@ -36,7 +36,7 @@ alphafold_program = run_alphafold_custom_sim.py
 alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
 
 # alphafold database directory
-alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
+alphafold_database_dir = /home/bml_casp15/alphafold_databases/
 
 ################################MSA generation tool###########################
 
