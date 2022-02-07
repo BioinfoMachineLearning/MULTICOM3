@@ -141,4 +141,4 @@ class Monomer_tertiary_structure_prediction_pipeline:
             print(cmd)
             os.system(cmd)
 
-        print("The structure based template searching for dimers has finished!")
+        print("The tertiary structure generation for monomers has finished!")
