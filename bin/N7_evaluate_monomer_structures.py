@@ -13,6 +13,7 @@ flags.DEFINE_string('input_monomer_dir', None, 'Monomer model directory')
 flags.DEFINE_string('input_multimer_dir', None, 'Monomer model directory')
 flags.DEFINE_string('chain_in_multimer', None, 'option file')
 flags.DEFINE_string('output_dir', None, 'Monomer model directory')
+flags.DEFINE_boolean('use_gpu', True, 'Monomer model directory')
 FLAGS = flags.FLAGS
 
 
@@ -28,11 +29,13 @@ def main(argv):
 
     makedir_if_not_exists(output_dir)
 
-    pipeline = Tertiary_structure_evaluation_pipeline(params=params)
+    pipeline = Tertiary_structure_evaluation_pipeline(params=params, use_gpu=FLAGS.use_gpu)
 
-    pipeline.process(FLAGS.targetname, FLAGS.fasta_file, FLAGS.input_monomer_dir, output_dir, FLAGS.input_multimer_dir, FLAGS.chain_in_multimer)
+    pipeline.process(FLAGS.targetname, FLAGS.fasta_file, FLAGS.input_monomer_dir, output_dir, FLAGS.input_multimer_dir,
+                     FLAGS.chain_in_multimer)
 
     print("The template search dimers has finished!")
+
 
 if __name__ == '__main__':
     flags.mark_flags_as_required([
@@ -40,6 +43,6 @@ if __name__ == '__main__':
         'targetname',
         'fasta_file',
         'input_monomer_dir',
-        'output_dir'
+        'output_dir',
     ])
     app.run(main)

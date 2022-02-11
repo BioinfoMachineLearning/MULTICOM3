@@ -59,6 +59,15 @@ qscore_program = SOFTWARE_PATH/tools/pairwiseQA/q_score
 # tmscore program
 tmscore_program = SOFTWARE_PATH/tools/TMscore
 
+# enqa_program_python
+enqa_program_python = YOUR_ENQA_ENV_PATH/bin/python
+
+# enqa_program_path
+enqa_program_path = YOUR_ENQA_PATH
+
+# enqa_program_script
+enqa_program_script = predict_batch.py
+
 ################################databases option#####################################
 
 smallbfd_database = SOFTWARE_PATH/databases/smallbfd/bfd-first_non_consensus_sequences.fasta

@@ -96,25 +96,25 @@ def evaluate_dimer(inparams):
     corr_summary_monomers = pd.DataFrame(columns=['monomer', 'tmscore'])
 
     for method in ["alphafold"]:
-        if complete_result(f'{outputdir}/{dimer}/{method}'):
+        if complete_result(f'{outputdir}/{dimer}'):
             monomer_result_1 = {'monomer': chain1, 'tmscore': 0}
             monomer_result_2 = {'monomer': chain2, 'tmscore': 0}
 
             for i in range(1, 6):
-                model = f'{outputdir}/{dimer}/{method}/unrelaxed_model_{i}_multimer.pdb'
+                model = f'{outputdir}/{dimer}/unrelaxed_model_{i}_multimer.pdb'
 
-                splitdir = f'{outputdir}/{dimer}/{method}/u_model_{i}_s'
+                splitdir = f'{outputdir}/{dimer}/u_model_{i}_s'
                 makedir_if_not_exists(splitdir)
-                split_pdb(model, [f'{outputdir}/{dimer}/{method}/u_model_{i}_s/B.pdb',
-                                  f'{outputdir}/{dimer}/{method}/u_model_{i}_s/C.pdb'])
+                split_pdb(model, [f'{outputdir}/{dimer}/u_model_{i}_s/B.pdb',
+                                  f'{outputdir}/{dimer}/u_model_{i}_s/C.pdb'])
 
-                cmd = tmscore_program + f' {outputdir}/{dimer}/{method}/u_model_{i}_s/B.pdb ' + chain1_atom + " | grep TM-score | awk '{print $3}' "
+                cmd = tmscore_program + f' {outputdir}/{dimer}/u_model_{i}_s/B.pdb ' + chain1_atom + " | grep TM-score | awk '{print $3}' "
                 # print(cmd)
                 tmscore_contents = os.popen(cmd).read().split('\n')
                 tmscore1 = float(tmscore_contents[2].rstrip('\n'))
                 monomer_result_1['tmscore'] += tmscore1
 
-                cmd = tmscore_program + f' {outputdir}/{dimer}/{method}/u_model_{i}_s/C.pdb ' + chain2_atom + " | grep TM-score | awk '{print $3}' "
+                cmd = tmscore_program + f' {outputdir}/{dimer}/u_model_{i}_s/C.pdb ' + chain2_atom + " | grep TM-score | awk '{print $3}' "
                 # print(cmd)
                 tmscore_contents = os.popen(cmd).read().split('\n')
                 tmscore2 = float(tmscore_contents[2].rstrip('\n'))
@@ -157,17 +157,21 @@ if __name__ == '__main__':
 
     pairwise_qa = Pairwise_dockq_qa(dockq_program)
 
-    methods = ['no_templates',
-               'original_template_pipeline',
-               'custom_template_file',
-               'custom_template_with_alphafold_models']
+    #methods = ['no_templates',
+    #           'original_template_pipeline',
+    #           'custom_template_file',
+    #           'custom_template_with_alphafold_models']
 
+    methods = os.listdir(args.output_dir)
+    
     monomer_list = []
     if args.monomer_list is not None:
         monomers_list = [line.rstrip() for line in open(args.monomer_list).readlines()]
     print(monomers_list)
 
     for method in methods:
+        if method.find('uni') >= 0:
+            continue
         corr_summary_all = pd.DataFrame(columns=['monomer', 'tmscore'])
         process_list = []
         for line in open(args.dimerlist).readlines():

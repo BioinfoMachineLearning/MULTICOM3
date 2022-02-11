@@ -27,7 +27,7 @@ tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
 hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
 
 # alphafold program path
-alphafold_program_dir = /home/bml_casp15/alphafold
+alphafold_program_dir = /home/bml_casp15/tools/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom_sim.py
@@ -36,7 +36,7 @@ alphafold_program = run_alphafold_custom_sim.py
 alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
 
 # alphafold database directory
-alphafold_database_dir = /home/bml_casp15/alphafold_databases/
+alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
 ################################MSA generation tool###########################
 
@@ -44,7 +44,7 @@ colabfold_search_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabf
 
 colabfold_split_msas_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabfold_split_msas
 
-colabfold_databases = /home/bml_casp15/BML_CASP15/tools/ColabFold/databases/
+colabfold_databases = /home/bml_casp15/BML_CASP15/tools/ColabFold/databases/af_proteomes,/home/bml_casp15/BML_CASP15/tools/ColabFold/databases/af_swissprot
 
 mmseq_program = /home/bml_casp15/BML_CASP15/tools/mmseqs/bin/mmseqs
 
@@ -58,6 +58,15 @@ qscore_program = /home/bml_casp15/BML_CASP15/tools/pairwiseQA/q_score
 
 # tmscore program
 tmscore_program = /home/bml_casp15/BML_CASP15/tools/TMscore
+
+# enqa_program_python
+enqa_program_python = /home/bml_casp15/anaconda3/envs/enqa/bin/python
+
+# enqa_program_path
+enqa_program_path = /home/bml_casp15/tools/EnQA
+
+# enqa_program_script
+enqa_program_script = predict_batch.py
 
 ################################databases option#####################################
 
@@ -89,7 +98,8 @@ uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
 uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
 
 # complex alignments concatenation method
-concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance,string_interact
+# concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance,string_interact
+concatenate_methods = string_interact
 
 ###########################UNIPROT TO PDB database option############################
 

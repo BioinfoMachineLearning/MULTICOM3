@@ -38,7 +38,7 @@ def main(argv):
     fasta_paths = []
 
     # methods = ['original', 'rosettafold']
-    methods = ['colabfold']
+    methods = ['original']
 
     for monomer in os.listdir(FLAGS.aln_dir):
         for method in methods:

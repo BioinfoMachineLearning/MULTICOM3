@@ -64,7 +64,7 @@ def main(argv):
 
     print(f"Total {len(process_list)} dimers to be processed")
 
-    pool = Pool(processes=10)
+    pool = Pool(processes=15)
     results = pool.map(run_pipeline, process_list)
     pool.close()
     pool.join()
