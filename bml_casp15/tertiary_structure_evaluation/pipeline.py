@@ -95,18 +95,18 @@ class Tertiary_structure_evaluation_pipeline:
                                         output_pkl=f"{pkldir}/{method}_{i}.pkl")
                 # print(f"start: {residue_start}, end:{residue_end}")
 
-        if not os.path.exists(output_dir + '/pairwise_ranking.tm'):
+        if "apollo" in self.run_methods and not os.path.exists(output_dir + '/pairwise_ranking.tm'):
             with open(f"{output_dir}/model.list", 'w') as fw:
                 for pdb in os.listdir(pdbdir):
                     fw.write(f"{pdbdir}/{pdb}\n")
             os.system(
                 f"{self.parwise_qa} {output_dir}/model.list {fasta_file} {self.tmscore} {output_dir} pairwise_ranking")
 
-        if not os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
+        if "alphafold" in self.run_methods and not os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
             alphafold_ranking = self.alphafold_qa.run(pkldir)
             alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
 
-        if not os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
+        if "enQA" in self.run_methods and not os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
             enqa_ranking = self.enqa.run(input_dir=pdbdir,
                                          alphafold_prediction_dir=f"{monomer_model_dir}/original",
                                          outputdir=output_dir_abs+'/enqa')

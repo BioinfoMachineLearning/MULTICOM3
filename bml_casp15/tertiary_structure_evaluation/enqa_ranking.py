@@ -35,8 +35,9 @@ class En_qa:
 
         os.chdir(self.program_path)
 
+        print("Try to run the ensemble model first")
         cmd = f"{self.program_python} {self.program_script} --input {input_dir} --output {outputdir} " \
-              f"--method EGNN_Full --alphafold_prediction {outputdir}/alphafold_prediction"
+              f"--method ensemble --alphafold_prediction {outputdir}/alphafold_prediction"
         if not self.use_gpu:
             cmd += " --cpu"
             
@@ -46,10 +47,21 @@ class En_qa:
         except Exception as e:
             print(e)
 
-        ranking_pd = pd.DataFrame(columns=['model', 'score'])
+        if not os.path.exists(f"{outputdir}/result.txt"):
+            print("Try to run the EGNN_esto9 model")
+            cmd = f"{self.program_python} {self.program_script} --input {input_dir} --output {outputdir} " \
+                  f"--method EGNN_esto9 --alphafold_prediction {outputdir}/alphafold_prediction"
+            if not self.use_gpu:
+                cmd += " --cpu"
+            print(cmd)
+            try:
+                os.system(cmd)
+            except Exception as e:
+                print(e)
+
+        models = []
+        scores = []
         if os.path.exists(f"{outputdir}/result.txt"):
-            models = []
-            scores = []
             for line in open(f"{outputdir}/result.txt"):
                 line = line.rstrip('\n')
                 contents = line.split()
@@ -59,5 +71,10 @@ class En_qa:
                 model, score = line.split()
                 models += [model]
                 scores += [score]
-            ranking_pd = pd.DataFrame({'model': models, 'score': scores})
-        return ranking_pd
+        else:
+            pdbs = os.listdir(input_dir)
+            for i in range(len(pdbs)):
+                models += [pdbs[i]]
+                scores += [0.0]
+
+        return pd.DataFrame({'model': models, 'score': scores})

@@ -22,6 +22,7 @@ from typing import Sequence
 from absl import logging
 from bml_casp15.tool import utils
 import pandas as pd
+import pathlib
 
 # Internal import (7716).
 
@@ -64,13 +65,15 @@ class Foldseek:
         result_df = pd.DataFrame(columns=['query','target','qaln','taln'])
         for database in self.databases:
 
+            database_name = pathlib.Path(database).stem
+
             cmd = [self.binary_path,
                    'easy-search',
                    input_path,
                    database,
-                   f'{outdir}/aln.m8_{database}',
+                   f'{outdir}/aln.m8_{database_name}',
                    outdir + '/tmp',
-                   '--format-output', '"query,target,qaln,taln,evalue"',
+                   '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue',
                    '--format-mode', '4']
 
             logging.info('Launching subprocess "%s"', ' '.join(cmd))
@@ -85,7 +88,8 @@ class Foldseek:
                     'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                         stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
 
-            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database}',sep='\t'))
+            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}',sep='\t'))
 
         result_df = result_df.sort_values(by='evalue')
         result_df.to_csv(f"{outdir}/result.m8", sep='\t')
+        return f"{outdir}/result.m8"
