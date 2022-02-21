@@ -45,8 +45,10 @@ if __name__ == '__main__':
 
         result_csv = f"{args.inputdir}/{target}/native_scores.csv"
         if os.path.exists(result_csv):
-            print(f"The native scores for {target} has been generated: {result_csv}")
-            continue
+            df = pd.read_csv(result_csv)
+            if 'global_lddt' in df:
+                print(f"The native scores for {target} has been generated: {result_csv}")
+                continue
 
         models = []
         gdt_scores = []

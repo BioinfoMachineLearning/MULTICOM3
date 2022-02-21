@@ -26,17 +26,30 @@ tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
 # hhsearch program path
 hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
 
+# alphafold environment directory
+alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
+
+# alphafold database directory
+alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
+
+#########################Customized alphafold program###########################
+
 # alphafold program path
 alphafold_program_dir = /home/bml_casp15/tools/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom_sim.py
 
-# alphafold environment directory
-alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
+# alphafold tertiary structure prediction script
+alphafold_multimer_program = run_alphafold_multimer_custom_sim.py
 
-# alphafold database directory
-alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
+#########################Original alphafold program###########################
+
+# alphafold program path
+alphafold_default_program_dir = /home/bml_casp15/tools/alphafold_default/alphafold
+
+# alphafold tertiary structure prediction script
+alphafold_default_program = run_alphafold_pre_sim.py
 
 ################################MSA generation tool###########################
 
@@ -44,7 +57,7 @@ colabfold_search_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabf
 
 colabfold_split_msas_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabfold_split_msas
 
-colabfold_databases = /home/bml_casp15/BML_CASP15/tools/ColabFold/databases/af_proteomes,/home/bml_casp15/BML_CASP15/tools/ColabFold/databases/af_swissprot
+colabfold_databases = /home/bml_casp15/BML_CASP15/tools/ColabFold/databases
 
 mmseq_program = /home/bml_casp15/BML_CASP15/tools/mmseqs/bin/mmseqs
 
@@ -67,6 +80,18 @@ enqa_program_path = /home/bml_casp15/tools/EnQA
 
 # enqa_program_script
 enqa_program_script = predict_batch.py
+
+######################Monomer template search option#################################
+
+foldseek_program = /home/bml_casp15/BML_CASP15/tools/foldseek/bin/foldseek
+
+foldseek_pdb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex
+
+foldseek_pdb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_pdb
+
+foldseek_af_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_db
+
+foldseek_af_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_pdbs
 
 ################################databases option#####################################
 

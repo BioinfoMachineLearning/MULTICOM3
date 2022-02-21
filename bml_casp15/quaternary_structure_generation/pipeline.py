@@ -117,7 +117,7 @@ class Quaternary_structure_prediction_pipeline:
                                                          concatenate_method=concatenate_method,
                                                          aln_dir=aln_dir)
 
-            cmd = f"python run_alphafold_multimer_custom_sim.py " \
+            cmd = f"python {self.params['alphafold_multimer_program']} " \
                   f"--fasta_path {fasta_path} " \
                   f"--a3ms {','.join(a3m_paths)} " \
                   f"--msa_pair_file {msa_pair_file} " \

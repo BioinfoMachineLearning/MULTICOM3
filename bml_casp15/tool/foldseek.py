@@ -24,6 +24,7 @@ from bml_casp15.tool import utils
 import pandas as pd
 import pathlib
 
+
 # Internal import (7716).
 
 class Foldseek:
@@ -56,39 +57,59 @@ class Foldseek:
                 logging.error('Could not find HHsearch database %s', database_path)
                 raise ValueError(f'Could not find HHsearch database {database_path}')
 
-
-    def query(self, pdb: str, outdir: str) -> str:
+    def query(self, pdb: str, outdir: str, progressive=False) -> str:
         """Queries the database using HHsearch using a given a3m."""
         input_path = os.path.join(outdir, 'query.pdb')
         os.system(f"cp {pdb} {input_path}")
 
-        result_df = pd.DataFrame(columns=['query','target','qaln','taln'])
+        result_df = pd.DataFrame(columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
         for database in self.databases:
-
             database_name = pathlib.Path(database).stem
-
             cmd = [self.binary_path,
                    'easy-search',
                    input_path,
                    database,
                    f'{outdir}/aln.m8_{database_name}',
                    outdir + '/tmp',
-                   '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue',
+                   '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                    '--format-mode', '4']
-
             logging.info('Launching subprocess "%s"', ' '.join(cmd))
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             with utils.timing('Foldseek query'):
                 stdout, stderr = process.communicate()
                 retcode = process.wait()
-
             if retcode:
                 # Stderr is truncated to prevent proto size errors in Beam.
                 raise RuntimeError(
                     'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                         stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
+            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
 
-            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}',sep='\t'))
+        # search the database using tmalign mode
+        if len(result_df) == 0 and progressive:
+            for database in self.databases:
+                database_name = pathlib.Path(database).stem
+                cmd = [self.binary_path,
+                       'easy-search',
+                       input_path,
+                       database,
+                       f'{outdir}/aln.m8_{database_name}',
+                       outdir + '/tmp',
+                       '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
+                       '--format-mode', '4',
+                       '--alignment-type', '1',
+                       '--tmscore-threshold', '0.3']
+                logging.info('Launching subprocess "%s"', ' '.join(cmd))
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                with utils.timing('Foldseek query'):
+                    stdout, stderr = process.communicate()
+                    retcode = process.wait()
+                if retcode:
+                    # Stderr is truncated to prevent proto size errors in Beam.
+                    raise RuntimeError(
+                        'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
+                            stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
+                result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
 
         result_df = result_df.sort_values(by='evalue')
         result_df.to_csv(f"{outdir}/result.m8", sep='\t')

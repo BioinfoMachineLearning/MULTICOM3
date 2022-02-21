@@ -12,16 +12,6 @@ flags.DEFINE_string('output_dir', None, 'Output directory')
 FLAGS = flags.FLAGS
 
 
-def complete_result(outputdir):
-    complete = True
-    for i in range(0, 5):
-        model = f'{outputdir}/ranked_{i}.pdb'
-        if not os.path.exists(model):
-            complete = False
-            break
-    return complete
-
-
 def main(argv):
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
@@ -37,14 +27,11 @@ def main(argv):
 
     fasta_paths = []
 
-    # methods = ['original', 'rosettafold']
+    # methods = ['original', 'rosettafold', 'colabfold']
     methods = ['original']
-
     for monomer in os.listdir(FLAGS.aln_dir):
-        for method in methods:
-            if os.path.exists(f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"):
-                if not complete_result(FLAGS.output_dir + '/' + method + '/' + monomer):
-                    fasta_paths += [f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"]
+        if os.path.exists(f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"):
+            fasta_paths += [f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"]
 
     print(f"Total {len(fasta_paths)} monomers are generating structures")
 
