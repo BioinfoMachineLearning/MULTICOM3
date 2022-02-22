@@ -38,5 +38,6 @@ class Quaternary_structure_evaluation_pipeline:
             pairwise_ranking = self.pairwise_qa.run(pdbdir)
             pairwise_ranking.to_csv(output_dir + '/pairwise_ranking.csv')
 
-        alphafold_ranking = self.alphafold_qa.run(pkldir)
-        alphafold_ranking.to_csv(output_dir + '/alphafold_ranking.csv')
+        if not os.path.exists(output_dir + '/alphafold_ranking.csv'):
+            alphafold_ranking = self.alphafold_qa.run(pkldir)
+            alphafold_ranking.to_csv(output_dir + '/alphafold_ranking.csv')

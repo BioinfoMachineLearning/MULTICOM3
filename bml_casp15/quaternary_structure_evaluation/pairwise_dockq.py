@@ -45,13 +45,18 @@ class Pairwise_dockq_qa:
                     cmd = f"python {self.dockq_program} -short " + input_dir + '/' + pdb1 + " " \
                           + input_dir + '/' + pdb2 + " | grep DockQ | awk '{print $2}'"
 
-                    score = os.popen(cmd).read()
+                    score_default = 0.0
+                    try:
+                        score = os.popen(cmd).read()
+                        score = score.rstrip('\n')
+                        if len(score) > 0:
+                            score_default = float(score)
+                    except Exception as e:
+                        print(e)
 
-                    score = float(score.rstrip('\n'))
+                    scores_dict[f"{pdb1}_{pdb2}"] = score_default
 
-                    scores_dict[f"{pdb1}_{pdb2}"] = score
-
-                scores += [score]
+                scores += [score_default]
 
             ranking['pairwise_score'] = np.mean(np.array(scores))
 

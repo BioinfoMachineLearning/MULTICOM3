@@ -55,7 +55,7 @@ def complete_result(outputdir):
 
 
 def evaluate_dimer(inparams):
-    dimer, atomdir, outputdir, tmpdir, dockq_program, tmscore_program = inparams
+    dimer, atomdir, outputdir, tmpdir, dockq_program, tmscore_program, mmalign_program = inparams
 
     chain1, chain2 = dimer.split('_')
 
@@ -71,8 +71,8 @@ def evaluate_dimer(inparams):
 
     model_count = 0
     dimer_count = 0
-    corr_summary_all = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2'])
-    corr_summary_dimer = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2'])
+    corr_summary_all = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2', 'mmalign'])
+    corr_summary_dimer = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2', 'mmalign'])
 
 
     dockQ_scores = []
@@ -80,7 +80,8 @@ def evaluate_dimer(inparams):
     dimer_result = {'dimer': dimer,
                     'dockq': 0,
                     'tmscore1': 0,
-                    'tmscore2': 0}
+                    'tmscore2': 0,
+                    'mmalign': 0}
 
     if complete_result(f'{outputdir}'):
         for i in range(1, 6):
@@ -109,11 +110,17 @@ def evaluate_dimer(inparams):
             tmscore_contents = os.popen(cmd).read().split('\n')
             tmscore2 = float(tmscore_contents[2].rstrip('\n'))
 
+            cmd = mmalign_program + f' {model} ' + combine_atom + " | grep TM-score | awk '{print $2}' "
+            # print(cmd)
+            mmalign_contents = os.popen(cmd).read().split('\n')
+            mmalign_score = float(mmalign_contents[1].rstrip('\n'))
+
             sum_dict = {'dimer': dimer,
                         'model': f"{method}_{i}",
                         'dockq': float(score.rstrip('\n')),
                         'tmscore1': tmscore1,
-                        'tmscore2': tmscore2}
+                        'tmscore2': tmscore2,
+                        'mmalign': mmalign_score}
 
             corr_summary_all = corr_summary_all.append(pd.DataFrame(sum_dict, index=[model_count]))
 
@@ -122,10 +129,12 @@ def evaluate_dimer(inparams):
             dimer_result['dockq'] += float(score.rstrip('\n'))
             dimer_result['tmscore1'] += tmscore1
             dimer_result['tmscore2'] += tmscore2
+            dimer_result['mmalign'] += mmalign_score
 
     dimer_result['dockq'] = dimer_result['dockq'] / 5
     dimer_result['tmscore1'] = dimer_result['tmscore1'] / 5
     dimer_result['tmscore2'] = dimer_result['tmscore2'] / 5
+    dimer_result['mmalign'] = dimer_result['mmalign'] / 5
     corr_summary_dimer = corr_summary_dimer.append(pd.DataFrame(dimer_result, index=[dimer_count]))
     dimer_count += dimer_count
 
@@ -145,16 +154,17 @@ if __name__ == '__main__':
 
     dockq_program = '/home/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py'
     tmscore_program = '/home/bml_casp15/BML_CASP15/tools/TMscore'
+    mmalign_program = '/home/bml_casp15/BML_CASP15/tools/MMalign'
 
     for method in os.listdir(args.output_dir):
-        corr_summary_all = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2'])
-        corr_summary_dimer = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2'])
+        corr_summary_all = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2', 'mmalign'])
+        corr_summary_dimer = pd.DataFrame(columns=['dockq', 'tmscore1', 'tmscore2', 'mmalign'])
 
         process_list = []
         for line in open(args.dimerlist).readlines():
             chain1, chain2 = line.rstrip('\n').split()
             process_list.append([f"{chain1}_{chain2}", args.atom_dir, f"{args.output_dir}/{method}/{chain1}_{chain2}",
-                                 args.tmpdir, dockq_program, tmscore_program])
+                                 args.tmpdir, dockq_program, tmscore_program, mmalign_program])
         pool = Pool(processes=20)
         results = pool.map(evaluate_dimer, process_list)
         pool.close()

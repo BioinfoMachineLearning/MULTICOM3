@@ -77,7 +77,7 @@ def get_range_top_of_contact_map(input_map, range='long', top='l2'):
 
 
 def evaluate_dimer(inparams):
-    dimer, atomdir, outputdir, tmpdir, dockq_program, tmscore_program = inparams
+    dimer, atomdir, outputdir, tmpdir, dockq_program, tmscore_program, mmalign_program = inparams
 
     chain1, chain2 = dimer.split('_')
 
@@ -94,9 +94,9 @@ def evaluate_dimer(inparams):
     model_count = 0
     dimer_count = 0
     corr_summary_all = pd.DataFrame(
-        columns=['dockq', 'tmscore1', 'tmscore2', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'ptmscore'])
+        columns=['dockq', 'tmscore1', 'tmscore2', 'mmalign', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'ptmscore'])
     corr_summary_dimer = pd.DataFrame(
-        columns=['dockq', 'tmscore1', 'tmscore2', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'ptmscore'])
+        columns=['dockq', 'tmscore1', 'tmscore2', 'mmalign', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'ptmscore'])
 
     for method in ["alphafold"]:
         dockQ_scores = []
@@ -105,6 +105,7 @@ def evaluate_dimer(inparams):
                             'dockq': 0,
                             'tmscore1': 0,
                             'tmscore2': 0,
+                            'mmalign': 0,
                             'lddt': 0,
                             'avg_l2_prob': 0,
                             'avg_l5_prob': 0,
@@ -136,6 +137,11 @@ def evaluate_dimer(inparams):
                 tmscore_contents = os.popen(cmd).read().split('\n')
                 tmscore2 = float(tmscore_contents[2].rstrip('\n'))
 
+                cmd = mmalign_program + f' {outputdir}/{dimer}/{method}/u_model_{i}_s/C.pdb ' + combine_atom + " | grep TM-score | awk '{print $2}' "
+                # print(cmd)
+                mmalign_contents = os.popen(cmd).read().split('\n')
+                mmalign_score = float(mmalign_contents[2].rstrip('\n'))
+
                 model_result = f'{outputdir}/{dimer}/{method}/result_model_{i}_multimer.pkl'
                 with open(model_result, 'rb') as f:
                     prediction_result = pickle.load(f)
@@ -162,6 +168,7 @@ def evaluate_dimer(inparams):
                                 'dockq': float(score.rstrip('\n')),
                                 'tmscore1': tmscore1,
                                 'tmscore2': tmscore2,
+                                'mmalign': mmalign_score,
                                 'lddt': np.mean(prediction_result['plddt']),
                                 'avg_l2_prob': avg_prob_l2,
                                 'avg_l5_prob': avg_prob_l5,
@@ -182,6 +189,7 @@ def evaluate_dimer(inparams):
             dimer_result['dockq'] = dimer_result['dockq'] / 5
             dimer_result['tmscore1'] = dimer_result['tmscore1'] / 5
             dimer_result['tmscore2'] = dimer_result['tmscore2'] / 5
+            dimer_result['mmalign'] = dimer_result['mmalign'] / 5
             dimer_result['lddt'] = dimer_result['lddt'] / 5
             dimer_result['avg_l2_prob'] = dimer_result['avg_l2_prob'] / 5
             dimer_result['avg_l5_prob'] = dimer_result['avg_l5_prob'] / 5
@@ -205,6 +213,7 @@ if __name__ == '__main__':
 
     dockq_program = '/home/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py'
     tmscore_program = '/home/bml_casp15/BML_CASP15/tools/TMscore'
+    mmalign_program = '/home/bml_casp15/BML_CASP15/tools/MMalign'
 
     pairwise_qa = Pairwise_dockq_qa(dockq_program)
 
@@ -214,15 +223,15 @@ if __name__ == '__main__':
                'custom_template_with_alphafold_models']
 
     for method in methods:
-        corr_summary_all = pd.DataFrame(columns=['dockq', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'tmscore1', 'tmscore2'])
+        corr_summary_all = pd.DataFrame(columns=['dockq', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'tmscore1', 'tmscore2', 'mmalign'])
         corr_summary_dimer = pd.DataFrame(
-            columns=['dockq', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'tmscore1', 'tmscore2'])
+            columns=['dockq', 'lddt', 'avg_l2_prob', 'avg_l5_prob', 'tmscore1', 'tmscore2', 'mmalign'])
 
         process_list = []
         for line in open(args.dimerlist).readlines():
             chain1, chain2 = line.rstrip('\n').split()
             process_list.append([f"{chain1}_{chain2}", args.atom_dir, args.output_dir + '/' + method,
-                                 args.tmpdir, dockq_program, tmscore_program])
+                                 args.tmpdir, dockq_program, tmscore_program, mmalign_program])
         pool = Pool(processes=30)
         results = pool.map(evaluate_dimer, process_list)
         pool.close()

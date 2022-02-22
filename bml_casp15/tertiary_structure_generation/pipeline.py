@@ -42,6 +42,8 @@ class Monomer_tertiary_structure_prediction_pipeline:
 
             monomer_outdir = outdir + '/' + targetname
 
+            makedir_if_not_exists(monomer_outdir)
+            
             if "default" in self.run_methods:
 
                 os.chdir(self.params['alphafold_default_program_dir'])
@@ -53,7 +55,7 @@ class Monomer_tertiary_structure_prediction_pipeline:
 
                 bfd_uniclust30_a3m = monomer_aln_dir + '/' + targetname + '_uniclust30_bfd.a3m'
                 if not os.path.exists(bfd_uniclust30_a3m):
-                    errormsg = errormsg + f"Cannot find uniclust30 alignment for {targetname}: {uniclust30_a3m}\n"
+                    errormsg = errormsg + f"Cannot find uniclust30 alignment for {targetname}: {bfd_uniclust30_a3m}\n"
 
                 mgnify_sto = monomer_aln_dir + '/' + targetname + '_mgnify.sto'
                 if not os.path.exists(mgnify_sto):
@@ -70,7 +72,7 @@ class Monomer_tertiary_structure_prediction_pipeline:
                                   f"--fasta_path {fasta_path} " \
                                   f"--env_dir {self.params['alphafold_env_dir']} " \
                                   f"--database_dir {self.params['alphafold_database_dir']} " \
-                                  f"--bfd_uniclust_a3ms {uniclust30_a3m} " \
+                                  f"--bfd_uniclust_a3ms {bfd_uniclust30_a3m} " \
                                   f"--mgnify_stos {mgnify_sto} " \
                                   f"--uniref90_stos {uniref90_sto} " \
                                   f"--output_dir {monomer_outdir}/default"

@@ -56,6 +56,7 @@ def generate_native_score(inparams):
         dockq_scores += [dockq_score]
 
     df = pd.DataFrame({'model': models, 'dockq_score': dockq_scores})
+    df = df.sort_values(by=['dockq_score'], ascending=False)
     df.to_csv(result_csv)
 
 if __name__ == '__main__':

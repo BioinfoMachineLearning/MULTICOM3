@@ -43,13 +43,10 @@ def _complete_result(outputdir):
     return complete
 
 
-def _cal_tmscore(tmscore_program, inpdb, nativepdb):
-    cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $3}' "
+def _cal_tmscore(mmalign_program, inpdb, nativepdb):
+    cmd = mmalign_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $3}' "
     tmscore_contents = os.popen(cmd).read().split('\n')
-    tmscore = float(tmscore_contents[2].rstrip('\n'))
-    cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep GDT-score | awk '{print $3}' "
-    tmscore_contents = os.popen(cmd).read().split('\n')
-    gdtscore = float(tmscore_contents[0].rstrip('\n'))
+    tmscore = float(tmscore_contents[1].rstrip('\n'))
     return tmscore, gdtscore
 
 
@@ -152,6 +149,27 @@ class Monomer_iterative_generation_pipeline:
                 os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb} {outdir}")
             os.system(f"gunzip -f {template_pdb}")
 
+    def split_pdb(complex_pdb, outdir):
+        pre_chain = None
+        fw = None
+        for line in open(complex_pdb, 'r').readlines():
+            if not line.startswith('ATOM'):
+                continue
+            chain_name = line[21]
+            if pre_chain is None:
+                pre_chain = chain_name
+                fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+                fw.write(line)
+            elif chain_name == pre_chain:
+                fw.write(line)
+            else:
+                fw.close()
+                i = i + 1
+                fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+                fw.write(line)
+                pre_chain = chain_name
+        fw.close()
+
     def search(self, fasta_file, input_pdb_dir, outdir, native_pdb=""):
 
         input_pdb_dir = os.path.abspath(input_pdb_dir)
@@ -211,13 +229,15 @@ class Monomer_iterative_generation_pipeline:
 
                 ref_tmscore = 0
                 if os.path.exists(native_pdb):
-                    ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb)
+                    ref_tmscore, _ = _cal_tmscore(self.params['mmalign_program'], start_pdb, native_pdb)
 
                 model_iteration_scores += [ref_avg_lddt]
                 model_iteration_tmscores += [ref_tmscore]
 
                 out_model_dir = f"{current_work_dir}/alphafold"
                 if not _complete_result(out_model_dir):
+
+
                     foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
 
                     if not self.check_and_rank_templates(foldseek_res, f"{current_work_dir}/structure_templates.csv"):
