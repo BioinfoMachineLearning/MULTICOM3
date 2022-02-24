@@ -64,11 +64,11 @@ def main(argv):
 
         structure_template_dir = FLAGS.structure_template_dir + '/' + '_'.join(monomers)
         if not os.path.exists(structure_template_dir):
-            raise Exception(f"Cannot find structure template directory: {structure_template_dir}")
+            print(f"Cannot find structure template directory: {structure_template_dir}")
 
         sequence_template_dir = FLAGS.sequence_template_dir + '/' + '_'.join(monomers)
         if not os.path.exists(sequence_template_dir):
-            raise Exception(f"Cannot find sequence template directory: {sequence_template_dir}")
+            print(f"Cannot find sequence template directory: {sequence_template_dir}")
 
         inparams = [params, fasta_path, FLAGS.aln_dir, complex_aln_dir, \
                     structure_template_dir, sequence_template_dir, \

@@ -82,6 +82,8 @@ class Quaternary_structure_prediction_pipeline:
                 monomer_model_dir,
                 output_dir):
 
+        self.concatenate_methods = []
+        self.template_methods = []
         makedir_if_not_exists(output_dir)
 
         os.chdir(self.params['alphafold_program_dir'])
@@ -231,7 +233,7 @@ class Quaternary_structure_prediction_pipeline:
             cmd = f"python {self.params['alphafold_default_program']} " \
                   f"--fasta_path {fasta_path} " \
                   f"--bfd_uniclust_a3ms {','.join(bfd_uniclust_a3ms)} " \
-                  f"--mgnify_stos {mgnify_stos} " \
+                  f"--mgnify_stos {','.join(mgnify_stos)} " \
                   f"--uniref90_stos {','.join(uniref90_stos)} " \
                   f"--uniprot_stos {','.join(uniprot_stos)} " \
                   f"--env_dir {self.params['alphafold_env_dir']} " \
