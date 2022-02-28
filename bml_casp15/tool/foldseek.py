@@ -57,11 +57,12 @@ class Foldseek:
                 logging.error('Could not find HHsearch database %s', database_path)
                 raise ValueError(f'Could not find HHsearch database {database_path}')
 
-    def query(self, pdb: str, outdir: str, progressive=False) -> str:
+    def query(self, pdb: str, outdir: str, progressive_threshold = 20, progressive=False) -> str:
         """Queries the database using HHsearch using a given a3m."""
         input_path = os.path.join(outdir, 'query.pdb')
         os.system(f"cp {pdb} {input_path}")
 
+        csvs = []
         result_df = pd.DataFrame(columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
         for database in self.databases:
             database_name = pathlib.Path(database).stem
@@ -83,17 +84,18 @@ class Foldseek:
                 raise RuntimeError(
                     'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                         stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
+            csvs += [f'{outdir}/aln.m8_{database_name}']
+
 
         # search the database using tmalign mode
-        if len(result_df) == 0 and progressive:
+        if len(result_df) < progressive_threshold and progressive:
             for database in self.databases:
                 database_name = pathlib.Path(database).stem
                 cmd = [self.binary_path,
                        'easy-search',
                        input_path,
                        database,
-                       f'{outdir}/aln.m8_{database_name}',
+                       f'{outdir}/aln.m8_{database_name}.tm',
                        outdir + '/tmp',
                        '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                        '--format-mode', '4',
@@ -109,7 +111,10 @@ class Foldseek:
                     raise RuntimeError(
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-                result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
+                csvs += [f'{outdir}/aln.m8_{database_name}.tm']
+
+        for csv in csvs:
+            result_df = result_df.append(pd.read_csv(csv, sep='\t'))
 
         result_df = result_df.sort_values(by='evalue')
         result_df.to_csv(f"{outdir}/result.m8", sep='\t')
