@@ -23,6 +23,9 @@ jackhmmer_program = YOUR_ENV/bin/jackhmmer
 # tmalign program path
 tmalign_program = SOFTWARE_PATH/tools/tmalign/TMalign
 
+# mmalign program path
+mmalign_program = SOFTWARE_PATH/tools/MMalign
+
 # hhsearch program path
 hhsearch_program = YOUR_ENV/bin/hhsearch
 

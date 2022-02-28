@@ -28,7 +28,7 @@ def main(argv):
     fasta_paths = []
 
     # methods = ['original', 'rosettafold', 'colabfold']
-    methods = ['original']
+    methods = ['default']
     for monomer in os.listdir(FLAGS.aln_dir):
         if os.path.exists(f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"):
             fasta_paths += [f"{FLAGS.aln_dir}/{monomer}/{monomer}.fasta"]

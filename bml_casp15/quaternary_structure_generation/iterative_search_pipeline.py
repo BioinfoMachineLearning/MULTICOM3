@@ -9,7 +9,9 @@ import dataclasses
 from bml_casp15.tool.foldseek import *
 import pickle
 import numpy as np
-
+from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
+from bml_casp15.complex_templates_search.parsers import TemplateHit
+from bml_casp15.tertiary_structure_generation.iterative_search_pipeline import build_alignment_indices
 # need to add A if using relaxation in alphafold
 PDB_CHAIN_IDS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -232,22 +234,9 @@ def _build_query_to_hit_index_mapping(
 
     return mapping
 
-
-def _build_alignment_indices(sequence, start_index):
-    indices_list = []
-    counter = start_index
-    for symbol in sequence:
-        if symbol == '-':
-            indices_list.append(-1)
-        else:
-            indices_list.append(counter)
-            counter += 1
-    return indices_list
-
-
 class Multimer_iterative_generation_pipeline:
 
-    def __init__(self, params, max_template_count=500):
+    def __init__(self, params, max_template_count=50):
 
         self.params = params
 
@@ -273,8 +262,6 @@ class Multimer_iterative_generation_pipeline:
             if target.find('.atom.gz') > 0 and evalue < 1e-10:
                 sort_indices += [i]
         for i in range(len(templates)):
-            if len(sort_indices) >= self.max_template_count:
-                break
             if i in sort_indices:
                 continue
             sort_indices += [i]
@@ -398,6 +385,9 @@ class Multimer_iterative_generation_pipeline:
             if not self.assess_complex_templates(chain_id_map, template_infos, template_path):
                 continue
 
+            if len(keep_indices) >= self.max_template_count:
+                break
+
             keep_indices += [i]
             for j, chainid in enumerate(chain_id_map):
                 query_non_gaps = [res != '-' for res in prev_df.loc[i, f'aln_query_{j + 1}']]
@@ -421,7 +411,8 @@ class Multimer_iterative_generation_pipeline:
                             for i in range(len(chain_template_msas[chain_id]['desc'])))
             with open(start_msa + '.temp', 'w') as fw:
                 fw.write('\n'.join(fasta_chunks) + '\n')
-            _combine_a3ms([start_msa, f"{start_msa}.temp"], f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m")
+            _combine_a3ms([start_msa, f"{start_msa}.temp"],
+                          f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m")
             out_msas += [f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m"]
 
         interact_dict = {}
@@ -432,13 +423,40 @@ class Multimer_iterative_generation_pipeline:
                 msa_len = current_len
             elif current_len != msa_len:
                 raise Exception(f"The length of each msas are not equal! {out_msas}")
-            interact_dict[f'index_{i + 1}'] = [i + 1 for i in range(int(msa_len / 2)-1)]
+            interact_dict[f'index_{i + 1}'] = [i + 1 for i in range(int(msa_len / 2) - 1)]
         interact_df = pd.DataFrame(interact_dict)
         interact_csv = outpath + f'/interaction.iteration{iteration}.csv'
         interact_df.to_csv(interact_csv)
 
         if rank_templates_by_monomers:
-            return template_files, out_msas, interact_csv
+            top_template_files = []
+            for template_file, chainid in zip(template_files, chain_id_map):
+                templates = pd.read_csv(template_file, sep='\t')
+                keep_indices = []
+                for i in range(len(templates)):
+                    hit = TemplateHit(index=i,
+                                      name=templates.loc[i, 'target'].split('.')[0],
+                                      aligned_cols=int(templates.loc[i, 'alnlen']),
+                                      query=templates.loc[i, 'qaln'],
+                                      hit_sequence=templates.loc[i, 'taln'],
+                                      indices_query=_build_alignment_indices(templates.loc[i, 'qaln'],
+                                                                             templates.loc[i, 'qstart']),
+                                      indices_hit=_build_alignment_indices(templates.loc[i, 'taln'],
+                                                                           templates.loc[i, 'tstart']),
+                                      sum_probs=0.0)
+                    try:
+                        assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chainid].sequence)
+                    except PrefilterError as e:
+                        msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                        print(msg)
+                        continue
+                    keep_indices += [i]
+                templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
+                templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
+                templates_sorted.reset_index(inplace=True, drop=True)
+                templates_sorted.to_csv(template_file + f'.top{self.max_template_count}', sep='\t')
+                top_template_files += [template_file + f'.top{self.max_template_count}']
+            return top_template_files, out_msas, interact_csv
 
         prev_df.iloc[keep_indices].to_csv(outpath + '/complex_templates.csv')
         return [outpath + '/complex_templates.csv'], out_msas, interact_csv
@@ -474,8 +492,11 @@ class Multimer_iterative_generation_pipeline:
 
         native_pdb = ""
         if os.path.exists(native_pdb_dir):
-            native_pdb = outdir + '/' + '_'.join([chain_id_map[chain_id].description for chain_id in chain_id_map]) + '.pdb'
-            _combine_pdb([native_pdb_dir + '/' + chain_id_map[chain_id].description + '.atom' for chain_id in chain_id_map], native_pdb)
+            native_pdb = outdir + '/' + '_'.join(
+                [chain_id_map[chain_id].description for chain_id in chain_id_map]) + '.pdb'
+            _combine_pdb(
+                [native_pdb_dir + '/' + chain_id_map[chain_id].description + '.atom' for chain_id in chain_id_map],
+                native_pdb)
 
         iteration_scores = {}
 
@@ -555,9 +576,11 @@ class Multimer_iterative_generation_pipeline:
 
                         monomer_work_dir = current_work_dir + '/' + chain_id_map[chain_id].description
                         makedir_if_not_exists(monomer_work_dir)
-                        os.system(f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
-                        foldseek_res = self.search_templates(inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
-                                                             outdir=monomer_work_dir + '/foldseek')
+                        os.system(
+                            f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
+                        foldseek_res = self.search_templates(
+                            inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
+                            outdir=monomer_work_dir + '/foldseek')
 
                         if not self.check_and_rank_templates(foldseek_res,
                                                              f"{monomer_work_dir}/structure_templates.csv"):
@@ -579,7 +602,7 @@ class Multimer_iterative_generation_pipeline:
                         start_msa_path=start_msa_path,
                         template_path=out_template_dir,
                         outpath=current_work_dir,
-                        iteration=num_iteration+1)
+                        iteration=num_iteration + 1)
 
                     makedir_if_not_exists(out_model_dir)
 

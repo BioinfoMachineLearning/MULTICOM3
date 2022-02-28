@@ -23,6 +23,9 @@ jackhmmer_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
 # tmalign program path
 tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
 
+# mmalign program path
+mmalign_program = /home/bml_casp15/BML_CASP15/tools/MMalign
+
 # hhsearch program path
 hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
 
