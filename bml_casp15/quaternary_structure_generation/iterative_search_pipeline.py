@@ -279,8 +279,8 @@ class Multimer_iterative_generation_pipeline:
         print(template_info1)
         chain1_id = template_info1['chainid']
         chain1_seq = chain_id_map[chain1_id].sequence
-        indices_hit = _build_alignment_indices(template_info1['aln_temp'], template_info1['tstart'])
-        indices_query = _build_alignment_indices(template_info1['aln_query'], template_info1['qstart'])
+        indices_hit = build_alignment_indices(template_info1['aln_temp'], template_info1['tstart'])
+        indices_query = build_alignment_indices(template_info1['aln_query'], template_info1['qstart'])
         mapping = _build_query_to_hit_index_mapping(
             template_info1['aln_query'], template_info1['aln_temp'], indices_hit, indices_query,
             chain1_seq)
@@ -290,8 +290,8 @@ class Multimer_iterative_generation_pipeline:
 
         chain2_id = template_info2['chainid']
         chain2_seq = chain_id_map[chain2_id].sequence
-        indices_hit = _build_alignment_indices(template_info2['aln_temp'], template_info2['tstart'])
-        indices_query = _build_alignment_indices(template_info2['aln_query'], template_info2['qstart'])
+        indices_hit = build_alignment_indices(template_info2['aln_temp'], template_info2['tstart'])
+        indices_query = build_alignment_indices(template_info2['aln_query'], template_info2['qstart'])
         mapping = _build_query_to_hit_index_mapping(
             template_info2['aln_query'], template_info2['aln_temp'], indices_hit, indices_query,
             chain2_seq)
@@ -439,9 +439,9 @@ class Multimer_iterative_generation_pipeline:
                                       aligned_cols=int(templates.loc[i, 'alnlen']),
                                       query=templates.loc[i, 'qaln'],
                                       hit_sequence=templates.loc[i, 'taln'],
-                                      indices_query=_build_alignment_indices(templates.loc[i, 'qaln'],
+                                      indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
                                                                              templates.loc[i, 'qstart']),
-                                      indices_hit=_build_alignment_indices(templates.loc[i, 'taln'],
+                                      indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
                                                                            templates.loc[i, 'tstart']),
                                       sum_probs=0.0)
                     try:

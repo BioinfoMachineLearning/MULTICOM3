@@ -9,6 +9,8 @@ import dataclasses
 from bml_casp15.tool.foldseek import *
 import pickle
 import numpy as np
+from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
+from bml_casp15.complex_templates_search.parsers import TemplateHit
 
 
 def _combine_a3ms(infiles, outfile):
@@ -53,6 +55,18 @@ def _cal_tmscore(tmscore_program, inpdb, nativepdb):
     return tmscore, gdtscore
 
 
+def build_alignment_indices(sequence, start_index):
+    indices_list = []
+    counter = start_index
+    for symbol in sequence:
+        if symbol == '-':
+            indices_list.append(-1)
+        else:
+            indices_list.append(counter)
+            counter += 1
+    return indices_list
+
+
 class Monomer_iterative_generation_pipeline:
 
     def __init__(self, params, max_template_count=50):
@@ -81,8 +95,8 @@ class Monomer_iterative_generation_pipeline:
             if target.find('.atom.gz') > 0 and evalue < 1e-10:
                 sort_indices += [i]
         for i in range(len(templates)):
-            if len(sort_indices) >= self.max_template_count:
-                break
+            # if len(sort_indices) >= self.max_template_count:
+            #     break
             if i in sort_indices:
                 continue
             sort_indices += [i]
@@ -90,7 +104,29 @@ class Monomer_iterative_generation_pipeline:
             os.system(f"cp {template_file} {outfile}")
             return False
 
-        templates_sorted = copy.deepcopy(templates.iloc[sort_indices])
+        keep_indices = []
+        for i in sort_indices:
+            if len(keep_indices) >= self.max_template_count:
+                break
+            hit = TemplateHit(index=i,
+                              name=templates.loc[i, 'target'].split('.')[0],
+                              aligned_cols=int(templates.loc[i, 'alnlen']),
+                              query=templates.loc[i, 'qaln'],
+                              hit_sequence=templates.loc[i, 'taln'],
+                              indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
+                                                                    templates.loc[i, 'qstart']),
+                              indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
+                                                                  templates.loc[i, 'tstart']),
+                              sum_probs=0.0)
+            try:
+                assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chainid].sequence)
+            except PrefilterError as e:
+                msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                print(msg)
+                continue
+            keep_indices += [i]
+
+        templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
         templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
         templates_sorted.reset_index(inplace=True, drop=True)
         templates_sorted.to_csv(outfile, sep='\t')
@@ -175,7 +211,8 @@ class Monomer_iterative_generation_pipeline:
                                 'start_tmscore': [],
                                 'end_tmscore': []}
 
-        iteration_result_avg = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
+        iteration_result_avg = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
+                                'end_tmscore': []}
 
         cwd = os.getcwd()
 
