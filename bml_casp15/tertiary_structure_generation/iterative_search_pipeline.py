@@ -9,7 +9,7 @@ import dataclasses
 from bml_casp15.tool.foldseek import *
 import pickle
 import numpy as np
-from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
+from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
 from bml_casp15.complex_templates_search.parsers import TemplateHit
 
 
@@ -86,7 +86,7 @@ class Monomer_iterative_generation_pipeline:
                                    databases=[foldseek_pdb_database, foldseek_af_database])
         return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive=True)
 
-    def check_and_rank_templates(self, template_file, outfile):
+    def check_and_rank_templates(self, template_file, outfile, query_sequence):
         templates = pd.read_csv(template_file, sep='\t')
         sort_indices = []
         for i in range(len(templates)):
@@ -119,7 +119,7 @@ class Monomer_iterative_generation_pipeline:
                                                                   templates.loc[i, 'tstart']),
                               sum_probs=0.0)
             try:
-                assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chainid].sequence)
+                assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
             except PrefilterError as e:
                 msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                 print(msg)
@@ -194,6 +194,14 @@ class Monomer_iterative_generation_pipeline:
 
         fasta_file = os.path.abspath(fasta_file)
 
+        query_sequence = ""
+        for line in open(fasta_file):
+            line = line.rstrip('\n')
+            if line.startswith('>'):
+                continue
+            else:
+                query_sequence = line
+
         targetname = pathlib.Path(fasta_file).stem
 
         outdir = os.path.abspath(outdir) + "/"
@@ -257,7 +265,7 @@ class Monomer_iterative_generation_pipeline:
                 if not _complete_result(out_model_dir):
                     foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
 
-                    if not self.check_and_rank_templates(foldseek_res, f"{current_work_dir}/structure_templates.csv"):
+                    if not self.check_and_rank_templates(foldseek_res, f"{current_work_dir}/structure_templates.csv", query_sequence):
                         print(f"Cannot find any templates in iteration {num_iteration + 1}")
                         break
 
