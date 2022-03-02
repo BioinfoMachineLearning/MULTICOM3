@@ -361,6 +361,12 @@ class Monomer_iterative_generation_pipeline:
         df = pd.DataFrame(true_tm_scores)
         df.to_csv(outdir + '/tmscores.csv')
 
+        df = pd.DataFrame(iteration_result_avg)
+        df.to_csv(outdir + '/iteration_result_avg.csv')
+
+        df = pd.DataFrame(iteration_result_all)
+        df.to_csv(outdir + '/iteration_result_all.csv')
+        
         os.chdir(cwd)
 
         return iteration_result_all, iteration_result_avg
