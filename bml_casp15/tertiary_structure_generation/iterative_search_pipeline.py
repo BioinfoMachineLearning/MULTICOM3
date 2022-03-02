@@ -317,14 +317,15 @@ class Monomer_iterative_generation_pipeline:
                     print('##################################################')
                 else:
                     # keep the models in iteration 1 even through the plddt score decreases
-                    if num_iteration == 1:
+                    if num_iteration == 0:
                         ref_avg_lddt = 0
-                        with open(ref_start_pkl, 'rb') as f:
+                        with open(out_model_dir + '/' + ref_start_pkl, 'rb') as f:
                             prediction_result = pickle.load(f)
                             ref_avg_lddt = np.mean(prediction_result['plddt'])
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
-                            ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], ref_start_pdb, native_pdb)
+                            ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'],
+                                                       out_model_dir + '/' + ref_start_pdb, native_pdb)
                         model_iteration_scores += [ref_avg_lddt]
                         model_iteration_tmscores += [ref_tmscore]
                     break
