@@ -27,8 +27,10 @@ def main(argv):
 
     pipeline = Multimer_iterative_generation_pipeline(params)
 
-    all_multimer_res_all = {'targetname': [], 'model': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
+    all_multimer_res_all = {'targetname': [], 'model': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
+                            'end_tmscore': []}
     all_multimer_res_avg = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
+    all_multimer_res_max = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
 
     for fasta_path, inpdb_dir in zip(FLAGS.fasta_paths, FLAGS.inpdb_dirs):
         fasta_path = os.path.abspath(fasta_path)
@@ -39,7 +41,9 @@ def main(argv):
         if not os.path.exists(inpdb_dir):
             continue
 
-        multimer_res_all, multimer_res_avg = pipeline.search(fasta_path, inpdb_dir, output_dir + '/' + targetname, FLAGS.atomdir)
+        multimer_res_all, multimer_res_avg, multimer_res_max = pipeline.search(fasta_path, inpdb_dir,
+                                                                               output_dir + '/' + targetname,
+                                                                               FLAGS.atomdir)
 
         all_multimer_res_all['targetname'] += multimer_res_all['targetname']
         all_multimer_res_all['model'] += multimer_res_all['model']
@@ -54,11 +58,20 @@ def main(argv):
         all_multimer_res_avg['start_tmscore'] += multimer_res_avg['start_tmscore']
         all_multimer_res_avg['end_tmscore'] += multimer_res_avg['end_tmscore']
 
+        all_multimer_res_max['targetname'] += multimer_res_max['targetname']
+        all_multimer_res_max['start_lddt'] += multimer_res_max['start_lddt']
+        all_multimer_res_max['end_lddt'] += multimer_res_max['end_lddt']
+        all_multimer_res_max['start_tmscore'] += multimer_res_max['start_tmscore']
+        all_multimer_res_max['end_tmscore'] += multimer_res_max['end_tmscore']
+
     df = pd.DataFrame(all_multimer_res_all)
     df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_all.csv')
 
     df = pd.DataFrame(all_multimer_res_avg)
     df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_avg.csv')
+
+    df = pd.DataFrame(all_multimer_res_max)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_max.csv')
 
 
 if __name__ == '__main__':

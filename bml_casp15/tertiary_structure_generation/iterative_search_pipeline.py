@@ -47,6 +47,7 @@ def _complete_result(outputdir):
 
 def _cal_tmscore(tmscore_program, inpdb, nativepdb):
     cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $3}' "
+    print(cmd)
     tmscore_contents = os.popen(cmd).read().split('\n')
     tmscore = float(tmscore_contents[2].rstrip('\n'))
     cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep GDT-score | awk '{print $3}' "
@@ -222,6 +223,9 @@ class Monomer_iterative_generation_pipeline:
         iteration_result_avg = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
                                 'end_tmscore': []}
 
+        iteration_result_max = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
+                                'end_tmscore': []}
+
         cwd = os.getcwd()
 
         for i in range(0, 5):
@@ -354,6 +358,11 @@ class Monomer_iterative_generation_pipeline:
         iteration_result_avg['start_tmscore'] = [np.mean(np.array(iteration_result_all['start_tmscore']))]
         iteration_result_avg['end_tmscore'] = [np.mean(np.array(iteration_result_all['end_tmscore']))]
 
+        iteration_result_max['start_lddt'] = [np.max(np.array(iteration_result_all['start_lddt']))]
+        iteration_result_max['end_lddt'] = [np.max(np.array(iteration_result_all['end_lddt']))]
+        iteration_result_max['start_tmscore'] = [np.max(np.array(iteration_result_all['start_tmscore']))]
+        iteration_result_max['end_tmscore'] = [np.max(np.array(iteration_result_all['end_tmscore']))]
+
         print(iteration_scores)
         df = pd.DataFrame(iteration_scores)
         df.to_csv(outdir + '/summary.csv')
@@ -366,7 +375,10 @@ class Monomer_iterative_generation_pipeline:
 
         df = pd.DataFrame(iteration_result_all)
         df.to_csv(outdir + '/iteration_result_all.csv')
-        
+
+        df = pd.DataFrame(iteration_result_max)
+        df.to_csv(outdir + '/iteration_result_max.csv')
+
         os.chdir(cwd)
 
-        return iteration_result_all, iteration_result_avg
+        return iteration_result_all, iteration_result_avg, iteration_result_max

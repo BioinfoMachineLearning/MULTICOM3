@@ -90,6 +90,34 @@ def _cal_tmscore(mmalign_program, inpdb, nativepdb):
     tmscore = float(tmscore_contents[1].rstrip('\n'))
     return tmscore
 
+def _cal_tmscore_single(tmscore_program, inpdb, nativepdb, tmpdir):
+
+    if os.path.exists(tmpdir):
+        os.system(f"rm -rf {tmpdir}")
+
+    os.makedirs(tmpdir)
+
+    src_pdb = tmpdir + '/src.pdb'
+    native_pdb = tmpdir + '/native.pdb'
+
+    with open(src_pdb, 'w') as fw:
+        for line in open(inpdb):
+            if not line.startswith('ATOM'):
+                continue
+            fw.write(line[:21] + 'A' + line[22:])
+
+    with open(native_pdb, 'w') as fw:
+        for line in open(nativepdb):
+            if not line.startswith('ATOM'):
+                continue
+            fw.write(line[:21] + 'A' + line[22:])
+
+    cmd = tmscore_program + ' ' + src_pdb + ' ' + native_pdb + " | grep TM-score | awk '{print $2}' "
+    print(cmd)
+    tmscore_contents = os.popen(cmd).read().split('\n')
+    # print(tmscore_contents)
+    tmscore = float(tmscore_contents[1].rstrip('\n'))
+    return tmscore
 
 def _split_pdb(complex_pdb, outdir):
     makedir_if_not_exists(outdir)
@@ -511,8 +539,11 @@ class Multimer_iterative_generation_pipeline:
                                 'start_tmscore': [],
                                 'end_tmscore': []}
 
-        iteration_result_avg = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
-                                'end_tmscore': []}
+        iteration_result_avg = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [],
+                                'start_tmscore': [], 'end_tmscore': []}
+
+        iteration_result_max = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [],
+                                'start_tmscore': [], 'end_tmscore': []}
 
         cwd = os.getcwd()
 
@@ -694,6 +725,11 @@ class Multimer_iterative_generation_pipeline:
         iteration_result_avg['start_tmscore'] = [np.mean(np.array(iteration_result_all['start_tmscore']))]
         iteration_result_avg['end_tmscore'] = [np.mean(np.array(iteration_result_all['end_tmscore']))]
 
+        iteration_result_max['start_lddt'] = [np.max(np.array(iteration_result_all['start_lddt']))]
+        iteration_result_max['end_lddt'] = [np.max(np.array(iteration_result_all['end_lddt']))]
+        iteration_result_max['start_tmscore'] = [np.max(np.array(iteration_result_all['start_tmscore']))]
+        iteration_result_max['end_tmscore'] = [np.max(np.array(iteration_result_all['end_tmscore']))]
+
         print(iteration_scores)
         df = pd.DataFrame(iteration_scores)
         df.to_csv(outdir + '/summary.csv')
@@ -701,11 +737,13 @@ class Multimer_iterative_generation_pipeline:
         df = pd.DataFrame(true_tm_scores)
         df.to_csv(outdir + '/tmscores.csv')
 
+        print(iteration_result_avg)
         df = pd.DataFrame(iteration_result_avg)
+
         df.to_csv(outdir + '/iteration_result_avg.csv')
 
         df = pd.DataFrame(iteration_result_all)
         df.to_csv(outdir + '/iteration_result_all.csv')
         os.chdir(cwd)
 
-        return iteration_result_all, iteration_result_avg
+        return iteration_result_all, iteration_result_avg, iteration_result_max

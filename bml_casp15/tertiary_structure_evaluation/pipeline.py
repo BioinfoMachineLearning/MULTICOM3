@@ -40,11 +40,13 @@ def extract_monomer_pdb(complex_pdb, chainid, output_pdb):
     return chain_start - 1, chain_end - 1
 
 
-def extract_monomer_pkl(complex_pkl, residue_start, residue_end, output_pkl):
-    with open(complex_pkl, 'rb') as f:
+def extract_pkl(src_pkl, output_pkl, residue_start=-1, residue_end=-1):
+    with open(src_pkl, 'rb') as f:
         prediction_result = pickle.load(f)
-        prediction_result_monomer = copy.deepcopy(prediction_result)
-        prediction_result_monomer['plddt'] = prediction_result_monomer['plddt'][residue_start:residue_end, ]
+        if residue_end != -1 and residue_start != -1:
+            prediction_result_monomer = {'plddt': prediction_result['plddt'][residue_start:residue_end, ]}
+        else:
+            prediction_result_monomer = {'plddt': prediction_result['plddt']}
         with open(output_pkl, 'wb') as f:
             pickle.dump(prediction_result_monomer, f, protocol=4)
 
@@ -79,7 +81,8 @@ class Tertiary_structure_evaluation_pipeline:
         for method in os.listdir(monomer_model_dir):
             for i in range(0, 5):
                 os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
-                os.system(f"cp {monomer_model_dir}/{method}/result_model_{i+1}.pkl {pkldir}/{method}_{i}.pkl")
+                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{i+1}.pkl",
+                            output_pkl=f"{pkldir}/{method}_{i}.pkl")
 
         for method in os.listdir(multimer_model_dir):
             for i in range(0, 5):
@@ -89,7 +92,7 @@ class Tertiary_structure_evaluation_pipeline:
                         complex_pdb=complex_pdb,
                         chainid=chainid_in_multimer,
                         output_pdb=f"{pdbdir}/{method}_{i}.pdb")
-                    extract_monomer_pkl(complex_pkl=f"{multimer_model_dir}/{method}/result_model_{i + 1}_multimer.pkl",
+                    extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_model_{i + 1}_multimer.pkl",
                                         residue_start=residue_start,
                                         residue_end=residue_end,
                                         output_pkl=f"{pkldir}/{method}_{i}.pkl")

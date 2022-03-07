@@ -29,6 +29,7 @@ def main(argv):
 
     all_monomer_res_all = {'targetname': [], 'model': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
     all_monomer_res_avg = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
+    all_monomer_res_max = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
 
     for fasta_path, inpdb_dir in zip(FLAGS.fasta_paths, FLAGS.inpdb_dirs):
         targetname = pathlib.Path(fasta_path).stem
@@ -40,7 +41,7 @@ def main(argv):
         if FLAGS.atomdir is not None:
             native_pdb = FLAGS.atomdir + '/' + targetname + '.atom'
 
-        monomer_res_all, monomer_res_avg = pipeline.search(fasta_path, inpdb_dir, output_dir + '/' + targetname, native_pdb)
+        monomer_res_all, monomer_res_avg, monomer_res_max = pipeline.search(fasta_path, inpdb_dir, output_dir + '/' + targetname, native_pdb)
 
         all_monomer_res_all['targetname'] += monomer_res_all['targetname']
         all_monomer_res_all['model'] += monomer_res_all['model']
@@ -55,11 +56,22 @@ def main(argv):
         all_monomer_res_avg['start_tmscore'] += monomer_res_avg['start_tmscore']
         all_monomer_res_avg['end_tmscore'] += monomer_res_avg['end_tmscore']
 
+        all_monomer_res_max['targetname'] += monomer_res_max['targetname']
+        all_monomer_res_max['start_lddt'] += monomer_res_max['start_lddt']
+        all_monomer_res_max['end_lddt'] += monomer_res_max['end_lddt']
+        all_monomer_res_max['start_tmscore'] += monomer_res_max['start_tmscore']
+        all_monomer_res_max['end_tmscore'] += monomer_res_max['end_tmscore']
+
     df = pd.DataFrame(all_monomer_res_all)
     df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_all.csv')
 
     df = pd.DataFrame(all_monomer_res_avg)
     df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_avg.csv')
+
+    df = pd.DataFrame(all_monomer_res_max)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_max.csv')
+
+
 
 
 if __name__ == '__main__':

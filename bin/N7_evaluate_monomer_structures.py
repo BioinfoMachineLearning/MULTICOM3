@@ -29,7 +29,7 @@ def main(argv):
 
     makedir_if_not_exists(output_dir)
 
-    pipeline = Tertiary_structure_evaluation_pipeline(params=params, run_methods=["enQA"], use_gpu=FLAGS.use_gpu)
+    pipeline = Tertiary_structure_evaluation_pipeline(params=params, run_methods=["apollo", "alphafold"], use_gpu=FLAGS.use_gpu)
 
     pipeline.process(FLAGS.targetname, FLAGS.fasta_file, FLAGS.input_monomer_dir, output_dir, FLAGS.input_multimer_dir,
                      FLAGS.chain_in_multimer)
