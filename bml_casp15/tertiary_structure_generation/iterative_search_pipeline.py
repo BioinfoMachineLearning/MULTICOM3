@@ -45,7 +45,20 @@ def _complete_result(outputdir):
     return complete
 
 
-def _cal_tmscore(tmscore_program, inpdb, nativepdb):
+def _cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
+
+    cwd = os.getcwd()
+
+    makedir_if_not_exists(tmpdir)
+
+    os.chdir(tmpdir)
+
+    os.system(f"cp {inpdb} inpdb.pdb")
+    os.system(f"cp {nativepdb} native.pdb")
+
+    inpdb = "inpdb.pdb"
+    nativepdb = "native.pdb"
+
     cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $3}' "
     print(cmd)
     tmscore_contents = os.popen(cmd).read().split('\n')
@@ -53,6 +66,11 @@ def _cal_tmscore(tmscore_program, inpdb, nativepdb):
     cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep GDT-score | awk '{print $3}' "
     tmscore_contents = os.popen(cmd).read().split('\n')
     gdtscore = float(tmscore_contents[0].rstrip('\n'))
+
+    os.chdir(cwd)
+
+    os.system("rm -rf " + tmpdir)
+
     return tmscore, gdtscore
 
 
@@ -260,7 +278,7 @@ class Monomer_iterative_generation_pipeline:
 
                 ref_tmscore = 0
                 if os.path.exists(native_pdb):
-                    ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb)
+                    ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb, current_work_dir + '/tmp')
 
                 model_iteration_scores += [ref_avg_lddt]
                 model_iteration_tmscores += [ref_tmscore]
@@ -314,11 +332,25 @@ class Monomer_iterative_generation_pipeline:
                 print(f"plddt before: {ref_avg_lddt}")
                 print(f"plddt after: {max_lddt_score}")
                 if max_lddt_score > ref_avg_lddt:
-                    print("Continue to refine")
-                    current_ref_dir = out_model_dir
-                    ref_start_pdb = f"ranked_{max_index}.pdb"
-                    ref_start_pkl = f"result_model_{max_index + 1}.pkl"
-                    print('##################################################')
+                    if num_iteration + 1 < self.max_iteration:
+                        print("Continue to refine")
+                        current_ref_dir = out_model_dir
+                        ref_start_pdb = f"ranked_{max_index}.pdb"
+                        ref_start_pkl = f"result_model_{max_index + 1}.pkl"
+                        print('##################################################')
+                    else:
+                        print("Reach maximum iteration")
+                        ref_avg_lddt = 0
+                        with open(out_model_dir + '/' + ref_start_pkl, 'rb') as f:
+                            prediction_result = pickle.load(f)
+                            ref_avg_lddt = np.mean(prediction_result['plddt'])
+                        ref_tmscore = 0
+                        if os.path.exists(native_pdb):
+                            ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'],
+                                                          out_model_dir + '/' + ref_start_pdb, native_pdb,
+                                                          current_work_dir + '/tmp')
+                        model_iteration_scores += [ref_avg_lddt]
+                        model_iteration_tmscores += [ref_tmscore]
                 else:
                     # keep the models in iteration 1 even through the plddt score decreases
                     if num_iteration == 0:
@@ -329,7 +361,7 @@ class Monomer_iterative_generation_pipeline:
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'],
-                                                       out_model_dir + '/' + ref_start_pdb, native_pdb)
+                                                       out_model_dir + '/' + ref_start_pdb, native_pdb, current_work_dir + '/tmp')
                         model_iteration_scores += [ref_avg_lddt]
                         model_iteration_tmscores += [ref_tmscore]
                     break

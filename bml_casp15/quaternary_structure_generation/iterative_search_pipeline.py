@@ -682,11 +682,24 @@ class Multimer_iterative_generation_pipeline:
                 print(f"plddt before: {ref_avg_lddt}")
                 print(f"plddt after: {max_lddt_score}")
                 if max_lddt_score > ref_avg_lddt:
-                    print("Continue to refine")
-                    current_ref_dir = out_model_dir
-                    ref_start_pdb = f"ranked_{max_index}.pdb"
-                    ref_start_pkl = f"result_model_{max_index + 1}_multimer.pkl"
-                    print('##################################################')
+                    if num_iteration + 1 < self.max_iteration:
+                        print("Continue to refine")
+                        current_ref_dir = out_model_dir
+                        ref_start_pdb = f"ranked_{max_index}.pdb"
+                        ref_start_pkl = f"result_model_{max_index + 1}_multimer.pkl"
+                        print('##################################################')
+                    else:
+                        print("Reach maximum iteration")
+                        ref_avg_lddt = 0
+                        with open(out_model_dir + '/' + ref_start_pkl, 'rb') as f:
+                            prediction_result = pickle.load(f)
+                            ref_avg_lddt = np.mean(prediction_result['plddt'])
+                        ref_tmscore = 0
+                        if os.path.exists(native_pdb):
+                            ref_tmscore = _cal_tmscore(self.params['mmalign_program'],
+                                                       out_model_dir + '/' + ref_start_pdb, native_pdb)
+                        model_iteration_scores += [ref_avg_lddt]
+                        model_iteration_tmscores += [ref_tmscore]
                 else:
                     # keep the models in iteration 1 even through the plddt score decreases
                     if num_iteration == 0:
