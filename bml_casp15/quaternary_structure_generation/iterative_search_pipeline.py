@@ -682,13 +682,12 @@ class Multimer_iterative_generation_pipeline:
                 print(f"plddt before: {ref_avg_lddt}")
                 print(f"plddt after: {max_lddt_score}")
                 if max_lddt_score > ref_avg_lddt:
-                    if num_iteration + 1 < self.max_iteration:
-                        print("Continue to refine")
-                        current_ref_dir = out_model_dir
-                        ref_start_pdb = f"ranked_{max_index}.pdb"
-                        ref_start_pkl = f"result_model_{max_index + 1}_multimer.pkl"
-                        print('##################################################')
-                    else:
+                    print("Continue to refine")
+                    current_ref_dir = out_model_dir
+                    ref_start_pdb = f"ranked_{max_index}.pdb"
+                    ref_start_pkl = f"result_model_{max_index + 1}_multimer.pkl"
+                    print('##################################################')
+                    if num_iteration + 1 >= self.max_iteration:
                         print("Reach maximum iteration")
                         ref_avg_lddt = 0
                         with open(out_model_dir + '/' + ref_start_pkl, 'rb') as f:
