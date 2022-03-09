@@ -66,7 +66,7 @@ class Monomer_tertiary_structure_prediction_pipeline:
                     errormsg = errormsg + f"Cannot find uniref90 alignment for {targetname}: {uniref90_sto}\n"
 
                 if len(errormsg) == 0:
-                    if not complete_result(f"{monomer_outdir}/original"):
+                    if not complete_result(f"{monomer_outdir}/default"):
                         try:
                             cmd = f"python {self.params['alphafold_default_program']} " \
                                   f"--fasta_path {fasta_path} " \
