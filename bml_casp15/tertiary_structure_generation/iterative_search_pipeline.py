@@ -1,7 +1,7 @@
 import copy
 import os
 import sys
-import time
+import time, json
 from bml_casp15.common.util import makedir_if_not_exists, check_dirs
 import pandas as pd
 from multiprocessing import Pool
@@ -252,7 +252,7 @@ class Monomer_iterative_generation_pipeline:
 
             current_ref_dir = input_pdb_dir
             ref_start_pdb = f"ranked_{i}.pdb"
-            ref_start_pkl = f"result_model_{i + 1}.pkl"
+            ref_start_ranking_json_file = f"ranking_debug.json"
 
             model_iteration_scores = []
             model_iteration_tmscores = []
@@ -266,15 +266,18 @@ class Monomer_iterative_generation_pipeline:
 
                 start_pdb = f"{current_work_dir}/start.pdb"
                 start_msa = f"{current_work_dir}/start.a3m"
-                start_pkl = f"{current_work_dir}/start.pkl"
+                start_ranking_json_file = f"{current_work_dir}/start_ranking.json"
 
                 os.system(f"cp {current_ref_dir}/{ref_start_pdb} {start_pdb}")
-                os.system(f"cp {current_ref_dir}/{ref_start_pkl} {start_pkl}")
+                os.system(f"cp {current_ref_dir}/{ref_start_ranking_json_file} {start_ranking_json_file}")
                 os.system(f"cp {current_ref_dir}/msas/final.a3m {start_msa}")
-                ref_avg_lddt = 0
-                with open(start_pkl, 'rb') as f:
-                    prediction_result = pickle.load(f)
-                    ref_avg_lddt = np.mean(prediction_result['plddt'])
+
+                ranking_json = json.loads(open(start_ranking_json_file).read())
+
+                if num_iteration == 0:
+                    ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[i]]
+                else:
+                    ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
 
                 ref_tmscore = 0
                 if os.path.exists(native_pdb):
@@ -317,16 +320,9 @@ class Monomer_iterative_generation_pipeline:
                     except Exception as e:
                         print(e)
 
-                max_lddt_score = 0
-                max_index = -1
-                for j in range(0, 5):
-                    new_pkl = f"{out_model_dir}/result_model_{j + 1}.pkl"
-                    with open(new_pkl, 'rb') as f:
-                        new_prediction_result = pickle.load(f)
-                        new_avg_lddt = np.mean(new_prediction_result['plddt'])
-                        if new_avg_lddt > max_lddt_score:
-                            max_lddt_score = new_avg_lddt
-                            max_index = j
+                new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+                new_ranking_json = json.loads(open(new_ranking_json_file).read())
+                max_lddt_score = new_ranking_json["plddts"][list(new_ranking_json["order"])[0]]
 
                 print(f'#########Iteration: {num_iteration + 1}#############')
                 print(f"plddt before: {ref_avg_lddt}")
@@ -334,15 +330,14 @@ class Monomer_iterative_generation_pipeline:
                 if max_lddt_score > ref_avg_lddt:
                     print("Continue to refine")
                     current_ref_dir = out_model_dir
-                    ref_start_pdb = f"ranked_{max_index}.pdb"
-                    ref_start_pkl = f"result_model_{max_index + 1}.pkl"
+                    ref_start_pdb = f"ranked_0.pdb"
+                    ref_start_ranking_json_file = f"ranking_debug.json"
                     print('##################################################')
                     if num_iteration + 1 >= self.max_iteration:
                         print("Reach maximum iteration")
-                        ref_avg_lddt = 0
-                        with open(out_model_dir + '/' + ref_start_pkl, 'rb') as f:
-                            prediction_result = pickle.load(f)
-                            ref_avg_lddt = np.mean(prediction_result['plddt'])
+                        ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
+                        ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
+
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'],
@@ -353,10 +348,10 @@ class Monomer_iterative_generation_pipeline:
                 else:
                     # keep the models in iteration 1 even through the plddt score decreases
                     if num_iteration == 0:
-                        ref_avg_lddt = 0
-                        with open(out_model_dir + '/' + ref_start_pkl, 'rb') as f:
-                            prediction_result = pickle.load(f)
-                            ref_avg_lddt = np.mean(prediction_result['plddt'])
+
+                        ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
+                        ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
+
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'],
