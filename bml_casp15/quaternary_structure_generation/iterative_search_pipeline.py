@@ -1,7 +1,7 @@
 import copy
 import os
 import sys
-import time
+import time, json
 from bml_casp15.common.util import makedir_if_not_exists, check_dirs
 import pandas as pd
 from multiprocessing import Pool
@@ -52,6 +52,8 @@ def _parse_fasta(fasta_file):
 
 
 def _combine_a3ms(infiles, outfile):
+    targetname = None
+    targetseq = None
     descriptions = []
     seqs = []
     for infile in infiles:
@@ -59,11 +61,18 @@ def _combine_a3ms(infiles, outfile):
             line = line.rstrip('\n')
             if line.startswith('>'):
                 descriptions += [line]
+                if targetname is None:
+                    targetname = line
             else:
                 seqs += [line]
+                if targetseq is None:
+                    targetseq = line
 
     with open(outfile, 'w') as fw:
+        fw.write(f"{targetname}\n{targetseq}\n")
         for (desc, seq) in zip(descriptions, seqs):
+            if desc == targetname and seq == targetseq:
+                continue
             fw.write(f"{desc}\n{seq}\n")
 
 
@@ -156,15 +165,21 @@ def _create_template_df(templates):
         tstart = templates.loc[i, 'tstart']
         tend = templates.loc[i, 'tend']
         evalue = float(templates.loc[i, 'evalue'])
+        aln_len = int(templates.loc[i, 'alnlen'])
+        if target.find('.atom.gz') > 0:
+            pdbcode = target[0:4]
+        else:
+            pdbcode = target
         row_dict = dict(template=target,
-                        tpdbcode=target[0:4],
+                        tpdbcode=pdbcode,
                         aln_temp=taln,
                         tstart=tstart,
                         tend=tend,
                         aln_query=qaln,
                         qstart=qstart,
                         qend=qend,
-                        evalue=evalue)
+                        evalue=evalue,
+                        aligned_length=aln_len)
         row_list += [row_dict]
     return pd.DataFrame(row_list)
 
@@ -345,7 +360,7 @@ class Multimer_iterative_generation_pipeline:
             else:
                 for i in range(len(same_template_infos[template])):
                     for j in range(i + 1, len(same_template_infos[template])):
-                        if not self.check_template_overlap_regions(same_template_infos[template][i],
+                        if self.check_template_overlap_regions(same_template_infos[template][i],
                                                                    same_template_infos[template][j],
                                                                    chain_id_map,
                                                                    template_path):
@@ -368,13 +383,13 @@ class Multimer_iterative_generation_pipeline:
             if prev_df is None:
                 prev_df = curr_df
             else:
-                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode', suffixes=('_' + str(i), '_' + str(i + 1)))
+                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode', suffixes=(str(i), str(i + 1)))
 
         min_evalues = []
         for i in range(len(prev_df)):
             evalues = []
             for j, chainid in enumerate(chain_id_map):
-                evalue = float(prev_df.loc[i, f'evalue_{j + 1}'])
+                evalue = float(prev_df.loc[i, f'evalue{j + 1}'])
                 evalues += [evalue]
             min_evalues += [np.min(np.array(evalues))]
         prev_df['min_evalue'] = min_evalues
@@ -387,17 +402,24 @@ class Multimer_iterative_generation_pipeline:
                                              'seq': [chain_id_map[chain_id].sequence]}
 
         print(prev_df)
+
+        seen_complex_seq = []
+        seen_complex_seq += ["".join([chain_template_msas[chain_id]['seq'][0] for chain_id in chain_template_msas])]
         for i in range(len(prev_df)):
+
+            if len(keep_indices) >= self.max_template_count:
+                break
+
             template_infos = []
             for j, chainid in enumerate(chain_id_map):
-                template = prev_df.loc[i, f'template_{j + 1}']
-                qaln = prev_df.loc[i, f'aln_query_{j + 1}']
-                qstart = int(prev_df.loc[i, f'qstart_{j + 1}'])
-                qend = int(prev_df.loc[i, f'qend_{j + 1}'])
-                taln = prev_df.loc[i, f'aln_temp_{j + 1}']
-                tstart = prev_df.loc[i, f'tstart_{j + 1}']
-                tend = prev_df.loc[i, f'tend_{j + 1}']
-                evalue = float(prev_df.loc[i, f'evalue_{j + 1}'])
+                template = prev_df.loc[i, f'template{j + 1}']
+                qaln = prev_df.loc[i, f'aln_query{j + 1}']
+                qstart = int(prev_df.loc[i, f'qstart{j + 1}'])
+                qend = int(prev_df.loc[i, f'qend{j + 1}'])
+                taln = prev_df.loc[i, f'aln_temp{j + 1}']
+                tstart = prev_df.loc[i, f'tstart{j + 1}']
+                tend = prev_df.loc[i, f'tend{j + 1}']
+                evalue = float(prev_df.loc[i, f'evalue{j + 1}'])
                 row_dict = dict(chainid=chainid,
                                 template=template,
                                 tpdbcode=template[0:4],
@@ -413,21 +435,25 @@ class Multimer_iterative_generation_pipeline:
             if not self.assess_complex_templates(chain_id_map, template_infos, template_path):
                 continue
 
-            if len(keep_indices) >= self.max_template_count:
-                break
-
-            keep_indices += [i]
+            monomer_template_seqs = {}
             for j, chainid in enumerate(chain_id_map):
-                query_non_gaps = [res != '-' for res in prev_df.loc[i, f'aln_query_{j + 1}']]
-                out_sequence = ''.join(_convert_taln_seq_to_a3m(query_non_gaps, prev_df.loc[i, f'aln_temp_{j + 1}']))
+                query_non_gaps = [res != '-' for res in prev_df.loc[i, f'aln_query{j + 1}']]
+                out_sequence = ''.join(_convert_taln_seq_to_a3m(query_non_gaps, prev_df.loc[i, f'aln_temp{j + 1}']))
                 aln_full = ['-'] * len(chain_id_map[chainid].sequence)
-
-                qstart = int(prev_df.loc[i, f'qstart_{j + 1}'])
-                qend = int(prev_df.loc[i, f'qend_{j + 1}'])
+                qstart = int(prev_df.loc[i, f'qstart{j + 1}'])
+                qend = int(prev_df.loc[i, f'qend{j + 1}'])
                 aln_full[qstart - 1:qend] = out_sequence
                 taln_full_seq = ''.join(aln_full)
-                chain_template_msas[chainid]['desc'] += [prev_df.loc[i, f'template_{j + 1}']]
-                chain_template_msas[chainid]['seq'] += [taln_full_seq]
+                monomer_template_dict = {'desc': prev_df.loc[i, f'template{j + 1}'], 'seq': taln_full_seq}
+                monomer_template_seqs[chainid] = monomer_template_dict
+
+            complex_template_seq = "".join([monomer_template_seqs[chainid]['seq'] for chainid in monomer_template_seqs])
+            if complex_template_seq not in seen_complex_seq:
+                for chainid in monomer_template_seqs:
+                    chain_template_msas[chainid]['desc'] += [monomer_template_seqs[chainid]['desc']]
+                    chain_template_msas[chainid]['seq'] += [monomer_template_seqs[chainid]['seq']]
+                seen_complex_seq += [complex_template_seq]
+                keep_indices += [i]
 
         msa_out_path = outpath  # + '/msas'
         makedir_if_not_exists(msa_out_path)
@@ -523,7 +549,7 @@ class Multimer_iterative_generation_pipeline:
         native_pdb = ""
         if os.path.exists(native_pdb_dir):
             native_pdb = outdir + '/' + '_'.join(
-                [chain_id_map[chain_id].description for chain_id in chain_id_map]) + '.pdb'
+                [chain_id_map[chain_id].description for chain_id in chain_id_map]) + '.atom'
             _combine_pdb(
                 [native_pdb_dir + '/' + chain_id_map[chain_id].description + '.atom' for chain_id in chain_id_map],
                 native_pdb)
@@ -582,9 +608,9 @@ class Multimer_iterative_generation_pipeline:
                 ranking_json = json.loads(open(start_ranking_json_file).read())
 
                 if num_iteration == 0:
-                    ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[i]]
+                    ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[i]]
                 else:
-                    ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
+                    ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
 
                 ref_tmscore = 0
                 if os.path.exists(native_pdb):
@@ -637,7 +663,8 @@ class Multimer_iterative_generation_pipeline:
                         start_msa_path=start_msa_path,
                         template_path=out_template_dir,
                         outpath=current_work_dir,
-                        iteration=num_iteration + 1)
+                        iteration=num_iteration + 1,
+                        rank_templates_by_monomers=True)
 
                     makedir_if_not_exists(out_model_dir)
 
@@ -671,7 +698,7 @@ class Multimer_iterative_generation_pipeline:
 
                 new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
                 new_ranking_json = json.loads(open(new_ranking_json_file).read())
-                max_lddt_score = new_ranking_json["plddts"][list(new_ranking_json["order"])[0]]
+                max_lddt_score = new_ranking_json["iptm+ptm"][list(new_ranking_json["order"])[0]]
 
                 print(f'#########Iteration: {num_iteration + 1}#############')
                 print(f"plddt before: {ref_avg_lddt}")
@@ -685,7 +712,7 @@ class Multimer_iterative_generation_pipeline:
                     if num_iteration + 1 >= self.max_iteration:
                         print("Reach maximum iteration")
                         ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
-                        ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
+                        ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
 
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
@@ -697,7 +724,7 @@ class Multimer_iterative_generation_pipeline:
                     # keep the models in iteration 1 even through the plddt score decreases
                     if num_iteration == 0:
                         ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
-                        ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
+                        ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
 
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
