@@ -60,7 +60,7 @@ def main(argv):
 
         complex_aln_dir = FLAGS.complex_aln_dir + '/' + '_'.join(monomers)
         if not os.path.exists(complex_aln_dir):
-            raise Exception(f"Cannot find complex alignment directory: {complex_aln_dir}")
+            print(f"Cannot find complex alignment directory: {complex_aln_dir}")
 
         structure_template_dir = FLAGS.structure_template_dir + '/' + '_'.join(monomers)
         if not os.path.exists(structure_template_dir):

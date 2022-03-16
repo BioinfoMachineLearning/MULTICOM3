@@ -31,6 +31,8 @@ if __name__ == '__main__':
         input_multimer_dir = f"{args.dimerdir}/{chain1}_{chain2}"
         for chain in [chain1, chain2]:
             fastafile = f"{args.fastadir}/{chain}.fasta"
+            if not os.path.exists(fastafile):
+                continue
             input_monomer_dir = f"{args.monomerdir}/{chain}"
             chain_in_multimer = chain_in_multimer_dict[chain]
             cmd = f"python {eva_script} --option_file {option_file} --targetname {chain} --fasta_file {fastafile} " \

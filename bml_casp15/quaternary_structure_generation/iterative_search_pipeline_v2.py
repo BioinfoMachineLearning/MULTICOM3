@@ -12,358 +12,9 @@ import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
 from bml_casp15.complex_templates_search.parsers import TemplateHit
 from bml_casp15.tertiary_structure_generation.iterative_search_pipeline import build_alignment_indices, PrefilterError
+from bml_casp15.quaternary_structure_generation.iterative_search_pipeline import *
 
-# need to add A if using relaxation in alphafold
-PDB_CHAIN_IDS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-
-PDB_CHAIN_IDS_UNRELAX = 'BCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-
-
-class FastaChain:
-    def __init__(self, sequence, description):
-        self.sequence = sequence
-        self.description = description
-
-
-def combine_pdb(pdbs, combine_pdb):
-    with open(combine_pdb, 'w') as out:
-        for chain_id, pdb in zip(PDB_CHAIN_IDS_UNRELAX, pdbs):
-            for line in open(pdb):
-                if not line.startswith('ATOM'):
-                    continue
-                out.write(line[:21] + chain_id + line[22:])
-
-
-def parse_fasta(fasta_file):
-    fasta_string = open(fasta_file).read()
-    sequences = []
-    descriptions = []
-    index = -1
-    for line in fasta_string.splitlines():
-        line = line.strip()
-        if line.startswith('>'):
-            index += 1
-            descriptions.append(line[1:])  # Remove the '>' at the beginning.
-            sequences.append('')
-            continue
-        elif not line:
-            continue  # Skip blank lines.
-        sequences[index] += line
-    return sequences, descriptions
-
-
-def combine_a3ms(infiles, outfile):
-    targetname = None
-    targetseq = None
-    descriptions = []
-    seqs = []
-    for infile in infiles:
-        for line in open(infile):
-            line = line.rstrip('\n')
-            if line.startswith('>'):
-                descriptions += [line]
-                if targetname is None:
-                    targetname = line
-            else:
-                seqs += [line]
-                if targetseq is None:
-                    targetseq = line
-
-    with open(outfile, 'w') as fw:
-        fw.write(f"{targetname}\n{targetseq}\n")
-        for (desc, seq) in zip(descriptions, seqs):
-            if desc == targetname and seq == targetseq:
-                continue
-            fw.write(f"{desc}\n{seq}\n")
-
-
-def convert_taln_seq_to_a3m(query_non_gaps, aln):
-    for is_query_res_non_gap, sequence_res in zip(query_non_gaps, aln):
-        if is_query_res_non_gap:
-            yield sequence_res
-
-
-def complete_result(outputdir):
-    complete = True
-    for i in range(0, 5):
-        model = f'{outputdir}/ranked_{i}.pdb'
-        if not os.path.exists(model):
-            complete = False
-            break
-    return complete
-
-
-def cal_tmscore(mmalign_program, inpdb, nativepdb):
-    cmd = mmalign_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $2}' "
-    print(cmd)
-    tmscore_contents = os.popen(cmd).read().split('\n')
-    tmscore = float(tmscore_contents[1].rstrip('\n'))
-    return tmscore
-
-
-def cal_tmalign(tmalign_program, inpdb, nativepdb, tmpdir):
-    if os.path.exists(tmpdir):
-        os.system(f"rm -rf {tmpdir}")
-
-    os.makedirs(tmpdir)
-
-    src_pdb = tmpdir + '/src.pdb'
-    native_pdb = tmpdir + '/native.pdb'
-
-    with open(src_pdb, 'w') as fw:
-        for line in open(inpdb):
-            if not line.startswith('ATOM'):
-                continue
-            fw.write(line[:21] + 'A' + line[22:])
-
-    with open(native_pdb, 'w') as fw:
-        for line in open(nativepdb):
-            if not line.startswith('ATOM'):
-                continue
-            fw.write(line[:21] + 'A' + line[22:])
-
-    cmd = tmalign_program + ' ' + src_pdb + ' ' + native_pdb + " | grep TM-score | awk '{print $2}' "
-    print(cmd)
-    tmscore_contents = os.popen(cmd).read().split('\n')
-    # print(tmscore_contents)
-    tmscore = float(tmscore_contents[2].rstrip('\n'))
-    return tmscore
-
-
-def split_pdb(complex_pdb, outdir):
-    makedir_if_not_exists(outdir)
-    chain_pdbs = {}
-    pre_chain = None
-    fw = None
-    for line in open(complex_pdb, 'r').readlines():
-        if not line.startswith('ATOM'):
-            continue
-        chain_name = line[21]
-        if pre_chain is None:
-            pre_chain = chain_name
-            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
-            fw.write(line)
-            chain_pdbs[chain_name] = outdir + '/' + chain_name + '.pdb'
-        elif chain_name == pre_chain:
-            fw.write(line)
-        else:
-            fw.close()
-            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
-            fw.write(line)
-            chain_pdbs[chain_name] = outdir + '/' + chain_name + '.pdb'
-            pre_chain = chain_name
-    fw.close()
-    return chain_pdbs
-
-
-def create_template_df(templates):
-    row_list = []
-    for i in range(len(templates)):
-        target = templates.loc[i, 'target']
-        qaln = templates.loc[i, 'qaln']
-        qstart = int(templates.loc[i, 'qstart'])
-        qend = int(templates.loc[i, 'qend'])
-        taln = templates.loc[i, 'taln']
-        tstart = templates.loc[i, 'tstart']
-        tend = templates.loc[i, 'tend']
-        evalue = float(templates.loc[i, 'evalue'])
-        aln_len = int(templates.loc[i, 'alnlen'])
-        if target.find('.atom.gz') > 0:
-            pdbcode = target[0:4]
-        else:
-            pdbcode = target
-        row_dict = dict(template=target,
-                        tpdbcode=pdbcode,
-                        aln_temp=taln,
-                        tstart=tstart,
-                        tend=tend,
-                        aln_query=qaln,
-                        qstart=qstart,
-                        qend=qend,
-                        evalue=evalue,
-                        aligned_length=aln_len)
-        row_list += [row_dict]
-    return pd.DataFrame(row_list)
-
-
-def get_sequence(inpdb):
-    """Enclosing logic in a function to simplify code"""
-
-    res_codes = [
-        # 20 canonical amino acids
-        ('CYS', 'C'), ('ASP', 'D'), ('SER', 'S'), ('GLN', 'Q'),
-        ('LYS', 'K'), ('ILE', 'I'), ('PRO', 'P'), ('THR', 'T'),
-        ('PHE', 'F'), ('ASN', 'N'), ('GLY', 'G'), ('HIS', 'H'),
-        ('LEU', 'L'), ('ARG', 'R'), ('TRP', 'W'), ('ALA', 'A'),
-        ('VAL', 'V'), ('GLU', 'E'), ('TYR', 'Y'), ('MET', 'M'),
-        # Non-canonical amino acids
-        # ('MSE', 'M'), ('SOC', 'C'),
-        # Canonical xNA
-        ('  U', 'U'), ('  A', 'A'), ('  G', 'G'), ('  C', 'C'),
-        ('  T', 'T'),
-    ]
-
-    three_to_one = dict(res_codes)
-    # _records = set(['ATOM  ', 'HETATM'])
-    _records = set(['ATOM  '])
-
-    sequence = []
-    read = set()
-    for line in open(inpdb):
-        line = line.strip()
-        if line[0:6] in _records:
-            resn = line[17:20]
-            resi = line[22:26]
-            icode = line[26]
-            r_uid = (resn, resi, icode)
-            if r_uid not in read:
-                read.add(r_uid)
-            else:
-                continue
-            aa_resn = three_to_one.get(resn, 'X')
-            sequence.append(aa_resn)
-
-    return ''.join(sequence)
-
-
-def get_indices(sequence, start):
-    """Returns indices for non-gap/insert residues starting at the given index."""
-    indices = []
-    counter = start
-    for symbol in sequence:
-        # Skip gaps but add a placeholder so that the alignment is preserved.
-        if symbol == '-':
-            indices.append(-1)
-        # Skip deleted residues, but increase the counter.
-        elif symbol.islower():
-            counter += 1
-        # Normal aligned residue. Increase the counter and append to indices.
-        else:
-            indices.append(counter)
-            counter += 1
-    return indices
-
-
-def build_query_to_hit_index_mapping(
-        hit_query_sequence,
-        hit_sequence,
-        indices_hit,
-        indices_query,
-        original_query_sequence):
-    # If the hit is empty (no aligned residues), return empty mapping
-    if not hit_query_sequence:
-        return {}
-
-    # Remove gaps and find the offset of hit.query relative to original query.
-    hhsearch_query_sequence = hit_query_sequence.replace('-', '')
-    hit_sequence = hit_sequence.replace('-', '')
-    hhsearch_query_offset = original_query_sequence.find(hhsearch_query_sequence)
-
-    # Index of -1 used for gap characters. Subtract the min index ignoring gaps.
-    min_idx = min(x for x in indices_hit if x > -1)
-    fixed_indices_hit = [
-        x - min_idx if x > -1 else -1 for x in indices_hit
-    ]
-
-    min_idx = min(x for x in indices_query if x > -1)
-    fixed_indices_query = [x - min_idx if x > -1 else -1 for x in indices_query]
-
-    # Zip the corrected indices, ignore case where both seqs have gap characters.
-    mapping = {}
-    for q_i, q_t in zip(fixed_indices_query, fixed_indices_hit):
-        if q_t != -1 and q_i != -1:
-            if (q_t >= len(hit_sequence) or
-                    q_i + hhsearch_query_offset >= len(original_query_sequence)):
-                continue
-            mapping[q_i + hhsearch_query_offset] = q_t
-
-    return mapping
-
-
-def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
-    makedir_if_not_exists(outdir)
-    # foldseek_program = self.params['foldseek_program']
-    # foldseek_pdb_database = self.params['foldseek_pdb_database']
-    # foldseek_af_database = self.params['foldseek_af_database']
-    foldseek_runner = Foldseek(binary_path=foldseek_program, databases=databases)
-    return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive=True)
-
-
-def check_and_rank_templates(template_file, outfile):
-    templates = pd.read_csv(template_file, sep='\t')
-    sort_indices = []
-    for i in range(len(templates)):
-        target = templates.loc[i, 'target']
-        evalue = float(templates.loc[i, 'evalue'])
-        if target.find('.atom.gz') > 0 and evalue < 1e-10:
-            sort_indices += [i]
-    for i in range(len(templates)):
-        if i in sort_indices:
-            continue
-        sort_indices += [i]
-    if len(sort_indices) == 0:
-        os.system(f"cp {template_file} {outfile}")
-        return False
-
-    templates_sorted = copy.deepcopy(templates.iloc[sort_indices])
-    templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
-    templates_sorted.reset_index(inplace=True, drop=True)
-    templates_sorted.to_csv(outfile, sep='\t')
-    return True
-
-
-def check_template_overlap_regions(template_info1, template_info2, chain_id_map, template_path):
-    print(template_info1)
-    chain1_id = template_info1['chainid']
-    chain1_seq = chain_id_map[chain1_id].sequence
-    indices_hit = build_alignment_indices(template_info1['aln_temp'], template_info1['tstart'])
-    indices_query = build_alignment_indices(template_info1['aln_query'], template_info1['qstart'])
-    mapping = build_query_to_hit_index_mapping(
-        template_info1['aln_query'], template_info1['aln_temp'], indices_hit, indices_query,
-        chain1_seq)
-
-    # tstart_1 = np.min(np.array(list(mapping.values())))
-    tend_1 = np.max(np.array(list(mapping.values())))
-
-    chain2_id = template_info2['chainid']
-    chain2_seq = chain_id_map[chain2_id].sequence
-    indices_hit = build_alignment_indices(template_info2['aln_temp'], template_info2['tstart'])
-    indices_query = build_alignment_indices(template_info2['aln_query'], template_info2['qstart'])
-    mapping = build_query_to_hit_index_mapping(
-        template_info2['aln_query'], template_info2['aln_temp'], indices_hit, indices_query,
-        chain2_seq)
-
-    tstart_2 = np.min(np.array(list(mapping.values())))
-    # tend_2 = np.max(np.array(list(mapping.values())))
-
-    return tend_1 > tstart_2
-
-
-def assess_complex_templates(chain_id_map, template_infos, template_path):
-    template_names = []
-    same_template_infos = {}
-    for template_info in template_infos:
-        if template_info['template'] not in template_names:
-            template_names += [template_info['template']]
-            same_template_infos[template_info['template']] = [template_info]
-        else:
-            same_template_infos[template_info['template']] += [template_info]
-
-    for template in same_template_infos:
-        if len(same_template_infos[template]) == 1:
-            continue
-        else:
-            for i in range(len(same_template_infos[template])):
-                for j in range(i + 1, len(same_template_infos[template])):
-                    if check_template_overlap_regions(same_template_infos[template][i],
-                                                      same_template_infos[template][j],
-                                                      chain_id_map,
-                                                      template_path):
-                        return False
-    return True
-
-
-class Multimer_iterative_generation_pipeline:
+class Multimer_iterative_generation_pipeline_v2:
 
     def __init__(self, params, max_template_count=50):
 
@@ -380,7 +31,7 @@ class Multimer_iterative_generation_pipeline:
                                       outpath,
                                       template_path,
                                       iteration,
-                                      rank_templates_by_monomers=True):
+                                      rank_templates_by_monomers=False):
 
         prev_df = None
         for i, chain_id in enumerate(chain_id_map):
@@ -438,7 +89,7 @@ class Multimer_iterative_generation_pipeline:
                                 evalue=evalue)
                 template_infos += [row_dict]
 
-            if not assess_complex_templates(chain_id_map, template_infos, template_path):
+            if not assess_complex_templates_diff(chain_id_map, template_infos, template_path):
                 continue
 
             monomer_template_seqs = {}
@@ -472,7 +123,7 @@ class Multimer_iterative_generation_pipeline:
             with open(start_msa + '.temp', 'w') as fw:
                 fw.write('\n'.join(fasta_chunks) + '\n')
             combine_a3ms([start_msa, f"{start_msa}.temp"],
-                         f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m")
+                          f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m")
             out_msas += [f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m"]
 
         interact_dict = {}
@@ -633,7 +284,7 @@ class Multimer_iterative_generation_pipeline:
                 if os.path.exists(native_pdb):
                     ref_tmscore = cal_tmscore(self.params['mmalign_program'], start_pdb, native_pdb)
                     ref_tmalign = cal_tmalign(self.params['tmalign_program'], start_pdb, native_pdb,
-                                              current_work_dir + '/tmp')
+                                               current_work_dir + '/tmp')
 
                 model_iteration_scores += [ref_avg_lddt]
                 model_iteration_tmscores += [ref_tmscore]
@@ -649,7 +300,8 @@ class Multimer_iterative_generation_pipeline:
 
                     out_template_dir = current_work_dir + '/templates'
                     makedir_if_not_exists(out_template_dir)
-
+                    
+                    start_monomer_pdb_paths = []
                     for chain_id in chain_pdbs:
 
                         if chain_id not in chain_id_map:
@@ -659,14 +311,17 @@ class Multimer_iterative_generation_pipeline:
                         makedir_if_not_exists(monomer_work_dir)
                         os.system(
                             f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
+                        os.system(f"cp {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb {monomer_work_dir}/ranked_0.pdb")
+                        start_monomer_pdb_paths += [monomer_work_dir]
+
                         foldseek_res = search_templates_foldseek(
                             foldseek_program=self.params['foldseek_program'],
-                            databases=[self.params['foldseek_pdb_database'], self.params['foldseek_af_database']],
+                            databases=[self.params['foldseek_pdb_database']],
                             inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
                             outdir=monomer_work_dir + '/foldseek')
 
                         if not check_and_rank_templates(foldseek_res,
-                                                        f"{monomer_work_dir}/structure_templates.csv"):
+                                                             f"{monomer_work_dir}/structure_templates.csv"):
                             print(
                                 f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
                             break
@@ -685,8 +340,7 @@ class Multimer_iterative_generation_pipeline:
                         start_msa_path=start_msa_path,
                         template_path=out_template_dir,
                         outpath=current_work_dir,
-                        iteration=num_iteration + 1,
-                        rank_templates_by_monomers=True)
+                        iteration=num_iteration + 1)
 
                     makedir_if_not_exists(out_model_dir)
 
@@ -699,6 +353,8 @@ class Multimer_iterative_generation_pipeline:
                               f"--msa_pair_file {msa_pair_file} " \
                               f"--temp_struct_csv {template_files[0]} " \
                               f"--struct_atom_dir {out_template_dir} " \
+                              f"--monomer_model_paths {','.join(start_monomer_pdb_paths)} " \
+                              f"--monomer_model_count 1 " \
                               f"--output_dir {out_model_dir}"
                     else:
                         cmd = f"python run_alphafold_multimer_custom_sim.py " \
@@ -709,6 +365,8 @@ class Multimer_iterative_generation_pipeline:
                               f"--msa_pair_file {msa_pair_file} " \
                               f"--monomer_temp_csvs {','.join(template_files)} " \
                               f"--struct_atom_dir {out_template_dir} " \
+                              f"--monomer_model_paths {','.join(start_monomer_pdb_paths)} " \
+                              f"--monomer_model_count 1 " \
                               f"--output_dir {out_model_dir}"
 
                     try:
@@ -739,10 +397,10 @@ class Multimer_iterative_generation_pipeline:
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
-                                                      out_model_dir + '/' + ref_start_pdb, native_pdb)
+                                                       out_model_dir + '/' + ref_start_pdb, native_pdb)
                             ref_tmalign = cal_tmalign(self.params['tmalign_program'],
-                                                      out_model_dir + '/' + ref_start_pdb, native_pdb,
-                                                      out_model_dir + '/tmp')
+                                                       out_model_dir + '/' + ref_start_pdb, native_pdb,
+                                                       out_model_dir + '/tmp')
                         model_iteration_scores += [ref_avg_lddt]
                         model_iteration_tmscores += [ref_tmscore]
                         model_iteration_tmaligns += [ref_tmalign]
@@ -755,10 +413,10 @@ class Multimer_iterative_generation_pipeline:
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
-                                                      out_model_dir + '/' + ref_start_pdb, native_pdb)
+                                                       out_model_dir + '/' + ref_start_pdb, native_pdb)
                             ref_tmalign = cal_tmalign(self.params['tmalign_program'],
-                                                      out_model_dir + '/' + ref_start_pdb, native_pdb,
-                                                      out_model_dir + '/tmp')
+                                                       out_model_dir + '/' + ref_start_pdb, native_pdb,
+                                                       out_model_dir + '/tmp')
                         model_iteration_scores += [ref_avg_lddt]
                         model_iteration_tmscores += [ref_tmscore]
                         model_iteration_tmaligns += [ref_tmalign]

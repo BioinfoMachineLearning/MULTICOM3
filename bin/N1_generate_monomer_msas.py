@@ -34,7 +34,7 @@ def generate_a3ms_for_single_seq(inparams):
 
     colabfold_search_binary = params['colabfold_search_program']
     colabfold_split_msas_binary = params['colabfold_split_msas_program']
-    colabfold_databases = params['colabfold_databases']
+    colabfold_databases = "" #params['colabfold_databases']
     mmseq_binary = params['mmseq_program']
 
     result = None
