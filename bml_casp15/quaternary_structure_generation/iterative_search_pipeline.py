@@ -484,7 +484,7 @@ class Multimer_iterative_generation_pipeline:
                 msa_len = current_len
             elif current_len != msa_len:
                 raise Exception(f"The length of each msas are not equal! {out_msas}")
-            interact_dict[f'index_{i + 1}'] = [j for j in range(int(msa_len / 2))]
+            interact_dict[f'index_{i + 1}'] = [j for j in range(msa_len)]
         interact_df = pd.DataFrame(interact_dict)
         interact_csv = outpath + f'/interaction.iteration{iteration}.csv'
         interact_df.to_csv(interact_csv)
