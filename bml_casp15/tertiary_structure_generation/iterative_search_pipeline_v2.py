@@ -102,7 +102,7 @@ class Monomer_iterative_generation_pipeline_v2:
         foldseek_af_database = self.params['foldseek_af_database']
         foldseek_runner = Foldseek(binary_path=foldseek_program,
                                    databases=[foldseek_pdb_database, foldseek_af_database])
-        return foldseek_runner.query(pdb=inpdb, outdir=outdir)
+        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000)
 
     def check_and_rank_templates(self, template_result, outfile, query_sequence):
 
