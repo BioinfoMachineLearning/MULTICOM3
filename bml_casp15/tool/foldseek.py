@@ -97,8 +97,8 @@ class Foldseek:
 
         # search the database using tmalign mode
         for database in self.databases:
+            database_name = pathlib.Path(database).stem
             if not os.path.exists(f'{outdir}/aln.m8_{database_name}.tm'):
-                database_name = pathlib.Path(database).stem
                 cmd = [self.binary_path,
                        'easy-search',
                        input_path,
