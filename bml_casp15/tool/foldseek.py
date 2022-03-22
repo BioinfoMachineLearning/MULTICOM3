@@ -97,6 +97,7 @@ class Foldseek:
             evalue_df = evalue_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
 
         evalue_df = evalue_df.sort_values(by='evalue')
+        evalue_df.reset_index(inplace=True, drop=True)
         evalue_df.to_csv(f"{outdir}/evalue.m8", sep='\t')
 
         if len(evalue_df) < progressive_threshold:
@@ -130,10 +131,12 @@ class Foldseek:
                 tmscore_df = tmscore_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}.tm', sep='\t'))
 
             tmscore_df = tmscore_df.sort_values(by='evalue', ascending=False)
+            tmscore_df.reset_index(inplace=True, drop=True)
             tmscore_df.to_csv(f"{outdir}/tmscore.m8", sep='\t')
 
         result_df = result_df.append(evalue_df)
         result_df = result_df.append(tmscore_df)
+        result_df.reset_index(inplace=True, drop=True)
         result_df.to_csv(f"{outdir}/result.m8", sep='\t')
 
         return {'local_alignment': evalue_df,

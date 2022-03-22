@@ -146,6 +146,8 @@ class Monomer_iterative_generation_pipeline:
                 print(msg)
                 continue
             keep_indices += [i]
+            if len(keep_indices) > self.max_template_count:
+                break
 
         if len(keep_indices) == 0:
             return False
@@ -175,9 +177,12 @@ class Monomer_iterative_generation_pipeline:
         if len(templates) == 0:
             templates = template_result['global_alignment']
 
+        print(templates)
         for i in range(len(templates)):
+            print(i)
             target = templates.loc[i, 'target']
             qaln = templates.loc[i, 'qaln']
+            print(templates.loc[i, 'qstart'])
             qstart = int(templates.loc[i, 'qstart'])
             qend = int(templates.loc[i, 'qend'])
             taln = templates.loc[i, 'taln']
