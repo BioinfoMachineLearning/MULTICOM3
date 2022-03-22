@@ -32,12 +32,12 @@ class Quaternary_structure_evaluation_pipeline:
         for method in os.listdir(model_dir):
             for i in range(0, 5):
                 os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
-                os.system(f"cp {model_dir}/{method}/result_model_{i + 1}_multimer.pkl {pkldir}/{method}_{i}.pkl")
+                #os.system(f"cp {model_dir}/{method}/result_model_{i + 1}_multimer.pkl {pkldir}/{method}_{i}.pkl")
 
-        if not os.path.exists(output_dir + '/pairwise_ranking.csv'):
-            pairwise_ranking = self.pairwise_qa.run(pdbdir)
-            pairwise_ranking.to_csv(output_dir + '/pairwise_ranking.csv')
+        #if not os.path.exists(output_dir + '/pairwise_ranking.csv'):
+        #    pairwise_ranking = self.pairwise_qa.run(pdbdir)
+        #    pairwise_ranking.to_csv(output_dir + '/pairwise_ranking.csv')
 
-        if not os.path.exists(output_dir + '/alphafold_ranking.csv'):
-            alphafold_ranking = self.alphafold_qa.run(pkldir)
-            alphafold_ranking.to_csv(output_dir + '/alphafold_ranking.csv')
+        #if not os.path.exists(output_dir + '/alphafold_ranking.csv'):
+        #    alphafold_ranking = self.alphafold_qa.run(pkldir)
+        #    alphafold_ranking.to_csv(output_dir + '/alphafold_ranking.csv')

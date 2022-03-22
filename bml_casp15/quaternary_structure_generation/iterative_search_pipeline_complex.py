@@ -13,9 +13,73 @@ from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_h
 from bml_casp15.complex_templates_search.parsers import TemplateHit
 from bml_casp15.tertiary_structure_generation.iterative_search_pipeline import build_alignment_indices, PrefilterError
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline import *
+import itertools
 
 
-class Multimer_iterative_generation_pipeline_v2:
+def reindex_pdb(inpdb):
+    resCounter = 0
+    atomCounter = 0
+    prevrNum = "XX"
+    prevchain = "XX"
+    contents = []
+    chain_sep = {}
+    for line in open(inpdb):
+        if not line.startswith('ATOM'):
+            continue
+        rnum = line[22:27]
+        chain = line[21:22]
+        if prevchain != chain:
+            prevchain = chain
+            prevrNum = rnum
+            resCounter += 1
+            chain_sep[chain] = resCounter
+        elif prevrNum != rnum:
+            prevrNum = rnum
+            resCounter += 1
+        atomCounter += 1
+        rnum_string = "{:>4}".format(resCounter)
+        anum_string = "{:>5}".format(atomCounter)
+        row = f"{line[:6]}{anum_string}{line[11:21]} {rnum_string}{line[27:]}"
+        contents += [row]
+    with open(inpdb, 'w') as fw:
+        fw.writelines("".join(contents))
+
+
+def combine_pdbs_to_single_chain(inpdbs, outpdb):
+    with open(outpdb, 'w') as fw:
+        for inpdb in inpdbs:
+            for line in open(inpdb):
+                fw.write(line[:21] + ' ' + line[22:])
+    reindex_pdb(outpdb)
+
+class complex_template:
+    def __init__(self, monomer_templates):
+        self.monomer_templates = monomer_templates
+
+class monomer_template:
+
+    def __init__(self,
+                 name,
+                 template,
+                 tstart,
+                 tend,
+                 qstart,
+                 qend,
+                 taln,
+                 qaln):
+
+        self.name = name
+        self.template = template
+        self.tstart = tstart
+        self.tend = tend
+        self.qstart = qstart
+        self.qend = qend
+        self.qaln = qaln
+        self.taln = taln
+
+
+
+class Multimer_iterative_generation_pipeline_complex:
 
     def __init__(self, params, max_template_count=50):
 
@@ -27,32 +91,138 @@ class Multimer_iterative_generation_pipeline_v2:
 
     def concatenate_msa_and_templates(self,
                                       chain_id_map,
-                                      template_files,
+                                      pair_template_files,
+                                      pair_work_dirs,
                                       start_msa_path,
                                       outpath,
                                       template_path,
                                       iteration,
                                       rank_templates_by_monomers=False):
 
-        prev_df = None
-        for i, chain_id in enumerate(chain_id_map):
-            templates = pd.read_csv(template_files[i], sep='\t')
-            curr_df = create_template_df(templates)
-            if prev_df is None:
-                prev_df = curr_df
-            else:
-                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode', suffixes=(str(i), str(i + 1)))
+        # H0957A_H0957B, H0957B_H0957A
 
-        min_evalues = []
-        for i in range(len(prev_df)):
-            evalues = []
-            for j, chainid in enumerate(chain_id_map):
-                evalue = float(prev_df.loc[i, f'evalue{j + 1}'])
-                evalues += [evalue]
-            min_evalues += [np.min(np.array(evalues))]
-        prev_df['min_evalue'] = min_evalues
-        prev_df = prev_df.sort_values(by=['min_evalue'])
-        # prev_df.reset_index(inplace=True, drop=True)
+        complex_templates_reorder = []
+
+        for pair in pair_template_files:
+            templates = pd.read_csv(pair_template_files[pair], sep='\t')
+
+            seq_len_dict = {}
+            for chain_id in chain_id_map:
+                seq_len_dict[chain_id_map[chain_id].description] = len(chain_id_map[chain_id].sequence)
+
+            print(seq_len_dict)
+            # A_B_C, A=60, B=60, C=120
+            order = pair.split('_')
+            sep_indices = []
+            # start=1, end=60
+            # start=61, end=60+60=120
+            # start=121, end=240
+            chain_tempate_dicts = {}
+            for i, member in enumerate(order):
+                if len(sep_indices) == 0:
+                    sep_indices += [dict(start=1,
+                                         end=seq_len_dict[member])]
+                else:
+                    sep_indices += [dict(start=sep_indices[i-1]['end']+1,
+                                         end=sep_indices[i-1]['end']+seq_len_dict[member])]
+                chain_tempate_dicts[member] = []
+
+            # sep_indices = [60, 120]
+            # print(sep_indices)
+            for i in range(len(templates)):
+                template = templates.loc[i, 'target']
+                qaln = templates.loc[i, 'qaln']
+                qstart = int(templates.loc[i, 'qstart'])
+                qend = int(templates.loc[i, 'qend'])
+                taln = templates.loc[i, 'taln']
+                tstart = templates.loc[i, 'tstart']
+                tend = templates.loc[i, 'tend']
+                evalue = float(templates.loc[i, 'evalue'])
+                aligned_length = int(templates.loc[i, 'alnlen'])
+
+                # check whether the query sequence contains all the chains
+                contain_all_chains = qstart < sep_indices[0]['end'] and qend > sep_indices[len(sep_indices)-1]['start']
+                if not contain_all_chains:
+                    continue
+
+                # cut query alignment based on seperate indices
+                res_counter = qstart-1
+                chain_qalns = []
+                chain_qaln = []
+                sep_index = 0
+                for char in qaln:
+                    if char != '-':
+                        res_counter += 1
+                    if res_counter > sep_indices[sep_index]['end']:
+                        sep_index += 1
+                        chain_qalns += [''.join(chain_qaln)]
+                        chain_qaln = []
+                    chain_qaln += [char]
+                chain_qalns += [''.join(chain_qaln)]
+
+                if len(chain_qalns) != len(order):
+                    raise Exception(f"The length of seperated query alignments and members in order doesn't match: {len(chain_qalns)} and {len(order)}")
+
+                # print(chain_qalns)
+
+                # qstart = 2, qend = 110
+                # qstart = 2, qend = 60
+                # qstart = 61, qend = 110 -> qstart = 1, qend = 50
+                curr_chain_qstart = qstart
+                curr_chain_tstart = tstart
+                taln_counter = 0
+                for j, member in enumerate(order):
+                    chain_qaln = chain_qalns[j]
+                    chain_qstart = curr_chain_qstart
+                    chain_qend = curr_chain_qstart + len([char for char in chain_qaln if char != '-']) - 1
+
+                    chain_taln = taln[taln_counter:taln_counter+len(chain_qaln)]
+                    chain_tstart = curr_chain_tstart
+                    chain_tend = curr_chain_tstart + len([char for char in chain_taln if char != '-']) - 1
+
+                    chain_evalue = evalue
+                    chain_aligned_length = len(chain_qaln)
+
+                    curr_chain_qstart = chain_qend + 1 - seq_len_dict[member]
+                    curr_chain_tstart = chain_tend + 1
+                    taln_counter += len(chain_qaln)
+
+                    row_dict = dict(merge_id=i,
+                                    template=template.replace('.atom', '') + 'X',
+                                    aln_temp=chain_taln,
+                                    tstart=chain_tstart,
+                                    tend=chain_tend,
+                                    aln_query=chain_qaln,
+                                    qstart=chain_qstart,
+                                    qend=chain_qend,
+                                    evalue=chain_evalue,
+                                    aligned_length=chain_aligned_length)
+
+                    chain_tempate_dicts[member] += [row_dict]
+
+            prev_df_reorder = None
+            for chaind_index, chain_id in enumerate(chain_id_map):
+                member_work_dir = pair_work_dirs[pair] + '/' + chain_id_map[chain_id].description
+                makedir_if_not_exists(member_work_dir)
+                curr_df_reorder = pd.DataFrame(chain_tempate_dicts[chain_id_map[chain_id].description])
+                curr_df_reorder.to_csv(member_work_dir + '/structure_templates.csv')
+                if prev_df_reorder is None:
+                    prev_df_reorder = curr_df_reorder
+                else:
+                    prev_df_reorder = prev_df_reorder.merge(curr_df_reorder, how="inner", on='merge_id', suffixes=(str(chaind_index), str(chaind_index + 1)))
+
+            prev_df_reorder.to_csv(pair_work_dirs[pair] + '/structure_templates_reorder.csv')
+
+            complex_templates_reorder += [pair_work_dirs[pair] + '/structure_templates_reorder.csv']
+
+        complex_df = None
+        for complex_template_reorder in complex_templates_reorder:
+            if complex_df is None:
+                complex_df = pd.read_csv(complex_template_reorder)
+            else:
+                complex_df = complex_df.append(pd.read_csv(complex_template_reorder))
+        complex_df.sort_values(by=['evalue1'])
+        complex_df.reset_index(inplace=True, drop=True)
 
         keep_indices = []
         chain_template_msas = {}
@@ -60,83 +230,30 @@ class Multimer_iterative_generation_pipeline_v2:
             chain_template_msas[chain_id] = {'desc': [chain_id_map[chain_id].description],
                                              'seq': [chain_id_map[chain_id].sequence]}
 
-        print(prev_df)
-
         seen_complex_seq = []
         seen_complex_seq += ["".join([chain_template_msas[chain_id]['seq'][0] for chain_id in chain_template_msas])]
-        for i in range(len(prev_df)):
+        for i in range(len(complex_df)):
 
             if len(keep_indices) >= self.max_template_count:
                 break
 
-            template_infos = []
-            for j, chainid in enumerate(chain_id_map):
-                template = prev_df.loc[i, f'template{j + 1}']
-                qaln = prev_df.loc[i, f'aln_query{j + 1}']
-                qstart = int(prev_df.loc[i, f'qstart{j + 1}'])
-                qend = int(prev_df.loc[i, f'qend{j + 1}'])
-                taln = prev_df.loc[i, f'aln_temp{j + 1}']
-                tstart = prev_df.loc[i, f'tstart{j + 1}']
-                tend = prev_df.loc[i, f'tend{j + 1}']
-                evalue = float(prev_df.loc[i, f'evalue{j + 1}'])
-                aligned_length = int(prev_df.loc[i, f'aligned_length{j + 1}'])
-                row_dict = dict(original_sequence=chain_id_map[chainid].sequence,
-                                chainid=chainid,
-                                template=template,
-                                tpdbcode=template[0:4],
-                                aln_temp=taln,
-                                tstart=tstart,
-                                tend=tend,
-                                aln_query=qaln,
-                                qstart=qstart,
-                                qend=qend,
-                                evalue=evalue,
-                                aligned_length=aligned_length)
-                template_infos += [row_dict]
-
-            pass_all = True
-            for template_info in template_infos:
-                hit = TemplateHit(index=i,
-                                  name=template_info['template'],
-                                  aligned_cols=template_info['aligned_length'],
-                                  query=template_info['aln_query'],
-                                  hit_sequence=template_info['aln_temp'],
-                                  indices_query=build_alignment_indices(template_info['aln_query'],
-                                                                        template_info['qstart']),
-                                  indices_hit=build_alignment_indices(template_info['aln_temp'],
-                                                                      template_info['tstart']),
-                                  sum_probs=0.0)
-                try:
-                    assess_hhsearch_hit(hit=hit, query_sequence=template_info['original_sequence'])
-                except PrefilterError as e:
-                    msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                    print(msg)
-                    pass_all = False
-                    break
-
-            if not pass_all:
-                continue
-
-            if not assess_complex_templates_diff(chain_id_map, template_infos, template_path):
-                continue
-
             monomer_template_seqs = {}
-            for j, chainid in enumerate(chain_id_map):
-                query_non_gaps = [res != '-' for res in prev_df.loc[i, f'aln_query{j + 1}']]
-                out_sequence = ''.join(convert_taln_seq_to_a3m(query_non_gaps, prev_df.loc[i, f'aln_temp{j + 1}']))
-                aln_full = ['-'] * len(chain_id_map[chainid].sequence)
-                qstart = int(prev_df.loc[i, f'qstart{j + 1}'])
-                qend = int(prev_df.loc[i, f'qend{j + 1}'])
+            for j, chain_id in enumerate(chain_id_map):
+                query_non_gaps = [res != '-' for res in complex_df.loc[i, f'aln_query{j + 1}']]
+                out_sequence = ''.join(convert_taln_seq_to_a3m(query_non_gaps, complex_df.loc[i, f'aln_temp{j + 1}']))
+                aln_full = ['-'] * len(chain_id_map[chain_id].sequence)
+                qstart = int(complex_df.loc[i, f'qstart{j + 1}'])
+                qend = int(complex_df.loc[i, f'qend{j + 1}'])
                 aln_full[qstart - 1:qend] = out_sequence
                 taln_full_seq = ''.join(aln_full)
-                monomer_template_dict = {'desc': prev_df.loc[i, f'template{j + 1}'], 'seq': taln_full_seq}
-                monomer_template_seqs[chainid] = monomer_template_dict
+                monomer_template_dict = {'desc': complex_df.loc[i, f'template{j + 1}'], 'seq': taln_full_seq}
+                monomer_template_seqs[chain_id] = monomer_template_dict
 
-            complex_template_seq = "".join([monomer_template_seqs[chainid]['seq'] for chainid in monomer_template_seqs])
+            complex_template_seq = "".join([monomer_template_seqs[chain_id]['seq'] for chain_id in monomer_template_seqs])
             if complex_template_seq not in seen_complex_seq:
-                for chainid in monomer_template_seqs:
-                    chain_template_msas[chainid]['desc'] += [monomer_template_seqs[chainid]['desc']]
-                    chain_template_msas[chainid]['seq'] += [monomer_template_seqs[chainid]['seq']]
+                for chain_id in monomer_template_seqs:
+                    chain_template_msas[chain_id]['desc'] += [monomer_template_seqs[chain_id]['desc']]
+                    chain_template_msas[chain_id]['seq'] += [monomer_template_seqs[chain_id]['seq']]
                 seen_complex_seq += [complex_template_seq]
                 keep_indices += [i]
 
@@ -167,110 +284,7 @@ class Multimer_iterative_generation_pipeline_v2:
         interact_df = pd.DataFrame(interact_dict)
         interact_csv = outpath + f'/interaction.iteration{iteration}.csv'
         interact_df.to_csv(interact_csv)
-
-        top_template_files = []
-        for template_file, chainid in zip(template_files, chain_id_map):
-            templates = pd.read_csv(template_file, sep='\t')
-            monomer_keep_indices = []
-            for i in range(len(templates)):
-                hit = TemplateHit(index=i,
-                                  name=templates.loc[i, 'target'].split('.')[0],
-                                  aligned_cols=int(templates.loc[i, 'alnlen']),
-                                  query=templates.loc[i, 'qaln'],
-                                  hit_sequence=templates.loc[i, 'taln'],
-                                  indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
-                                                                        templates.loc[i, 'qstart']),
-                                  indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
-                                                                      templates.loc[i, 'tstart']),
-                                  sum_probs=0.0)
-                try:
-                    assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chainid].sequence)
-                except PrefilterError as e:
-                    msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                    print(msg)
-                    continue
-                monomer_keep_indices += [i]
-            templates_sorted = copy.deepcopy(templates.iloc[monomer_keep_indices])
-            templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
-            templates_sorted.reset_index(inplace=True, drop=True)
-            templates_sorted.to_csv(template_file + f'.top{self.max_template_count}', sep='\t')
-            top_template_files += [template_file + f'.top{self.max_template_count}']
-
-        if rank_templates_by_monomers or len(keep_indices) == 0:
-            return top_template_files, out_msas, interact_csv
-
-        # rank templates by complex but template count is smaller than max_template_count
-        if len(keep_indices) < self.max_template_count:
-            print(prev_df)
-            print(keep_indices)
-            new_prev_df = None
-            for j, chainid in enumerate(chain_id_map):
-                seen_templates = []
-                row_list = []
-                template_count = 0
-                for i in keep_indices:
-                    template = prev_df.loc[i, f'template{j + 1}']
-                    qaln = prev_df.loc[i, f'aln_query{j + 1}']
-                    qstart = int(prev_df.loc[i, f'qstart{j + 1}'])
-                    qend = int(prev_df.loc[i, f'qend{j + 1}'])
-                    taln = prev_df.loc[i, f'aln_temp{j + 1}']
-                    tstart = prev_df.loc[i, f'tstart{j + 1}']
-                    tend = prev_df.loc[i, f'tend{j + 1}']
-                    evalue = float(prev_df.loc[i, f'evalue{j + 1}'])
-                    aligned_length = int(prev_df.loc[i, f'aligned_length{j + 1}'])
-                    row_dict = dict(chainid=chainid,
-                                    template=template,
-                                    tpdbcode=str(template_count),
-                                    aln_temp=taln,
-                                    tstart=tstart,
-                                    tend=tend,
-                                    aln_query=qaln,
-                                    qstart=qstart,
-                                    qend=qend,
-                                    evalue=evalue,
-                                    aligned_length=aligned_length)
-                    seen_templates += [f"{template}_{taln}_{tstart}_{tend}"]
-                    row_list += [row_dict]
-                    template_count += 1
-
-                templates = pd.read_csv(top_template_files[j], sep='\t')
-                for i in range(len(templates)):
-                    if len(row_list) > self.max_template_count:
-                        break
-                    template = templates.loc[i, 'target']
-                    qaln = templates.loc[i, 'qaln']
-                    qstart = int(templates.loc[i, 'qstart'])
-                    qend = int(templates.loc[i, 'qend'])
-                    taln = templates.loc[i, 'taln']
-                    tstart = templates.loc[i, 'tstart']
-                    tend = templates.loc[i, 'tend']
-                    evalue = float(templates.loc[i, 'evalue'])
-                    aligned_length = int(templates.loc[i, 'alnlen'])
-                    if f"{template}_{taln}_{tstart}_{tend}" not in seen_templates:
-                        row_dict = dict(chainid=chainid,
-                                        template=template,
-                                        tpdbcode=str(template_count),
-                                        aln_temp=taln,
-                                        tstart=tstart,
-                                        tend=tend,
-                                        aln_query=qaln,
-                                        qstart=qstart,
-                                        qend=qend,
-                                        evalue=evalue,
-                                        aligned_length=aligned_length)
-                        row_list += [row_dict]
-                        template_count += 1
-
-                new_curr_df = pd.DataFrame(row_list)
-                if new_prev_df is None:
-                    new_prev_df = new_curr_df
-                else:
-                    new_prev_df = new_prev_df.merge(new_curr_df, how="inner", on='tpdbcode',
-                                                    suffixes=(str(j), str(j + 1)))
-
-            new_prev_df.to_csv(outpath + '/complex_templates.csv')
-        else:
-            prev_df.iloc[keep_indices].to_csv(outpath + '/complex_templates.csv')
+        complex_df.iloc[keep_indices].to_csv(outpath + '/complex_templates.csv')
         return [outpath + '/complex_templates.csv'], out_msas, interact_csv
 
     def copy_atoms_and_unzip(self, template_csv, outdir):
@@ -278,11 +292,8 @@ class Multimer_iterative_generation_pipeline_v2:
         templates = pd.read_csv(template_csv, sep='\t')
         for i in range(len(templates)):
             template_pdb = templates.loc[i, 'target']
-            if template_pdb.find('.pdb.gz') > 0:
-                os.system(f"cp {self.params['foldseek_af_database_dir']}/{template_pdb} {outdir}")
-            else:
-                os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb} {outdir}")
-            os.system(f"gunzip -f {template_pdb}")
+            pdbcode = template_pdb[:4]
+            os.system(f"cp {self.params['foldseek_complex_comb_database_dir']}/{template_pdb} {outdir}/{pdbcode}X.atom")
 
     def search(self, fasta_file, input_pdb_dir, outdir, native_pdb_dir=""):
 
@@ -368,9 +379,9 @@ class Multimer_iterative_generation_pipeline_v2:
                     os.system(f"rm -rf {start_msa_path}")
                 makedir_if_not_exists(start_msa_path)
 
-                for chainid in chain_id_map:
-                    os.system(f"cp {current_ref_dir}/msas/{chain_id_map[chainid].description}.paired.a3m "
-                              f"{start_msa_path}/{chain_id_map[chainid].description}.start.a3m")
+                for chain_id in chain_id_map:
+                    os.system(f"cp {current_ref_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m "
+                              f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m")
 
                 ranking_json = json.loads(open(start_ranking_json_file).read())
 
@@ -394,50 +405,55 @@ class Multimer_iterative_generation_pipeline_v2:
 
                 if not complete_result(out_model_dir):
 
+                    # B, C
                     chain_pdbs = split_pdb(start_pdb, current_work_dir)
 
-                    template_files = []
+                    # (B, C) or (C, B)
+                    combination_pairs = itertools.permutations([chain_id for chain_id in chain_id_map],
+                                                               len(chain_id_map))
 
                     out_template_dir = current_work_dir + '/templates'
                     makedir_if_not_exists(out_template_dir)
 
-                    start_monomer_pdb_paths = []
-                    for chain_id in chain_pdbs:
+                    pair_template_files = {}
+                    pair_work_dirs = {}
+                    for combination_pair in combination_pairs:
 
-                        if chain_id not in chain_id_map:
-                            raise Exception("Multimer fasta file and model doesn't match!")
+                        pair_fullname = '_'.join([chain_id_map[member].description for member in combination_pair])
 
-                        monomer_work_dir = current_work_dir + '/' + chain_id_map[chain_id].description
-                        makedir_if_not_exists(monomer_work_dir)
-                        os.system(
-                            f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
-                        os.system(
-                            f"cp {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb {monomer_work_dir}/ranked_0.pdb")
-                        start_monomer_pdb_paths += [monomer_work_dir]
+                        comb_res_dir = current_work_dir + '/' + pair_fullname
+                        makedir_if_not_exists(comb_res_dir)
+
+                        combine_start_pdb = pair_fullname + '.pdb'
+
+                        combine_pdbs_to_single_chain([chain_pdbs[chain_id] for chain_id in combination_pair],
+                                                     comb_res_dir + '/' + combine_start_pdb)
 
                         foldseek_res = search_templates_foldseek(
                             foldseek_program=self.params['foldseek_program'],
-                            databases=[self.params['foldseek_pdb_database']],
-                            inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
-                            outdir=monomer_work_dir + '/foldseek')
+                            databases=[self.params['foldseek_complex_comb_database']],
+                            inpdb=comb_res_dir + '/' + combine_start_pdb,
+                            outdir=comb_res_dir + '/foldseek')
 
                         if not check_and_rank_templates(foldseek_res,
-                                                        f"{monomer_work_dir}/structure_templates.csv"):
+                                                        f"{comb_res_dir}/structure_templates.csv"):
                             print(
                                 f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
                             break
 
-                        template_files += [f"{monomer_work_dir}/structure_templates.csv"]
+                        pair_template_files[pair_fullname] = comb_res_dir + '/structure_templates.csv'
+                        pair_work_dirs[pair_fullname] = comb_res_dir
 
-                        self.copy_atoms_and_unzip(template_csv=f"{monomer_work_dir}/structure_templates.csv",
+                        self.copy_atoms_and_unzip(template_csv=f"{comb_res_dir}/structure_templates.csv",
                                                   outdir=out_template_dir)
 
-                    if len(template_files) != len(chain_id_map):
-                        break
+                    # if len(pair_template_files) != len(combination_pairs):
+                    #     break
 
                     template_files, msa_files, msa_pair_file = self.concatenate_msa_and_templates(
                         chain_id_map=chain_id_map,
-                        template_files=template_files,
+                        pair_template_files=pair_template_files,
+                        pair_work_dirs=pair_work_dirs,
                         start_msa_path=start_msa_path,
                         template_path=out_template_dir,
                         outpath=current_work_dir,
@@ -454,8 +470,6 @@ class Multimer_iterative_generation_pipeline_v2:
                               f"--msa_pair_file {msa_pair_file} " \
                               f"--temp_struct_csv {template_files[0]} " \
                               f"--struct_atom_dir {out_template_dir} " \
-                              f"--monomer_model_paths {','.join(start_monomer_pdb_paths)} " \
-                              f"--monomer_model_count 1 " \
                               f"--output_dir {out_model_dir}"
                     else:
                         cmd = f"python run_alphafold_multimer_custom_sim.py " \
@@ -466,8 +480,6 @@ class Multimer_iterative_generation_pipeline_v2:
                               f"--msa_pair_file {msa_pair_file} " \
                               f"--monomer_temp_csvs {','.join(template_files)} " \
                               f"--struct_atom_dir {out_template_dir} " \
-                              f"--monomer_model_paths {','.join(start_monomer_pdb_paths)} " \
-                              f"--monomer_model_count 1 " \
                               f"--output_dir {out_model_dir}"
 
                     try:

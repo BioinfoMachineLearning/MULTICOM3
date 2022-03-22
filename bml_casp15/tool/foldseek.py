@@ -57,50 +57,32 @@ class Foldseek:
                 logging.error('Could not find HHsearch database %s', database_path)
                 raise ValueError(f'Could not find HHsearch database {database_path}')
 
-    def query(self, pdb: str, outdir: str, progressive_threshold = 20, progressive=False) -> str:
+    def query(self, pdb: str, outdir: str, tmscore_threshold=0.4, first='evalue') -> str:
         """Queries the database using HHsearch using a given a3m."""
         input_path = os.path.join(outdir, 'query.pdb')
         os.system(f"cp {pdb} {input_path}")
 
-        csvs = []
-        result_df = pd.DataFrame(columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
+        result_df = pd.DataFrame(
+            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
+        evalue_df = pd.DataFrame(
+            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
+        tmscore_df = pd.DataFrame(
+            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
         for database in self.databases:
             database_name = pathlib.Path(database).stem
-            cmd = [self.binary_path,
-                   'easy-search',
-                   input_path,
-                   database,
-                   f'{outdir}/aln.m8_{database_name}',
-                   outdir + '/tmp',
-                   '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
-                   '--format-mode', '4']
-            logging.info('Launching subprocess "%s"', ' '.join(cmd))
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            with utils.timing('Foldseek query'):
-                stdout, stderr = process.communicate()
-                retcode = process.wait()
-            if retcode:
-                # Stderr is truncated to prevent proto size errors in Beam.
-                raise RuntimeError(
-                    'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
-                        stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-            csvs += [f'{outdir}/aln.m8_{database_name}']
-
-
-        # search the database using tmalign mode
-        if len(result_df) < progressive_threshold and progressive:
-            for database in self.databases:
-                database_name = pathlib.Path(database).stem
+            if not os.path.exists(f'{outdir}/aln.m8_{database_name}'):
                 cmd = [self.binary_path,
                        'easy-search',
                        input_path,
                        database,
-                       f'{outdir}/aln.m8_{database_name}.tm',
+                       f'{outdir}/aln.m8_{database_name}',
                        outdir + '/tmp',
                        '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                        '--format-mode', '4',
-                       '--alignment-type', '1',
-                       '--tmscore-threshold', '0.3']
+                       '--max-seqs', '50000',
+                       '-e', '0.001',
+                       '-c', '0.5',
+                       '--cov-mode', '2']
                 logging.info('Launching subprocess "%s"', ' '.join(cmd))
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 with utils.timing('Foldseek query'):
@@ -111,11 +93,50 @@ class Foldseek:
                     raise RuntimeError(
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-                csvs += [f'{outdir}/aln.m8_{database_name}.tm']
+            evalue_df = evalue_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
 
-        for csv in csvs:
-            result_df = result_df.append(pd.read_csv(csv, sep='\t'))
+        # search the database using tmalign mode
+        for database in self.databases:
+            if not os.path.exists(f'{outdir}/aln.m8_{database_name}.tm'):
+                database_name = pathlib.Path(database).stem
+                cmd = [self.binary_path,
+                       'easy-search',
+                       input_path,
+                       database,
+                       f'{outdir}/aln.m8_{database_name}.tm',
+                       outdir + '/tmp',
+                       '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
+                       '--format-mode', '4',
+                       '--alignment-type', '1',
+                       '--tmscore-threshold', str(tmscore_threshold),
+                       '--max-seqs', '50000',
+                       '-c', '0.5',
+                       '--cov-mode', '2']
+                logging.info('Launching subprocess "%s"', ' '.join(cmd))
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                with utils.timing('Foldseek query'):
+                    stdout, stderr = process.communicate()
+                    retcode = process.wait()
+                if retcode:
+                    # Stderr is truncated to prevent proto size errors in Beam.
+                    raise RuntimeError(
+                        'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
+                            stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
+            tmscore_df = tmscore_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}.tm', sep='\t'))
 
-        result_df = result_df.sort_values(by='evalue')
+        evalue_df = evalue_df.sort_values(by='evalue')
+        evalue_df.to_csv(f"{outdir}/evalue.m8", sep='\t')
+
+        tmscore_df = tmscore_df.sort_values(by='evalue', ascending=False)
+        tmscore_df.to_csv(f"{outdir}/tmscore.m8", sep='\t')
+
+        if first == 'evalue':
+            result_df = result_df.append(evalue_df)
+            result_df = result_df.append(tmscore_df)
+        else:
+            result_df = result_df.append(tmscore_df)
+            result_df = result_df.append(evalue_df)
         result_df.to_csv(f"{outdir}/result.m8", sep='\t')
-        return f"{outdir}/result.m8"
+        return {'evalue_csv': f"{outdir}/evalue.m8",
+                'tmscore_csv': f"{outdir}/tmscore.m8",
+                'result_csv': f"{outdir}/result.m8"}
