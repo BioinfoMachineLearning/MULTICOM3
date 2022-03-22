@@ -106,38 +106,18 @@ class Monomer_iterative_generation_pipeline:
 
     def check_and_rank_templates(self, template_result, outfile, query_sequence):
 
-        global_alignment = False
-
-        templates = template_result['local_alignment']
-        if len(templates) == 0:
-            templates = template_result['global_alignment']
-            global_alignment = True
-
-        sort_indices = []
-        for i in range(len(templates)):
-            target = templates.loc[i, 'target']
-            evalue = float(templates.loc[i, 'evalue'])
-            if target.find('.atom.gz') > 0:
-                if global_alignment and evalue >= 0.8:
-                    sort_indices += [i]
-                if not global_alignment and evalue < 1e-10:
-                    sort_indices += [i]
-        for i in range(len(templates)):
-            if i in sort_indices:
-                continue
-            sort_indices += [i]
-
-        keep_indices = []
-        for i in sort_indices:
+        evalue_templates = pd.read_csv(template_result['evalue_csv'], sep='\t')
+        evalue_keep_indices = []
+        for i in range(len(evalue_templates)):
             hit = TemplateHit(index=i,
-                              name=templates.loc[i, 'target'].split('.')[0],
-                              aligned_cols=int(templates.loc[i, 'alnlen']),
-                              query=templates.loc[i, 'qaln'],
-                              hit_sequence=templates.loc[i, 'taln'],
-                              indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
-                                                                    templates.loc[i, 'qstart']),
-                              indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
-                                                                  templates.loc[i, 'tstart']),
+                              name=evalue_templates.loc[i, 'target'].split('.')[0],
+                              aligned_cols=int(evalue_templates.loc[i, 'alnlen']),
+                              query=evalue_templates.loc[i, 'qaln'],
+                              hit_sequence=evalue_templates.loc[i, 'taln'],
+                              indices_query=build_alignment_indices(evalue_templates.loc[i, 'qaln'],
+                                                                    evalue_templates.loc[i, 'qstart']),
+                              indices_hit=build_alignment_indices(evalue_templates.loc[i, 'taln'],
+                                                                  evalue_templates.loc[i, 'tstart']),
                               sum_probs=0.0)
             try:
                 assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
@@ -145,12 +125,75 @@ class Monomer_iterative_generation_pipeline:
                 msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                 print(msg)
                 continue
-            keep_indices += [i]
+            evalue_keep_indices += [i]
 
-        if len(keep_indices) == 0:
+        tmscore_templates = pd.read_csv(template_result['tmscore_csv'], sep='\t')
+        tmscore_keep_indices = []
+        for i in range(len(tmscore_templates)):
+            hit = TemplateHit(index=i,
+                              name=tmscore_templates.loc[i, 'target'].split('.')[0],
+                              aligned_cols=int(tmscore_templates.loc[i, 'alnlen']),
+                              query=tmscore_templates.loc[i, 'qaln'],
+                              hit_sequence=tmscore_templates.loc[i, 'taln'],
+                              indices_query=build_alignment_indices(tmscore_templates.loc[i, 'qaln'],
+                                                                    tmscore_templates.loc[i, 'qstart']),
+                              indices_hit=build_alignment_indices(tmscore_templates.loc[i, 'taln'],
+                                                                  tmscore_templates.loc[i, 'tstart']),
+                              sum_probs=0.0)
+            try:
+                assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+            except PrefilterError as e:
+                msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                print(msg)
+                continue
+            tmscore_keep_indices += [i]
+
+        if len(evalue_keep_indices) == 0 and len(tmscore_keep_indices) == 0:
+            os.system(f"cp {template_result['result_csv']} {outfile}")
             return False
 
-        templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
+        evalue_thresholds = [1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4]
+
+        templates_sorted = pd.DataFrame(
+            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
+
+        evalue_af_indices = []
+        evalue_pdb_indices = []
+        tmscore_af_indices = []
+        tmscore_pdb_indices = []
+        for evalue_threshold, tmscore_threshold in zip(evalue_thresholds, tmscore_thresholds):
+            evalue_af_indices = []
+            evalue_pdb_indices = []
+            for i in evalue_keep_indices:
+                target = evalue_templates.loc[i, 'target']
+                evalue = float(evalue_templates.loc[i, 'evalue'])
+                if evalue < evalue_threshold:
+                    if target.find('.atom.gz') > 0:
+                        evalue_pdb_indices += [i]
+                    else:
+                        evalue_af_indices += [i]
+
+            tmscore_af_indices = []
+            tmscore_pdb_indices = []
+            for i in tmscore_keep_indices:
+                target = tmscore_templates.loc[i, 'target']
+                evalue = float(tmscore_templates.loc[i, 'evalue'])
+                if evalue > tmscore_threshold:
+                    if target.find('.atom.gz') > 0:
+                        tmscore_pdb_indices += [i]
+                    else:
+                        tmscore_af_indices += [i]
+
+            if len(evalue_af_indices) + len(evalue_pdb_indices) + len(tmscore_af_indices) + len(tmscore_pdb_indices) >= 4:
+                break
+
+        templates_sorted = copy.deepcopy(evalue_templates.iloc[evalue_pdb_indices])
+        templates_sorted = templates_sorted.append(copy.deepcopy(tmscore_templates.iloc[tmscore_pdb_indices]))
+        if len(templates_sorted) < 4:
+            templates_sorted = templates_sorted.append(copy.deepcopy(evalue_templates.iloc[evalue_af_indices]))
+            templates_sorted = templates_sorted.append(copy.deepcopy(tmscore_templates.iloc[tmscore_af_indices]))
+
         templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
         templates_sorted.reset_index(inplace=True, drop=True)
         templates_sorted.to_csv(outfile, sep='\t')
@@ -169,32 +212,35 @@ class Monomer_iterative_generation_pipeline:
         alignments = {targetname: seq}
         seen_seq = []
 
-        # Use local alignment if available
-        # Use global alignment if no local alignment found
-        templates = template_result['local_alignment']
-        if len(templates) == 0:
-            templates = template_result['global_alignment']
+        tmscore_threshold = 0.4
+        if len(pd.read_csv(template_result['evalue_csv'], sep='\t')) > 1000:
+            tmscore_threshold = 0.7
 
-        for i in range(len(templates)):
-            target = templates.loc[i, 'target']
-            qaln = templates.loc[i, 'qaln']
-            qstart = int(templates.loc[i, 'qstart'])
-            qend = int(templates.loc[i, 'qend'])
-            taln = templates.loc[i, 'taln']
-            # tstart = templates.loc[i, 'tstart']
-            # tend = templates.loc[i, 'tend']
-            # evalue = templates.loc[i, 'evalue']
+        for csv in ['evalue_csv', 'tmscore_csv']:
+            templates = pd.read_csv(template_result[csv], sep='\t')
+            for i in range(len(templates)):
+                target = templates.loc[i, 'target']
+                qaln = templates.loc[i, 'qaln']
+                qstart = int(templates.loc[i, 'qstart'])
+                qend = int(templates.loc[i, 'qend'])
+                taln = templates.loc[i, 'taln']
+                tstart = templates.loc[i, 'tstart']
+                tend = templates.loc[i, 'tend']
+                evalue = templates.loc[i, 'evalue']
 
-            query_non_gaps = [res != '-' for res in qaln]
-            out_sequence = ''.join(_convert_taln_seq_to_a3m(query_non_gaps, taln))
+                if csv == 'tmscore_csv' and evalue < tmscore_threshold:
+                    continue
 
-            aln_full = ['-'] * len(seq)
-            aln_full[qstart - 1:qend] = out_sequence
-            taln_full_seq = ''.join(aln_full)
-            if taln_full_seq in seen_seq:
-                continue
-            alignments[target] = taln_full_seq
-            seen_seq += [taln_full_seq]
+                query_non_gaps = [res != '-' for res in qaln]
+                out_sequence = ''.join(_convert_taln_seq_to_a3m(query_non_gaps, taln))
+
+                aln_full = ['-'] * len(seq)
+                aln_full[qstart - 1:qend] = out_sequence
+                taln_full_seq = ''.join(aln_full)
+                if taln_full_seq in seen_seq:
+                    continue
+                alignments[target] = taln_full_seq
+                seen_seq += [taln_full_seq]
 
         fasta_chunks = (f">{k}\n{alignments[k]}" for k in alignments)
 
@@ -303,7 +349,7 @@ class Monomer_iterative_generation_pipeline:
 
                     foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
 
-                    if len(foldseek_res['all_alignment']) == 0:
+                    if len(pd.read_csv(foldseek_res['result_csv'], sep='\t')) == 0:
                         print(f"Cannot find any templates in iteration {num_iteration + 1}")
                         break
 

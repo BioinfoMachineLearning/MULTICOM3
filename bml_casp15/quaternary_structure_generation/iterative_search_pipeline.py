@@ -282,11 +282,8 @@ def build_query_to_hit_index_mapping(
 
 def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
     makedir_if_not_exists(outdir)
-    # foldseek_program = self.params['foldseek_program']
-    # foldseek_pdb_database = self.params['foldseek_pdb_database']
-    # foldseek_af_database = self.params['foldseek_af_database']
     foldseek_runner = Foldseek(binary_path=foldseek_program, databases=databases)
-    return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive=True)
+    return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=1000, progressive=True)
 
 
 def check_and_rank_templates(template_file, outfile):
@@ -387,7 +384,7 @@ class Multimer_iterative_generation_pipeline:
 
     def concatenate_msa_and_templates(self,
                                       chain_id_map,
-                                      template_files,
+                                      template_results,
                                       start_msa_path,
                                       outpath,
                                       template_path,
@@ -396,7 +393,7 @@ class Multimer_iterative_generation_pipeline:
 
         prev_df = None
         for i, chain_id in enumerate(chain_id_map):
-            templates = pd.read_csv(template_files[i], sep='\t')
+            templates = pd.read_csv(template_results[i]['result_csv'], sep='\t')
             curr_df = create_template_df(templates)
             if prev_df is None:
                 prev_df = curr_df
@@ -424,10 +421,6 @@ class Multimer_iterative_generation_pipeline:
         seen_complex_seq = []
         seen_complex_seq += ["".join([chain_template_msas[chain_id]['seq'][0] for chain_id in chain_template_msas])]
         for i in range(len(prev_df)):
-
-            if len(keep_indices) >= self.max_template_count:
-                break
-
             template_infos = []
             for j, chainid in enumerate(chain_id_map):
                 template = prev_df.loc[i, f'template{j + 1}']
@@ -657,7 +650,7 @@ class Multimer_iterative_generation_pipeline:
 
                     chain_pdbs = split_pdb(start_pdb, current_work_dir)
 
-                    template_files = []
+                    template_results = []
 
                     out_template_dir = current_work_dir + '/templates'
                     makedir_if_not_exists(out_template_dir)
@@ -677,23 +670,24 @@ class Multimer_iterative_generation_pipeline:
                             inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
                             outdir=monomer_work_dir + '/foldseek')
 
-                        if not check_and_rank_templates(foldseek_res,
-                                                        f"{monomer_work_dir}/structure_templates.csv"):
+                        if len(pd.read_csv(foldseek_res['result_csv'], sep='\t')) == 0:
                             print(
                                 f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
                             break
 
-                        template_files += [f"{monomer_work_dir}/structure_templates.csv"]
+                        # os.system(f"cp {foldseek_res} {monomer_work_dir}/structure_templates.csv")
 
-                        self.copy_atoms_and_unzip(template_csv=f"{monomer_work_dir}/structure_templates.csv",
+                        template_results += [foldseek_res]
+
+                        self.copy_atoms_and_unzip(template_csv=foldseek_res['result_csv'],
                                                   outdir=out_template_dir)
 
-                    if len(template_files) != len(chain_id_map):
+                    if len(template_results) != len(chain_id_map):
                         break
 
                     template_files, msa_files, msa_pair_file = self.concatenate_msa_and_templates(
                         chain_id_map=chain_id_map,
-                        template_files=template_files,
+                        template_results=template_results,
                         start_msa_path=start_msa_path,
                         template_path=out_template_dir,
                         outpath=current_work_dir,
