@@ -40,6 +40,8 @@ def main(argv):
         native_pdb = ""
         if FLAGS.atomdir is not None:
             native_pdb = FLAGS.atomdir + '/' + targetname + '.atom'
+            if not os.path.exists(native_pdb):
+                native_pdb = FLAGS.atomdir + '/' + targetname + '.pdb'
 
         monomer_res_all, monomer_res_avg, monomer_res_max = pipeline.search(fasta_path, inpdb_dir, output_dir + '/' + targetname, native_pdb)
 
