@@ -378,7 +378,7 @@ class Multimer_iterative_generation_pipeline:
 
         self.params = params
 
-        self.max_iteration = 5
+        self.max_iteration = 3
 
         self.max_template_count = max_template_count
 
