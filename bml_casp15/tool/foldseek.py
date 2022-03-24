@@ -57,7 +57,7 @@ class Foldseek:
                 logging.error('Could not find HHsearch database %s', database_path)
                 raise ValueError(f'Could not find HHsearch database {database_path}')
 
-    def query(self, pdb: str, outdir: str, progressive_threshold=1, tmscore_threshold=0.5) -> str:
+    def query(self, pdb: str, outdir: str, progressive_threshold=1, tmscore_threshold=0.3) -> str:
         """Queries the database using HHsearch using a given a3m."""
         input_path = os.path.join(outdir, 'query.pdb')
         os.system(f"cp {pdb} {input_path}")
