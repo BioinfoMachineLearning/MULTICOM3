@@ -96,6 +96,10 @@ foldseek_af_database = SOFTWARE_PATH/tools/foldseek/databases/af_db
 
 foldseek_af_database_dir = SOFTWARE_PATH/tools/foldseek/databases/af_pdbs
 
+foldseek_complex_comb_database = SOFTWARE_PATH/tools/foldseek/databases/complex_comb
+
+foldseek_complex_comb_database_dir = SOFTWARE_PATH/tools/foldseek/databases/complex_atom_comb
+
 ################################databases option#####################################
 
 smallbfd_database = SOFTWARE_PATH/databases/smallbfd/bfd-first_non_consensus_sequences.fasta

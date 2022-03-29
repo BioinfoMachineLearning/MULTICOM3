@@ -45,8 +45,12 @@ def extract_pkl(src_pkl, output_pkl, residue_start=-1, residue_end=-1):
         prediction_result = pickle.load(f)
         if residue_end != -1 and residue_start != -1:
             prediction_result_monomer = {'plddt': prediction_result['plddt'][residue_start:residue_end, ]}
+            distogram_monomer = prediction_result['distogram']
+            distogram_monomer['logits'] = distogram_monomer['logits'][residue_start:residue_end, residue_start:residue_end, :]
+            prediction_result_monomer['distogram'] = distogram_monomer
+
         else:
-            prediction_result_monomer = {'plddt': prediction_result['plddt']}
+            prediction_result_monomer = {'plddt': prediction_result['plddt'], 'distogram': prediction_result['distogram']}
         with open(output_pkl, 'wb') as f:
             pickle.dump(prediction_result_monomer, f, protocol=4)
 
@@ -81,7 +85,7 @@ class Tertiary_structure_evaluation_pipeline:
         for method in os.listdir(monomer_model_dir):
             for i in range(0, 5):
                 os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
-                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{i+1}.pkl",
+                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{i + 1}.pkl",
                             output_pkl=f"{pkldir}/{method}_{i}.pkl")
 
         for method in os.listdir(multimer_model_dir):
@@ -93,9 +97,9 @@ class Tertiary_structure_evaluation_pipeline:
                         chainid=chainid_in_multimer,
                         output_pdb=f"{pdbdir}/{method}_{i}.pdb")
                     extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_model_{i + 1}_multimer.pkl",
-                                        residue_start=residue_start,
-                                        residue_end=residue_end,
-                                        output_pkl=f"{pkldir}/{method}_{i}.pkl")
+                                residue_start=residue_start,
+                                residue_end=residue_end,
+                                output_pkl=f"{pkldir}/{method}_{i}.pkl")
                 # print(f"start: {residue_start}, end:{residue_end}")
 
         if "apollo" in self.run_methods and not os.path.exists(output_dir + '/pairwise_ranking.tm'):
@@ -110,7 +114,11 @@ class Tertiary_structure_evaluation_pipeline:
             alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
 
         if "enQA" in self.run_methods and not os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
-            enqa_ranking = self.enqa.run(input_dir=pdbdir,
-                                         alphafold_prediction_dir=f"{monomer_model_dir}/original",
-                                         outputdir=output_dir_abs+'/enqa')
+            # enqa_ranking = self.enqa.run(input_dir=pdbdir,
+            #                              alphafold_prediction_dir=f"{monomer_model_dir}/original",
+            #                              outputdir=output_dir_abs+'/enqa')
+            enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
+                                                               pkl_dir=pkldir,
+                                                               pairwise_ranking_file=output_dir + '/pairwise_ranking.tm',
+                                                               outputdir=output_dir_abs + '/enqa')
             enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')

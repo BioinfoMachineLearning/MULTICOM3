@@ -96,6 +96,10 @@ foldseek_af_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_d
 
 foldseek_af_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_pdbs
 
+foldseek_complex_comb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_comb
+
+foldseek_complex_comb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_atom_comb
+
 ################################databases option#####################################
 
 smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
@@ -126,8 +130,8 @@ uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
 uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
 
 # complex alignments concatenation method
-# concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance,string_interact
-concatenate_methods = string_interact
+concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance
+# concatenate_methods = string_interact
 
 ###########################UNIPROT TO PDB database option############################
 

@@ -703,11 +703,15 @@ class Multimer_iterative_generation_pipeline:
                         outpath=current_work_dir,
                         iteration=num_iteration + 1)
 
+                    find_templates = True
                     for chain_id, template_file in zip(chain_id_map, template_files):
                         if len(pd.read_csv(template_file, sep='\t')) == 0:
                             print(
                                 f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
-                            break
+                            find_templates = False
+
+                    if not find_templates:
+                        break
 
                     makedir_if_not_exists(out_model_dir)
 
