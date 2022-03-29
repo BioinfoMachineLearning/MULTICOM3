@@ -286,29 +286,6 @@ def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
     return foldseek_runner.query(pdb=inpdb, outdir=outdir)
 
 
-def check_and_rank_templates(template_file, outfile):
-    templates = pd.read_csv(template_file, sep='\t')
-    sort_indices = []
-    for i in range(len(templates)):
-        target = templates.loc[i, 'target']
-        evalue = float(templates.loc[i, 'evalue'])
-        if target.find('.atom.gz') > 0 and evalue < 1e-10:
-            sort_indices += [i]
-    for i in range(len(templates)):
-        if i in sort_indices:
-            continue
-        sort_indices += [i]
-    if len(sort_indices) == 0:
-        os.system(f"cp {template_file} {outfile}")
-        return False
-
-    templates_sorted = copy.deepcopy(templates.iloc[sort_indices])
-    templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
-    templates_sorted.reset_index(inplace=True, drop=True)
-    templates_sorted.to_csv(outfile, sep='\t')
-    return True
-
-
 def check_template_overlap_regions(template_info1, template_info2, chain_id_map, template_path):
     print(template_info1)
     chain1_id = template_info1['chainid']
@@ -378,9 +355,60 @@ class Multimer_iterative_generation_pipeline:
 
         self.params = params
 
-        self.max_iteration = 3
+        self.max_iteration = 5
 
         self.max_template_count = max_template_count
+
+    def check_and_rank_templates(self, template_result, outfile, query_sequence):
+
+        global_alignment = False
+
+        templates = template_result['local_alignment']
+        if len(templates) == 0:
+            templates = template_result['global_alignment']
+            global_alignment = True
+
+        sort_indices = []
+        for i in range(len(templates)):
+            target = templates.loc[i, 'target']
+            evalue = float(templates.loc[i, 'evalue'])
+            if target.find('.atom.gz') > 0:
+                if global_alignment and evalue >= 0.8:
+                    sort_indices += [i]
+                if not global_alignment and evalue < 1e-10:
+                    sort_indices += [i]
+        for i in range(len(templates)):
+            if i in sort_indices:
+                continue
+            sort_indices += [i]
+
+        keep_indices = []
+        for i in sort_indices:
+            hit = TemplateHit(index=i,
+                              name=templates.loc[i, 'target'].split('.')[0],
+                              aligned_cols=int(templates.loc[i, 'alnlen']),
+                              query=templates.loc[i, 'qaln'],
+                              hit_sequence=templates.loc[i, 'taln'],
+                              indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
+                                                                    templates.loc[i, 'qstart']),
+                              indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
+                                                                  templates.loc[i, 'tstart']),
+                              sum_probs=0.0)
+            try:
+                assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+            except PrefilterError as e:
+                msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                print(msg)
+                continue
+            keep_indices += [i]
+            if len(keep_indices) > self.max_template_count:
+                break
+
+        templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
+        templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
+        templates_sorted.reset_index(inplace=True, drop=True)
+        templates_sorted.to_csv(outfile, sep='\t')
+        return True
 
     def concatenate_msa_and_templates(self,
                                       chain_id_map,
@@ -447,7 +475,8 @@ class Multimer_iterative_generation_pipeline:
                 monomer_template_dict = {'desc': prev_df.loc[i, f'template{j + 1}'], 'seq': taln_full_seq}
                 monomer_template_seqs[chain_id] = monomer_template_dict
 
-            complex_template_seq = "".join([monomer_template_seqs[chain_id]['seq'] for chain_id in monomer_template_seqs])
+            complex_template_seq = "".join(
+                [monomer_template_seqs[chain_id]['seq'] for chain_id in monomer_template_seqs])
             if complex_template_seq not in seen_complex_seq:
                 for chain_id in monomer_template_seqs:
                     chain_template_msas[chain_id]['desc'] += [monomer_template_seqs[chain_id]['desc']]
@@ -485,53 +514,9 @@ class Multimer_iterative_generation_pipeline:
 
         top_template_files = []
         for template_result, chain_id in zip(template_results, chain_id_map):
-            global_alignment = False
-
-            templates = template_result['local_alignment']
-            if len(templates) == 0:
-                templates = template_result['global_alignment']
-                global_alignment = True
-
-            sort_indices = []
-            for i in range(len(templates)):
-                target = templates.loc[i, 'target']
-                evalue = float(templates.loc[i, 'evalue'])
-                if target.find('.atom.gz') > 0:
-                    if global_alignment and evalue >= 0.8:
-                        sort_indices += [i]
-                    if not global_alignment and evalue < 1e-10:
-                        sort_indices += [i]
-            for i in range(len(templates)):
-                if i in sort_indices:
-                    continue
-                sort_indices += [i]
-
-            keep_indices = []
-            for i in sort_indices:
-                hit = TemplateHit(index=i,
-                                  name=templates.loc[i, 'target'].split('.')[0],
-                                  aligned_cols=int(templates.loc[i, 'alnlen']),
-                                  query=templates.loc[i, 'qaln'],
-                                  hit_sequence=templates.loc[i, 'taln'],
-                                  indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
-                                                                        templates.loc[i, 'qstart']),
-                                  indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
-                                                                      templates.loc[i, 'tstart']),
-                                  sum_probs=0.0)
-                try:
-                    assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chain_id].sequence)
-                except PrefilterError as e:
-                    msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                    print(msg)
-                    continue
-                keep_indices += [i]
-                if len(keep_indices) > self.max_template_count:
-                    break
-
-            templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
-            templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
-            templates_sorted.reset_index(inplace=True, drop=True)
-            templates_sorted.to_csv(f"{outpath}/{chain_id_map[chain_id].description}.top{self.max_template_count}", sep='\t')
+            self.check_and_rank_templates(template_result=template_result,
+                                          outfile=f"{outpath}/{chain_id_map[chain_id].description}.top{self.max_template_count}",
+                                          query_sequence=chain_id_map[chain_id].sequence)
             top_template_files += [f"{outpath}/{chain_id_map[chain_id].description}.top{self.max_template_count}"]
         return top_template_files, out_msas, interact_csv
         #

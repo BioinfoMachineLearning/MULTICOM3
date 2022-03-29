@@ -405,8 +405,8 @@ class Multimer_iterative_generation_pipeline:
         if len(evalue_keep_indices) == 0 and len(tmscore_keep_indices) == 0:
             return False
 
-        evalue_thresholds = [1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
-        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4]
+        evalue_thresholds = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
 
         templates_sorted = pd.DataFrame(
             columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
@@ -732,6 +732,16 @@ class Multimer_iterative_generation_pipeline:
                         template_path=out_template_dir,
                         outpath=current_work_dir,
                         iteration=num_iteration + 1)
+
+                    find_templates = True
+                    for chain_id, template_file in zip(chain_id_map, template_files):
+                        if len(pd.read_csv(template_file, sep='\t')) == 0:
+                            print(
+                                f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                            find_templates = False
+
+                    if not find_templates:
+                        break
 
                     makedir_if_not_exists(out_model_dir)
 

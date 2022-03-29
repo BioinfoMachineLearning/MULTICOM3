@@ -149,8 +149,8 @@ class Monomer_iterative_generation_pipeline_v2:
         if len(evalue_keep_indices) == 0 and len(tmscore_keep_indices) == 0:
             return False
 
-        evalue_thresholds = [1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
-        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4]
+        evalue_thresholds = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
 
         templates_sorted = pd.DataFrame(
             columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
