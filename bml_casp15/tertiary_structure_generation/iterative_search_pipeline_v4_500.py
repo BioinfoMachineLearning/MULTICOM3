@@ -88,7 +88,7 @@ def build_alignment_indices(sequence, start_index):
 
 class Monomer_iterative_generation_pipeline:
 
-    def __init__(self, params, max_template_count=50):
+    def __init__(self, params, max_template_count=500):
 
         self.params = params
 
@@ -103,7 +103,7 @@ class Monomer_iterative_generation_pipeline:
         foldseek_af_database = self.params['foldseek_af_database']
         foldseek_runner = Foldseek(binary_path=foldseek_program,
                                    databases=[foldseek_pdb_database, foldseek_af_database])
-        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=300, maxseq=300)
+        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000)
 
     def check_and_rank_templates(self, template_result, outfile, query_sequence):
 
@@ -193,9 +193,9 @@ class Monomer_iterative_generation_pipeline:
         templates_sorted = templates_sorted.append(
             copy.deepcopy(template_result['global_alignment'].iloc[tmscore_pdb_indices]))
         templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['local_alignment'].iloc[evalue_af_indices]))
+                copy.deepcopy(template_result['local_alignment'].iloc[evalue_af_indices]))
         templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['global_alignment'].iloc[tmscore_af_indices]))
+                copy.deepcopy(template_result['global_alignment'].iloc[tmscore_af_indices]))
 
         templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
         templates_sorted.reset_index(inplace=True, drop=True)

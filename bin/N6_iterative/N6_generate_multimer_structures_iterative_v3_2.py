@@ -2,7 +2,7 @@ import os, sys, argparse, time
 from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import check_file, check_dir, makedir_if_not_exists, check_contents, read_option_file
-from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v1_1_monomer import *
+from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v3_2 import *
 from absl import flags
 from absl import app
 import pathlib

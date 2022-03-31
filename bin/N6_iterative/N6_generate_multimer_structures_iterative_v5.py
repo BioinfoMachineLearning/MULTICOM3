@@ -2,7 +2,7 @@ import os, sys, argparse, time
 from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import check_file, check_dir, makedir_if_not_exists, check_contents, read_option_file
-from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v1_1 import *
+from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v5 import *
 from absl import flags
 from absl import app
 import pathlib
@@ -25,7 +25,7 @@ def main(argv):
 
     makedir_if_not_exists(FLAGS.output_dir)
 
-    pipeline = Multimer_iterative_generation_pipeline(params)
+    pipeline = Multimer_iterative_generation_pipeline_v2(params)
 
     all_multimer_res_all = {'targetname': [], 'model': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
                             'end_tmscore': [], 'start_tmalign': [], 'end_tmalign': []}

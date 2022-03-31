@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.tertiary_structure_generation.iterative_search_pipeline import build_alignment_indices, PrefilterError
+from bml_casp15.tertiary_structure_generation.iterative_search_pipeline_v1 import build_alignment_indices, PrefilterError
 
 # need to add A if using relaxation in alphafold
 PDB_CHAIN_IDS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -361,18 +361,6 @@ def assess_complex_templates(chain_id_map, template_infos, template_path):
                                                       template_path):
                         return False
     return True
-
-
-def assess_complex_templates_diff(chain_id_map, template_infos, template_path):
-    template_names = []
-    same_template_infos = {}
-    for template_info in template_infos:
-        if template_info['template'] not in template_names:
-            template_names += [template_info['template']]
-            same_template_infos[template_info['template']] = [template_info]
-        else:
-            same_template_infos[template_info['template']] += [template_info]
-    return len(template_names) == len(chain_id_map)
 
 
 class Multimer_iterative_generation_pipeline:

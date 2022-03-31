@@ -46,7 +46,6 @@ def _complete_result(outputdir):
 
 
 def _cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
-
     cwd = os.getcwd()
 
     makedir_if_not_exists(tmpdir)
@@ -88,7 +87,7 @@ def build_alignment_indices(sequence, start_index):
 
 class Monomer_iterative_generation_pipeline:
 
-    def __init__(self, params, max_template_count=50):
+    def __init__(self, params, max_template_count=4):
 
         self.params = params
 
@@ -103,7 +102,7 @@ class Monomer_iterative_generation_pipeline:
         foldseek_af_database = self.params['foldseek_af_database']
         foldseek_runner = Foldseek(binary_path=foldseek_program,
                                    databases=[foldseek_pdb_database, foldseek_af_database])
-        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=300, maxseq=300)
+        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000)
 
     def check_and_rank_templates(self, template_result, outfile, query_sequence):
 
@@ -115,8 +114,7 @@ class Monomer_iterative_generation_pipeline:
                               query=template_result['local_alignment'].loc[i, 'qaln'],
                               hit_sequence=template_result['local_alignment'].loc[i, 'taln'],
                               indices_query=build_alignment_indices(template_result['local_alignment'].loc[i, 'qaln'],
-                                                                    template_result['local_alignment'].loc[
-                                                                        i, 'qstart']),
+                                                                    template_result['local_alignment'].loc[i, 'qstart']),
                               indices_hit=build_alignment_indices(template_result['local_alignment'].loc[i, 'taln'],
                                                                   template_result['local_alignment'].loc[i, 'tstart']),
                               sum_probs=0.0)
@@ -136,8 +134,7 @@ class Monomer_iterative_generation_pipeline:
                               query=template_result['global_alignment'].loc[i, 'qaln'],
                               hit_sequence=template_result['global_alignment'].loc[i, 'taln'],
                               indices_query=build_alignment_indices(template_result['global_alignment'].loc[i, 'qaln'],
-                                                                    template_result['global_alignment'].loc[
-                                                                        i, 'qstart']),
+                                                                    template_result['global_alignment'].loc[i, 'qstart']),
                               indices_hit=build_alignment_indices(template_result['global_alignment'].loc[i, 'taln'],
                                                                   template_result['global_alignment'].loc[i, 'tstart']),
                               sum_probs=0.0)
@@ -193,16 +190,16 @@ class Monomer_iterative_generation_pipeline:
         templates_sorted = templates_sorted.append(
             copy.deepcopy(template_result['global_alignment'].iloc[tmscore_pdb_indices]))
         templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['local_alignment'].iloc[evalue_af_indices]))
+                copy.deepcopy(template_result['local_alignment'].iloc[evalue_af_indices]))
         templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['global_alignment'].iloc[tmscore_af_indices]))
-
+                copy.deepcopy(template_result['global_alignment'].iloc[tmscore_af_indices]))
+        
         templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
         templates_sorted.reset_index(inplace=True, drop=True)
         templates_sorted.to_csv(outfile, sep='\t')
         return True
 
-    def generate_msa_from_templates(self, fasta_file, start_msa, template_file, outfile):
+    def generate_msa_from_templates(self, fasta_file, start_msa, template_result, outfile):
         targetname = None
         seq = None
         for line in open(fasta_file):
@@ -212,29 +209,38 @@ class Monomer_iterative_generation_pipeline:
             else:
                 seq = line
 
-        templates = pd.read_csv(template_file, sep='\t')
-
         alignments = {targetname: seq}
         seen_seq = []
-        for i in range(len(templates)):
-            target = templates.loc[i, 'target']
-            qaln = templates.loc[i, 'qaln']
-            qstart = int(templates.loc[i, 'qstart'])
-            qend = int(templates.loc[i, 'qend'])
-            taln = templates.loc[i, 'taln']
-            tstart = templates.loc[i, 'tstart']
-            tend = templates.loc[i, 'tend']
 
-            query_non_gaps = [res != '-' for res in qaln]
-            out_sequence = ''.join(_convert_taln_seq_to_a3m(query_non_gaps, taln))
+        tmscore_threshold = 0.4
+        if len(template_result['local_alignment']) > 1000:
+            tmscore_threshold = 0.7
 
-            aln_full = ['-'] * len(seq)
-            aln_full[qstart - 1:qend] = out_sequence
-            taln_full_seq = ''.join(aln_full)
-            if taln_full_seq in seen_seq:
-                continue
-            alignments[target] = taln_full_seq
-            seen_seq += [taln_full_seq]
+        for csv in ['local_alignment', 'global_alignment']:
+            templates = template_result[csv]
+            for i in range(len(templates)):
+                target = templates.loc[i, 'target']
+                qaln = templates.loc[i, 'qaln']
+                qstart = int(templates.loc[i, 'qstart'])
+                qend = int(templates.loc[i, 'qend'])
+                taln = templates.loc[i, 'taln']
+                tstart = templates.loc[i, 'tstart']
+                tend = templates.loc[i, 'tend']
+                evalue = templates.loc[i, 'evalue']
+
+                if csv == 'tmscore_csv' and evalue < tmscore_threshold:
+                    continue
+
+                query_non_gaps = [res != '-' for res in qaln]
+                out_sequence = ''.join(_convert_taln_seq_to_a3m(query_non_gaps, taln))
+
+                aln_full = ['-'] * len(seq)
+                aln_full[qstart - 1:qend] = out_sequence
+                taln_full_seq = ''.join(aln_full)
+                if taln_full_seq in seen_seq:
+                    continue
+                alignments[target] = taln_full_seq
+                seen_seq += [taln_full_seq]
 
         fasta_chunks = (f">{k}\n{alignments[k]}" for k in alignments)
 
@@ -332,7 +338,8 @@ class Monomer_iterative_generation_pipeline:
 
                 ref_tmscore = 0
                 if os.path.exists(native_pdb):
-                    ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb, current_work_dir + '/tmp')
+                    ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb,
+                                                  current_work_dir + '/tmp')
 
                 model_iteration_scores += [ref_avg_lddt]
                 model_iteration_tmscores += [ref_tmscore]
@@ -342,14 +349,20 @@ class Monomer_iterative_generation_pipeline:
 
                     foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
 
-                    if not self.check_and_rank_templates(foldseek_res, f"{current_work_dir}/structure_templates.csv", query_sequence):
+                    if len(foldseek_res['all_alignment']) == 0:
                         print(f"Cannot find any templates in iteration {num_iteration + 1}")
                         break
 
                     self.generate_msa_from_templates(fasta_file=fasta_file,
-                                                     template_file=f"{current_work_dir}/structure_templates.csv",
+                                                     template_result=foldseek_res,
                                                      start_msa=start_msa,
                                                      outfile=f"{current_work_dir}/iteration{num_iteration + 1}.a3m")
+
+                    if not self.check_and_rank_templates(template_result=foldseek_res,
+                                                         outfile=f"{current_work_dir}/structure_templates.csv",
+                                                         query_sequence=query_sequence):
+                        print(f"No templates passed verification in iteration {num_iteration + 1}")
+                        break
 
                     out_template_dir = f"{current_work_dir}/template_pdbs"
                     makedir_if_not_exists(out_template_dir)
@@ -407,7 +420,8 @@ class Monomer_iterative_generation_pipeline:
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'],
-                                                       out_model_dir + '/' + ref_start_pdb, native_pdb, current_work_dir + '/tmp')
+                                                          out_model_dir + '/' + ref_start_pdb, native_pdb,
+                                                          current_work_dir + '/tmp')
                         model_iteration_scores += [ref_avg_lddt]
                         model_iteration_tmscores += [ref_tmscore]
                     break

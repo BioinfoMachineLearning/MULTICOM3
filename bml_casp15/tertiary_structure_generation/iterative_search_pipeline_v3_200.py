@@ -88,7 +88,7 @@ def build_alignment_indices(sequence, start_index):
 
 class Monomer_iterative_generation_pipeline:
 
-    def __init__(self, params, max_template_count=50):
+    def __init__(self, params, max_template_count=200):
 
         self.params = params
 
@@ -103,22 +103,42 @@ class Monomer_iterative_generation_pipeline:
         foldseek_af_database = self.params['foldseek_af_database']
         foldseek_runner = Foldseek(binary_path=foldseek_program,
                                    databases=[foldseek_pdb_database, foldseek_af_database])
-        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=300, maxseq=300)
+        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=1)
 
     def check_and_rank_templates(self, template_result, outfile, query_sequence):
 
-        evalue_keep_indices = []
-        for i in range(len(template_result['local_alignment'])):
+        global_alignment = False
+
+        templates = template_result['local_alignment']
+        if len(templates) == 0:
+            templates = template_result['global_alignment']
+            global_alignment = True
+
+        sort_indices = []
+        for i in range(len(templates)):
+            target = templates.loc[i, 'target']
+            evalue = float(templates.loc[i, 'evalue'])
+            if target.find('.atom.gz') > 0:
+                if global_alignment and evalue >= 0.8:
+                    sort_indices += [i]
+                if not global_alignment and evalue < 1e-10:
+                    sort_indices += [i]
+        for i in range(len(templates)):
+            if i in sort_indices:
+                continue
+            sort_indices += [i]
+
+        keep_indices = []
+        for i in sort_indices:
             hit = TemplateHit(index=i,
-                              name=template_result['local_alignment'].loc[i, 'target'].split('.')[0],
-                              aligned_cols=int(template_result['local_alignment'].loc[i, 'alnlen']),
-                              query=template_result['local_alignment'].loc[i, 'qaln'],
-                              hit_sequence=template_result['local_alignment'].loc[i, 'taln'],
-                              indices_query=build_alignment_indices(template_result['local_alignment'].loc[i, 'qaln'],
-                                                                    template_result['local_alignment'].loc[
-                                                                        i, 'qstart']),
-                              indices_hit=build_alignment_indices(template_result['local_alignment'].loc[i, 'taln'],
-                                                                  template_result['local_alignment'].loc[i, 'tstart']),
+                              name=templates.loc[i, 'target'].split('.')[0],
+                              aligned_cols=int(templates.loc[i, 'alnlen']),
+                              query=templates.loc[i, 'qaln'],
+                              hit_sequence=templates.loc[i, 'taln'],
+                              indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
+                                                                    templates.loc[i, 'qstart']),
+                              indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
+                                                                  templates.loc[i, 'tstart']),
                               sum_probs=0.0)
             try:
                 assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
@@ -126,77 +146,14 @@ class Monomer_iterative_generation_pipeline:
                 msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                 print(msg)
                 continue
-            evalue_keep_indices += [i]
-
-        tmscore_keep_indices = []
-        for i in range(len(template_result['global_alignment'])):
-            hit = TemplateHit(index=i,
-                              name=template_result['global_alignment'].loc[i, 'target'].split('.')[0],
-                              aligned_cols=int(template_result['global_alignment'].loc[i, 'alnlen']),
-                              query=template_result['global_alignment'].loc[i, 'qaln'],
-                              hit_sequence=template_result['global_alignment'].loc[i, 'taln'],
-                              indices_query=build_alignment_indices(template_result['global_alignment'].loc[i, 'qaln'],
-                                                                    template_result['global_alignment'].loc[
-                                                                        i, 'qstart']),
-                              indices_hit=build_alignment_indices(template_result['global_alignment'].loc[i, 'taln'],
-                                                                  template_result['global_alignment'].loc[i, 'tstart']),
-                              sum_probs=0.0)
-            try:
-                assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
-            except PrefilterError as e:
-                msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                print(msg)
-                continue
-            tmscore_keep_indices += [i]
-
-        if len(evalue_keep_indices) == 0 and len(tmscore_keep_indices) == 0:
-            return False
-
-        evalue_thresholds = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
-        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-
-        templates_sorted = pd.DataFrame(
-            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
-
-        evalue_af_indices = []
-        evalue_pdb_indices = []
-        tmscore_af_indices = []
-        tmscore_pdb_indices = []
-        for evalue_threshold, tmscore_threshold in zip(evalue_thresholds, tmscore_thresholds):
-            evalue_af_indices = []
-            evalue_pdb_indices = []
-            for i in evalue_keep_indices:
-                target = template_result['local_alignment'].loc[i, 'target']
-                evalue = float(template_result['local_alignment'].loc[i, 'evalue'])
-                if evalue < evalue_threshold:
-                    if target.find('.atom.gz') > 0:
-                        evalue_pdb_indices += [i]
-                    else:
-                        evalue_af_indices += [i]
-
-            tmscore_af_indices = []
-            tmscore_pdb_indices = []
-            for i in tmscore_keep_indices:
-                target = template_result['global_alignment'].loc[i, 'target']
-                evalue = float(template_result['global_alignment'].loc[i, 'evalue'])
-                if evalue > tmscore_threshold:
-                    if target.find('.atom.gz') > 0:
-                        tmscore_pdb_indices += [i]
-                    else:
-                        tmscore_af_indices += [i]
-
-            if len(evalue_af_indices) + len(evalue_pdb_indices) \
-                    + len(tmscore_af_indices) + len(tmscore_pdb_indices) >= self.max_template_count:
+            keep_indices += [i]
+            if len(keep_indices) > self.max_template_count:
                 break
 
-        templates_sorted = copy.deepcopy(template_result['local_alignment'].iloc[evalue_pdb_indices])
-        templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['global_alignment'].iloc[tmscore_pdb_indices]))
-        templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['local_alignment'].iloc[evalue_af_indices]))
-        templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['global_alignment'].iloc[tmscore_af_indices]))
+        if len(keep_indices) == 0:
+            return False
 
+        templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
         templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
         templates_sorted.reset_index(inplace=True, drop=True)
         templates_sorted.to_csv(outfile, sep='\t')

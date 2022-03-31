@@ -33,8 +33,7 @@ class Foldseek:
     def __init__(self,
                  *,
                  binary_path: str,
-                 databases: Sequence[str],
-                 maxseq: int = 1_000_000):
+                 databases: Sequence[str]):
         """Initializes the Python HHsearch wrapper.
 
     Args:
@@ -50,14 +49,13 @@ class Foldseek:
     """
         self.binary_path = binary_path
         self.databases = databases
-        self.maxseq = maxseq
 
         for database_path in self.databases:
             if not glob.glob(database_path + '_*'):
                 logging.error('Could not find HHsearch database %s', database_path)
                 raise ValueError(f'Could not find HHsearch database {database_path}')
 
-    def query(self, pdb: str, outdir: str, progressive_threshold=1, tmscore_threshold=0.3) -> str:
+    def query(self, pdb: str, outdir: str, progressive_threshold=1, tmscore_threshold=0.3, maxseq=2000) -> str:
         """Queries the database using HHsearch using a given a3m."""
         input_path = os.path.join(outdir, 'query.pdb')
         os.system(f"cp {pdb} {input_path}")
@@ -80,7 +78,7 @@ class Foldseek:
                        outdir + '/tmp',
                        '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                        '--format-mode', '4',
-                       '--max-seqs', '2000',
+                       '--max-seqs', str(maxseq),
                        '-e', '0.001',
                        '-c', '0.5',
                        '--cov-mode', '2']
@@ -115,7 +113,7 @@ class Foldseek:
                            '--format-mode', '4',
                            '--alignment-type', '1',
                            '--tmscore-threshold', str(tmscore_threshold),
-                           '--max-seqs', '2000',
+                           '--max-seqs', str(maxseq),
                            '-c', '0.5',
                            '--cov-mode', '2']
                     logging.info('Launching subprocess "%s"', ' '.join(cmd))

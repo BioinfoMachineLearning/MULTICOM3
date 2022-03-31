@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.tertiary_structure_generation.iterative_search_pipeline import build_alignment_indices, PrefilterError
+from bml_casp15.tertiary_structure_generation.iterative_search_pipeline_v1 import build_alignment_indices, PrefilterError
 
 # need to add A if using relaxation in alphafold
 PDB_CHAIN_IDS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -286,7 +286,7 @@ def build_query_to_hit_index_mapping(
 def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
     makedir_if_not_exists(outdir)
     foldseek_runner = Foldseek(binary_path=foldseek_program, databases=databases)
-    return foldseek_runner.query(pdb=inpdb, outdir=outdir)
+    return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000)
 
 
 def check_template_overlap_regions(template_info1, template_info2, chain_id_map):
@@ -406,8 +406,8 @@ class Multimer_iterative_generation_pipeline:
         if len(evalue_keep_indices) == 0 and len(tmscore_keep_indices) == 0:
             return False
 
-        evalue_thresholds = [1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
-        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4]
+        evalue_thresholds = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
 
         templates_sorted = pd.DataFrame(
             columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
