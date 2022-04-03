@@ -25,60 +25,49 @@ def main(argv):
 
     makedir_if_not_exists(FLAGS.output_dir)
 
-    pipeline = Multimer_iterative_generation_pipeline(params)
-
-    all_multimer_res_all = {'targetname': [], 'model': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
-                            'end_tmscore': []}
-    all_multimer_res_avg = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
-    all_multimer_res_max = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': []}
+    pipeline = Multimer_iterative_generation_pipeline_monomer(params)
 
     inpdb_dir = os.path.abspath(FLAGS.inpdb_dir)
 
-    for fasta_path in FLAGS.fasta_paths:
-        fasta_path = os.path.abspath(fasta_path)
+    cwd = os.getcwd()
+
+    all_multimer_res_all = {'targetname': [], 'tmscore': [], 'tmalign': []}
+    all_multimer_res_max = {'targetname': [], 'tmscore': [], 'tmalign': []}
+
+    for fasta_file in FLAGS.fasta_paths:
+        os.chdir(cwd)
+        fasta_file = os.path.abspath(fasta_file)
         output_dir = os.path.abspath(FLAGS.output_dir)
-        targetname = pathlib.Path(fasta_path).stem
+        targetname = pathlib.Path(fasta_file).stem
 
         if not os.path.exists(inpdb_dir):
             continue
 
-        multimer_res_all, multimer_res_avg, multimer_res_max = pipeline.search(fasta_path, inpdb_dir,
-                                                                               output_dir + '/' + targetname,
-                                                                               FLAGS.atomdir)
+        multimer_res_all, multimer_res_max = pipeline.search(fasta_file, inpdb_dir,
+                                                             output_dir + '/' + targetname,
+                                                             FLAGS.atomdir)
 
         all_multimer_res_all['targetname'] += multimer_res_all['targetname']
-        all_multimer_res_all['model'] += multimer_res_all['model']
-        all_multimer_res_all['start_lddt'] += multimer_res_all['start_lddt']
-        all_multimer_res_all['end_lddt'] += multimer_res_all['end_lddt']
-        all_multimer_res_all['start_tmscore'] += multimer_res_all['start_tmscore']
-        all_multimer_res_all['end_tmscore'] += multimer_res_all['end_tmscore']
-
-        all_multimer_res_avg['targetname'] += multimer_res_avg['targetname']
-        all_multimer_res_avg['start_lddt'] += multimer_res_avg['start_lddt']
-        all_multimer_res_avg['end_lddt'] += multimer_res_avg['end_lddt']
-        all_multimer_res_avg['start_tmscore'] += multimer_res_avg['start_tmscore']
-        all_multimer_res_avg['end_tmscore'] += multimer_res_avg['end_tmscore']
+        all_multimer_res_all['tmscore'] += multimer_res_all['tmscore']
+        all_multimer_res_all['tmalign'] += multimer_res_all['tmalign']
 
         all_multimer_res_max['targetname'] += multimer_res_max['targetname']
-        all_multimer_res_max['start_lddt'] += multimer_res_max['start_lddt']
-        all_multimer_res_max['end_lddt'] += multimer_res_max['end_lddt']
-        all_multimer_res_max['start_tmscore'] += multimer_res_max['start_tmscore']
-        all_multimer_res_max['end_tmscore'] += multimer_res_max['end_tmscore']
+        all_multimer_res_max['tmscore'] += multimer_res_max['tmscore']
+        all_multimer_res_max['tmalign'] += multimer_res_max['tmalign']
+
+    cwd = os.getcwd()
 
     df = pd.DataFrame(all_multimer_res_all)
-    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_all.csv')
-
-    df = pd.DataFrame(all_multimer_res_avg)
-    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_avg.csv')
+    df.to_csv(FLAGS.output_dir + '/all_multimer_res_all.csv')
 
     df = pd.DataFrame(all_multimer_res_max)
-    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_max.csv')
+    df.to_csv(FLAGS.output_dir + '/all_multimer_res_max.csv')
 
 
 if __name__ == '__main__':
     flags.mark_flags_as_required([
         'option_file',
-        'fasta_paths',
+        'fasta_path',
         'inpdb_dir',
         'output_dir'
     ])

@@ -11,9 +11,16 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.tertiary_structure_generation.iterative_search_pipeline_v1 import build_alignment_indices, PrefilterError
-from bml_casp15.quaternary_structure_generation.iterative_search_pipeline import *
+from bml_casp15.tertiary_structure_generation.iterative_search_pipeline_v1 import build_alignment_indices, \
+    PrefilterError
+from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v1 import *
 from bml_casp15.monomer_alignment_generation.alignment import read_a3m
+
+
+def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
+    makedir_if_not_exists(outdir)
+    foldseek_runner = Foldseek(binary_path=foldseek_program, databases=databases)
+    return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000)
 
 
 class Multimer_iterative_generation_pipeline_monomer:
@@ -28,30 +35,18 @@ class Multimer_iterative_generation_pipeline_monomer:
 
     def concatenate_msa_and_templates(self,
                                       chain_id_map,
-                                      template_files,
+                                      template_results,
                                       monomer_a3ms,
-                                      outpath,
-                                      template_path,
-                                      rank_templates_by_monomers=True):
+                                      outpath):
 
         prev_df = None
         for i, chain_id in enumerate(chain_id_map):
-            templates = pd.read_csv(template_files[i], sep='\t')
+            templates = template_results[i]['all_alignment']
             curr_df = create_template_df(templates)
             if prev_df is None:
                 prev_df = curr_df
             else:
                 prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode', suffixes=(str(i), str(i + 1)))
-
-        min_evalues = []
-        for i in range(len(prev_df)):
-            evalues = []
-            for j, chain_id in enumerate(chain_id_map):
-                evalue = float(prev_df.loc[i, f'evalue{j + 1}'])
-                evalues += [evalue]
-            min_evalues += [np.min(np.array(evalues))]
-        prev_df['min_evalue'] = min_evalues
-        prev_df = prev_df.sort_values(by=['min_evalue'])
 
         keep_indices = []
         chain_template_msas = {}
@@ -83,11 +78,8 @@ class Multimer_iterative_generation_pipeline_monomer:
                                 evalue=evalue)
                 template_infos += [row_dict]
 
-            if not assess_complex_templates(chain_id_map, template_infos, template_path):
+            if not assess_complex_templates(chain_id_map, template_infos):
                 continue
-
-            if len(keep_indices) >= self.max_template_count:
-                break
 
             keep_indices += [i]
             for j, chain_id in enumerate(chain_id_map):
@@ -106,7 +98,7 @@ class Multimer_iterative_generation_pipeline_monomer:
         makedir_if_not_exists(msa_out_path)
 
         interact_template_count = len(keep_indices)
-        num_monomer = len(template_files)
+        num_monomer = len(template_results)
         max_msa_count = 50000
         num_msa_per_monomer = int((max_msa_count - interact_template_count) / num_monomer)
         print(num_msa_per_monomer)
@@ -123,7 +115,7 @@ class Multimer_iterative_generation_pipeline_monomer:
             with open(msa_out_path + '/' + chain_id_map[chain_id].description + '.temp.interact', 'w') as fw:
                 fw.write('\n'.join(fasta_chunks) + '\n')
 
-            templates = pd.read_csv(template_files[chain_idx], sep='\t')
+            templates = template_results[chain_idx]['all_alignment']
             seen_sequences = [chain_template_msas[chain_id]['seq'][i] for i in
                               range(len(chain_template_msas[chain_id]['desc']))]
             monomer_msas = {'desc': [], 'seq': []}
@@ -198,47 +190,22 @@ class Multimer_iterative_generation_pipeline_monomer:
             elif current_len != msa_len:
                 raise Exception(f"The length of each msas are not equal! {out_msas}")
             interact_dict[f'index_{i + 1}'] = [j for j in range(msa_len)]
-            
+
         interact_df = pd.DataFrame(interact_dict)
         interact_csv = outpath + f'/interaction.iteration.csv'
         interact_df.to_csv(interact_csv)
 
-        if rank_templates_by_monomers:
-            top_template_files = []
-            for template_file, chain_id in zip(template_files, chain_id_map):
-                templates = pd.read_csv(template_file, sep='\t')
-                keep_indices = []
-                for i in range(len(templates)):
-                    hit = TemplateHit(index=i,
-                                      name=templates.loc[i, 'target'].split('.')[0],
-                                      aligned_cols=int(templates.loc[i, 'alnlen']),
-                                      query=templates.loc[i, 'qaln'],
-                                      hit_sequence=templates.loc[i, 'taln'],
-                                      indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
-                                                                            templates.loc[i, 'qstart']),
-                                      indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
-                                                                          templates.loc[i, 'tstart']),
-                                      sum_probs=0.0)
-                    try:
-                        assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chain_id].sequence)
-                    except PrefilterError as e:
-                        msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                        print(msg)
-                        continue
-                    keep_indices += [i]
-                templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
-                templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
-                templates_sorted.reset_index(inplace=True, drop=True)
-                templates_sorted.to_csv(template_file + f'.top{self.max_template_count}', sep='\t')
-                top_template_files += [template_file + f'.top{self.max_template_count}']
-            return top_template_files, out_msas, interact_csv
+        top_template_files = []
+        for template_result, chain_id in zip(template_results, chain_id_map):
+            check_and_rank_monomer_templates_local_and_global(template_result=template_result,
+                                                              outfile=f"{outpath}/{chain_id_map[chain_id].description}.top{self.max_template_count}",
+                                                              query_sequence=chain_id_map[chain_id].sequence,
+                                                              max_template_count=self.max_template_count)
+            top_template_files += [f"{outpath}/{chain_id_map[chain_id].description}.top{self.max_template_count}"]
+        return top_template_files, out_msas, interact_csv
 
-        prev_df.iloc[keep_indices].to_csv(outpath + '/complex_templates.csv')
-        return [outpath + '/complex_templates.csv'], out_msas, interact_csv
-
-    def copy_atoms_and_unzip(self, template_csv, outdir):
+    def copy_atoms_and_unzip(self, templates, outdir):
         os.chdir(outdir)
-        templates = pd.read_csv(template_csv, sep='\t')
         for i in range(len(templates)):
             template_pdb = templates.loc[i, 'target']
             if template_pdb.find('.pdb.gz') > 0:
@@ -269,8 +236,9 @@ class Multimer_iterative_generation_pipeline_monomer:
             if not os.path.exists(monomer_pdb_dir + '/' + description):
                 print(f"Cannot find monomer models for {description}: {monomer_pdb_dir}/{description}")
                 return
-            monomer_abs_dirs[chain_id] = os.path.abspath(monomer_pdb_dir + '/' + description)
+            monomer_abs_dirs[chain_id] = os.path.abspath(monomer_pdb_dir + '/' + description + '/default')
 
+        print(monomer_abs_dirs)
         native_pdb = ""
         if os.path.exists(native_pdb_dir):
             native_pdb = outdir + '/' + '_'.join(
@@ -296,7 +264,7 @@ class Multimer_iterative_generation_pipeline_monomer:
 
             makedir_if_not_exists(out_template_dir)
 
-            template_files = []
+            template_results = []
             alphafold_a3ms = []
 
             for chain_id in chain_id_map:
@@ -324,25 +292,24 @@ class Multimer_iterative_generation_pipeline_monomer:
                     inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
                     outdir=monomer_work_dir + '/foldseek')
 
-                if not check_and_rank_templates(foldseek_res, f"{monomer_work_dir}/structure_templates.csv"):
+                if len(foldseek_res['all_alignment']) == 0:
                     print(
                         f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
                     break
 
-                template_files += [f"{monomer_work_dir}/structure_templates.csv"]
+                template_results += [foldseek_res]
 
-                self.copy_atoms_and_unzip(template_csv=f"{monomer_work_dir}/structure_templates.csv",
+                self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
                                           outdir=out_template_dir)
 
-            if len(template_files) != len(chain_id_map):
+            if len(template_results) != len(chain_id_map):
                 return
 
             template_files, msa_files, msa_pair_file = self.concatenate_msa_and_templates(chain_id_map=chain_id_map,
-                                                                                          template_files=template_files,
+                                                                                          template_results=template_results,
                                                                                           monomer_a3ms=alphafold_a3ms,
-                                                                                          template_path=out_template_dir,
                                                                                           outpath=outdir)
-            
+
             if len(template_files) == 1:
                 cmd = f"python run_alphafold_multimer_custom_sim.py " \
                       f"--fasta_path {fasta_file} " \

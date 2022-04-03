@@ -56,6 +56,8 @@ def _cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
     os.system(f"cp {inpdb} inpdb.pdb")
     os.system(f"cp {nativepdb} native.pdb")
 
+    print(inpdb)
+    print(nativepdb)
     inpdb = "inpdb.pdb"
     nativepdb = "native.pdb"
 
