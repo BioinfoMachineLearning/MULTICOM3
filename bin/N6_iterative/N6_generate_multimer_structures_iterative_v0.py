@@ -55,7 +55,7 @@ def main(argv):
         all_multimer_res_max['tmscore'] += multimer_res_max['tmscore']
         all_multimer_res_max['tmalign'] += multimer_res_max['tmalign']
 
-    cwd = os.getcwd()
+    os.chdir(cwd)
 
     df = pd.DataFrame(all_multimer_res_all)
     df.to_csv(FLAGS.output_dir + '/all_multimer_res_all.csv')
@@ -67,7 +67,7 @@ def main(argv):
 if __name__ == '__main__':
     flags.mark_flags_as_required([
         'option_file',
-        'fasta_path',
+        'fasta_paths',
         'inpdb_dir',
         'output_dir'
     ])

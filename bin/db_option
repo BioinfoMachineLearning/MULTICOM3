@@ -183,10 +183,26 @@ tmalign_threshold = 0.5
 
 ###########################Sequence based template search option####################
 
-pdb_hhsuite_database = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70
+pdb70_hhsuite_database = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70
 
-pdb_hhsuite_cluster_tsv = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70_clu.tsv
+pdb70_hhsuite_cluster_tsv = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70_clu.tsv
 
 pdb_seqs_dir = /home/bml_casp15/tools/alphafold_databases/pdb_seqres/pdb_seqs
+
+pdb_sort90_hhsuite_database = /home/bml_casp15/update_complex_dbs/databases/hhsuite_pdb/hhsuitedb3
+
+pdb_sort90_hhsuite_cluster_tsv = /home/bml_casp15/update_complex_dbs/databases/RCSB_PDB/fr_lib/sort90_clust
+
+pdb_sort90_atom_dir = /home/bml_casp15/update_complex_dbs/databases/RCSB_PDB/atom
+
+pdb_sort90_hmm_dir = /home/bml_casp15/update_complex_dbs/databases/RCSB_PDB/msa/hmm
+
+complex_sort90_hhsuite_database = /home/bml_casp15/update_complex_dbs/databases/hhsuite_complex/hhsuitedb3
+
+complex_sort90_hhsuite_cluster_tsv = /home/bml_casp15/update_complex_dbs/databases/Complex/fr_lib/sort90_clust
+
+complex_sort90_atom_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/atom
+
+complex_sort90_hmm_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/msa/hmm
 
 #######################End of Complex alignment generation option###################

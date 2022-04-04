@@ -259,6 +259,10 @@ class Multimer_iterative_generation_pipeline_monomer:
         out_model_dir = outdir + '/alphafold'
         makedir_if_not_exists(out_model_dir)
 
+        targets = [targetname] * 5
+        tmscores = [0] * 5
+        tmaligns = [0] * 5
+
         if not complete_result(out_model_dir):
             out_template_dir = outdir + '/templates'
 
@@ -294,7 +298,7 @@ class Multimer_iterative_generation_pipeline_monomer:
 
                 if len(foldseek_res['all_alignment']) == 0:
                     print(
-                        f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        f"Cannot find any templates for {chain_id_map[chain_id].description}")
                     break
 
                 template_results += [foldseek_res]
@@ -303,7 +307,11 @@ class Multimer_iterative_generation_pipeline_monomer:
                                           outdir=out_template_dir)
 
             if len(template_results) != len(chain_id_map):
-                return
+                df_all = {'targetname': targets, 'tmscore': tmscores, 'tmalign': tmaligns}
+                df_max = {'targetname': [targetname],
+                          'tmscore': [np.max(np.array(tmscores))],
+                          'tmalign': [np.max(np.array(tmaligns))]}
+                return df_all, df_max
 
             template_files, msa_files, msa_pair_file = self.concatenate_msa_and_templates(chain_id_map=chain_id_map,
                                                                                           template_results=template_results,
@@ -338,9 +346,6 @@ class Multimer_iterative_generation_pipeline_monomer:
             except Exception as e:
                 print(e)
 
-        targets = [targetname] * 5
-        tmscores = [0] * 5
-        tmaligns = [0] * 5
         if os.path.exists(out_model_dir + '/ranked_0.pdb'):
             for i in range(0, 5):
                 inpdb = f"{out_model_dir}/ranked_{i}.pdb"

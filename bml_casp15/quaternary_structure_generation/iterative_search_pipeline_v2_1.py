@@ -78,7 +78,7 @@ class Multimer_iterative_generation_pipeline:
                                 evalue=evalue)
                 template_infos += [row_dict]
 
-            if not assess_complex_templates(chain_id_map, template_infos, template_path):
+            if not assess_complex_templates(chain_id_map, template_infos):
                 continue
 
             monomer_template_seqs = {}

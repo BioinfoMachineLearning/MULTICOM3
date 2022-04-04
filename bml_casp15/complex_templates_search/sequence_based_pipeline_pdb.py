@@ -103,15 +103,17 @@ class Complex_sequence_based_template_search_pipeline:
 
         self.template_searcher = hhsearch.HHSearch(
             binary_path=params['hhsearch_program'],
-            databases=[params['pdb70_hhsuite_database']])
+            databases=[params['pdb_sort90_hhsuite_database']])
 
-        self.single_seq_template_searcher = hhalign.HHAlign(binary_path=params['hhalign_program'])
+        self.seq_template_searcher = hhalign.HHAlign(binary_path=params['hhalign_program'])
 
-        self.cluster_tsv = params['pdb70_hhsuite_cluster_tsv']
+        self.cluster_tsv = params['pdb_sort90_hhsuite_cluster_tsv']
 
         self.hhmake_program = params['hhmake_program']
 
-        self.pdb_seqs_dir = params['pdb_seqs_dir']
+        self.atom_dir = params['pdb_sort90_atom_dir']
+
+        self.template_hmm_dir = params['pdb_sort90_hmm_dir']
 
     def find_matches_between_pdbcodes(self, monomer_code1, monomer_code2):
 
@@ -139,11 +141,11 @@ class Complex_sequence_based_template_search_pipeline:
 
         return match_members[0]
 
-    def align_template(self, src_name, src_a3m, trg_fasta, outdir):
+    def align_template(self, src_name, src_a3m, trg_hmm, outdir):
 
         os.system(f"{self.hhmake_program} -i {src_a3m} -o {outdir}/{src_name}.hmm\n")
 
-        pdb_templates_result = self.single_seq_template_searcher.query(f"{outdir}/{src_name}.hmm", trg_fasta, outdir)
+        pdb_templates_result = self.seq_template_searcher.query(f"{outdir}/{src_name}.hmm", trg_hmm, outdir)
 
         pdb_templates_hits = parsers.parse_hhr(hhr_string=pdb_templates_result)
 
@@ -182,11 +184,11 @@ class Complex_sequence_based_template_search_pipeline:
                         hit_name = self.find_matches_between_pdbcodes(hit1_name, hit2_name)
                         # print(hit1_name)
                         if len(hit_name) > 0:
-                            if not os.path.exists(self.pdb_seqs_dir + '/' + hit_name + '.fasta'):
+                            if not os.path.exists(self.template_hmm_dir + '/' + hit_name + '.hmm'):
                                 continue
                             hit = self.align_template(monomer_inputs[i].name,
                                                       monomer_inputs[i].msa_path,
-                                                      self.pdb_seqs_dir + '/' + hit_name + '.fasta',
+                                                      self.template_hmm_dir + '/' + hit_name + '.hmm',
                                                       outdir)
 
                     if hit is None:
@@ -259,3 +261,10 @@ class Complex_sequence_based_template_search_pipeline:
         concatenated_pd = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir)
 
         concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
+
+        os.chdir(outdir)
+        for i in range(len(concatenated_pd)):
+            for j in len(monomer_inputs):
+                template_pdb = concatenated_pd.loc[i, f'name{j}'].split()[0]
+                os.system(f"cp {self.pdbdir}/{template_pdb}.atom.gz {outdir}")
+                os.system(f"gunzip -f {template_pdb}.atom.gz")

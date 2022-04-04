@@ -25,7 +25,7 @@ def main(argv):
 
     makedir_if_not_exists(FLAGS.output_dir)
 
-    pipeline = Multimer_iterative_generation_pipeline_complex(params)
+    pipeline = Multimer_iterative_generation_pipeline(params)
 
     all_multimer_res_all = {'targetname': [], 'model': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
                             'end_tmscore': [], 'start_tmalign': [], 'end_tmalign': []}
