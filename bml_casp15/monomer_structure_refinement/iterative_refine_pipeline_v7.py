@@ -46,7 +46,6 @@ def _complete_result(outputdir):
 
 
 def _cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
-
     cwd = os.getcwd()
 
     makedir_if_not_exists(tmpdir)
@@ -56,8 +55,6 @@ def _cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
     os.system(f"cp {inpdb} inpdb.pdb")
     os.system(f"cp {nativepdb} native.pdb")
 
-    print(inpdb)
-    print(nativepdb)
     inpdb = "inpdb.pdb"
     nativepdb = "native.pdb"
 
@@ -105,22 +102,42 @@ class Monomer_iterative_refinement_pipeline:
         foldseek_af_database = self.params['foldseek_af_database']
         foldseek_runner = Foldseek(binary_path=foldseek_program,
                                    databases=[foldseek_pdb_database, foldseek_af_database])
-        return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000)
+        return foldseek_runner.query(pdb=inpdb, outdir=outdir)
 
     def check_and_rank_templates(self, template_result, outfile, query_sequence):
 
-        evalue_keep_indices = []
-        for i in range(len(template_result['local_alignment'])):
+        global_alignment = False
+
+        templates = template_result['local_alignment']
+        if len(templates) == 0:
+            templates = template_result['global_alignment']
+            global_alignment = True
+
+        sort_indices = []
+        for i in range(len(templates)):
+            target = templates.loc[i, 'target']
+            evalue = float(templates.loc[i, 'evalue'])
+            if target.find('.atom.gz') > 0:
+                if global_alignment and evalue >= 0.8:
+                    sort_indices += [i]
+                if not global_alignment and evalue < 1e-10:
+                    sort_indices += [i]
+        for i in range(len(templates)):
+            if i in sort_indices:
+                continue
+            sort_indices += [i]
+
+        keep_indices = []
+        for i in sort_indices:
             hit = TemplateHit(index=i,
-                              name=template_result['local_alignment'].loc[i, 'target'].split('.')[0],
-                              aligned_cols=int(template_result['local_alignment'].loc[i, 'alnlen']),
-                              query=template_result['local_alignment'].loc[i, 'qaln'],
-                              hit_sequence=template_result['local_alignment'].loc[i, 'taln'],
-                              indices_query=build_alignment_indices(template_result['local_alignment'].loc[i, 'qaln'],
-                                                                    template_result['local_alignment'].loc[
-                                                                        i, 'qstart']),
-                              indices_hit=build_alignment_indices(template_result['local_alignment'].loc[i, 'taln'],
-                                                                  template_result['local_alignment'].loc[i, 'tstart']),
+                              name=templates.loc[i, 'target'].split('.')[0],
+                              aligned_cols=int(templates.loc[i, 'alnlen']),
+                              query=templates.loc[i, 'qaln'],
+                              hit_sequence=templates.loc[i, 'taln'],
+                              indices_query=build_alignment_indices(templates.loc[i, 'qaln'],
+                                                                    templates.loc[i, 'qstart']),
+                              indices_hit=build_alignment_indices(templates.loc[i, 'taln'],
+                                                                  templates.loc[i, 'tstart']),
                               sum_probs=0.0)
             try:
                 assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
@@ -128,83 +145,20 @@ class Monomer_iterative_refinement_pipeline:
                 msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                 print(msg)
                 continue
-            evalue_keep_indices += [i]
-
-        tmscore_keep_indices = []
-        for i in range(len(template_result['global_alignment'])):
-            hit = TemplateHit(index=i,
-                              name=template_result['global_alignment'].loc[i, 'target'].split('.')[0],
-                              aligned_cols=int(template_result['global_alignment'].loc[i, 'alnlen']),
-                              query=template_result['global_alignment'].loc[i, 'qaln'],
-                              hit_sequence=template_result['global_alignment'].loc[i, 'taln'],
-                              indices_query=build_alignment_indices(template_result['global_alignment'].loc[i, 'qaln'],
-                                                                    template_result['global_alignment'].loc[
-                                                                        i, 'qstart']),
-                              indices_hit=build_alignment_indices(template_result['global_alignment'].loc[i, 'taln'],
-                                                                  template_result['global_alignment'].loc[i, 'tstart']),
-                              sum_probs=0.0)
-            try:
-                assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
-            except PrefilterError as e:
-                msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                print(msg)
-                continue
-            tmscore_keep_indices += [i]
-
-        if len(evalue_keep_indices) == 0 and len(tmscore_keep_indices) == 0:
-            return False
-
-        evalue_thresholds = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
-        tmscore_thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-
-        templates_sorted = pd.DataFrame(
-            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
-
-        evalue_af_indices = []
-        evalue_pdb_indices = []
-        tmscore_af_indices = []
-        tmscore_pdb_indices = []
-        for evalue_threshold, tmscore_threshold in zip(evalue_thresholds, tmscore_thresholds):
-            evalue_af_indices = []
-            evalue_pdb_indices = []
-            for i in evalue_keep_indices:
-                target = template_result['local_alignment'].loc[i, 'target']
-                evalue = float(template_result['local_alignment'].loc[i, 'evalue'])
-                if evalue < evalue_threshold:
-                    if target.find('.atom.gz') > 0:
-                        evalue_pdb_indices += [i]
-                    else:
-                        evalue_af_indices += [i]
-
-            tmscore_af_indices = []
-            tmscore_pdb_indices = []
-            for i in tmscore_keep_indices:
-                target = template_result['global_alignment'].loc[i, 'target']
-                evalue = float(template_result['global_alignment'].loc[i, 'evalue'])
-                if evalue > tmscore_threshold:
-                    if target.find('.atom.gz') > 0:
-                        tmscore_pdb_indices += [i]
-                    else:
-                        tmscore_af_indices += [i]
-
-            if len(evalue_af_indices) + len(evalue_pdb_indices) \
-                    + len(tmscore_af_indices) + len(tmscore_pdb_indices) >= self.max_template_count:
+            keep_indices += [i]
+            if len(keep_indices) > self.max_template_count:
                 break
 
-        templates_sorted = copy.deepcopy(template_result['local_alignment'].iloc[evalue_pdb_indices])
-        templates_sorted = templates_sorted.append(
-            copy.deepcopy(template_result['global_alignment'].iloc[tmscore_pdb_indices]))
-        templates_sorted = templates_sorted.append(
-                copy.deepcopy(template_result['local_alignment'].iloc[evalue_af_indices]))
-        templates_sorted = templates_sorted.append(
-                copy.deepcopy(template_result['global_alignment'].iloc[tmscore_af_indices]))
+        if len(keep_indices) == 0:
+            return False
 
+        templates_sorted = copy.deepcopy(templates.iloc[keep_indices])
         templates_sorted.drop(templates_sorted.filter(regex="Unnamed"), axis=1, inplace=True)
         templates_sorted.reset_index(inplace=True, drop=True)
         templates_sorted.to_csv(outfile, sep='\t')
         return True
 
-    def generate_msa_from_templates(self, fasta_file, start_msa, template_file, outfile):
+    def generate_msa_from_templates(self, fasta_file, start_msa, template_result, outfile):
         targetname = None
         seq = None
         for line in open(fasta_file):
@@ -214,18 +168,27 @@ class Monomer_iterative_refinement_pipeline:
             else:
                 seq = line
 
-        templates = pd.read_csv(template_file, sep='\t')
-
         alignments = {targetname: seq}
         seen_seq = []
+
+        # Use local alignment if available
+        # Use global alignment if no local alignment found
+        templates = template_result['local_alignment']
+        if len(templates) == 0:
+            templates = template_result['global_alignment']
+
+        print(templates)
         for i in range(len(templates)):
+            print(i)
             target = templates.loc[i, 'target']
             qaln = templates.loc[i, 'qaln']
+            print(templates.loc[i, 'qstart'])
             qstart = int(templates.loc[i, 'qstart'])
             qend = int(templates.loc[i, 'qend'])
             taln = templates.loc[i, 'taln']
-            tstart = templates.loc[i, 'tstart']
-            tend = templates.loc[i, 'tend']
+            # tstart = templates.loc[i, 'tstart']
+            # tend = templates.loc[i, 'tend']
+            # evalue = templates.loc[i, 'evalue']
 
             query_non_gaps = [res != '-' for res in qaln]
             out_sequence = ''.join(_convert_taln_seq_to_a3m(query_non_gaps, taln))
@@ -338,7 +301,8 @@ class Monomer_iterative_refinement_pipeline:
 
                 ref_tmscore = 0
                 if os.path.exists(native_pdb):
-                    ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb, current_work_dir + '/tmp')
+                    ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb,
+                                                  current_work_dir + '/tmp')
 
                 model_iteration_scores += [ref_avg_lddt]
                 model_iteration_tmscores += [ref_tmscore]
@@ -348,14 +312,20 @@ class Monomer_iterative_refinement_pipeline:
 
                     foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
 
-                    if not self.check_and_rank_templates(foldseek_res, f"{current_work_dir}/structure_templates.csv", query_sequence):
+                    if len(foldseek_res['all_alignment']) == 0:
                         print(f"Cannot find any templates in iteration {num_iteration + 1}")
                         break
 
                     self.generate_msa_from_templates(fasta_file=fasta_file,
-                                                     template_file=f"{current_work_dir}/structure_templates.csv",
+                                                     template_result=foldseek_res,
                                                      start_msa=start_msa,
                                                      outfile=f"{current_work_dir}/iteration{num_iteration + 1}.a3m")
+
+                    if not self.check_and_rank_templates(template_result=foldseek_res,
+                                                         outfile=f"{current_work_dir}/structure_templates.csv",
+                                                         query_sequence=query_sequence):
+                        print(f"No templates passed verification in iteration {num_iteration + 1}")
+                        break
 
                     out_template_dir = f"{current_work_dir}/template_pdbs"
                     makedir_if_not_exists(out_template_dir)
@@ -413,7 +383,8 @@ class Monomer_iterative_refinement_pipeline:
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore, _ = _cal_tmscore(self.params['tmscore_program'],
-                                                       out_model_dir + '/' + ref_start_pdb, native_pdb, current_work_dir + '/tmp')
+                                                          out_model_dir + '/' + ref_start_pdb, native_pdb,
+                                                          current_work_dir + '/tmp')
                         model_iteration_scores += [ref_avg_lddt]
                         model_iteration_tmscores += [ref_tmscore]
                     break
