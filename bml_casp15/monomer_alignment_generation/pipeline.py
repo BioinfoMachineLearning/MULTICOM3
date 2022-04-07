@@ -175,21 +175,22 @@ class Monomer_alignment_generation_pipeline:
             uniclust30_bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_uniclust30_bfd.a3m')
             print(uniclust30_bfd_out_path)
             msa_process_list.append([self.unclust30_bfd_msa_runner, input_fasta_path, uniclust30_bfd_out_path, 'uniclust30_bfd_a3m'])
-        # pool = Pool(processes=len(msa_process_list))
-        # results = pool.map(run_msa_tool, msa_process_list)
-        # pool.close()
-        # pool.join()
+        
+        pool = Pool(processes=len(msa_process_list))
+        results = pool.map(run_msa_tool, msa_process_list)
+        pool.close()
+        pool.join()
         #
-        # result_dict = {}
-        # for result in results:
-        #     msa_key, msa_out_path = result
-        #     if os.path.exists(msa_out_path):
-        #         result_dict[msa_key] = msa_out_path
-
         result_dict = {}
-        for msa_process_params in msa_process_list:
-            msa_key, msa_out_path = run_msa_tool(msa_process_params)
+        for result in results:
+            msa_key, msa_out_path = result
             if os.path.exists(msa_out_path):
                 result_dict[msa_key] = msa_out_path
+
+        # result_dict = {}
+        # for msa_process_params in msa_process_list:
+        #     msa_key, msa_out_path = run_msa_tool(msa_process_params)
+        #     if os.path.exists(msa_out_path):
+        #         result_dict[msa_key] = msa_out_path
 
         return result_dict

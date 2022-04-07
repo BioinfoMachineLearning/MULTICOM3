@@ -11,9 +11,9 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.tertiary_structure_generation.iterative_search_pipeline_v1 import build_alignment_indices, \
+from bml_casp15.tertiary_structure_refinement.iterative_refine_pipeline_v1 import build_alignment_indices, \
     PrefilterError
-from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v1 import *
+from bml_casp15.tertiary_structure_refinement.iterative_refine_pipeline_v1 import *
 from bml_casp15.monomer_alignment_generation.alignment import read_a3m
 
 

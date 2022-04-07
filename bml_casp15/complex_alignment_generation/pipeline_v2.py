@@ -88,8 +88,8 @@ def write_concatenated_alignment(id_pairing, alignments):
     seen_seqs = {'full': []}
     filter_pair_ids = {}
     for i in range(len(alignments)):
-        filter_pair_ids[f"id_{i + 1}"] = []
-        filter_pair_ids[f"index_{i + 1}"] = []
+        filter_pair_ids[f"id_{i + 1}"] = [alignments[i].main_id]
+        filter_pair_ids[f"index_{i + 1}"] = [0]
         seen_seqs[alignments[i].main_id] = []
 
     pair_id_count = 0

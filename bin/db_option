@@ -130,8 +130,9 @@ uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
 uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
 
 # complex alignments concatenation method
-concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance
+# concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance
 # concatenate_methods = string_interact
+concatenate_methods = species_interact
 
 ###########################UNIPROT TO PDB database option############################
 

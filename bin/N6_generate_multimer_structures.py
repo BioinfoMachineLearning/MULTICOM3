@@ -74,16 +74,16 @@ def main(argv):
                     structure_template_dir, sequence_template_dir, \
                     FLAGS.monomer_model_dir, output_dir]
 
-        # process_list.append([params, [monomer1_template_input, monomer2_template_input], dimer_outdir])
+        process_list.append(inparams)
 
-        run_pipeline(inparams)
+        # run_pipeline(inparams)
 
-    # print(f"Total {len(process_list)} dimers to be processed")
-    #
-    # pool = Pool(processes=10)
-    # results = pool.map(run_pipeline, process_list)
-    # pool.close()
-    # pool.join()
+    print(f"Total {len(process_list)} dimers to be processed")
+
+    pool = Pool(processes=10)
+    results = pool.map(run_pipeline, process_list)
+    pool.close()
+    pool.join()
 
     print("The template search dimers has finished!")
 

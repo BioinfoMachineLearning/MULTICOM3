@@ -203,7 +203,7 @@ class Quaternary_structure_prediction_pipeline:
 
         # run alphafold default pipeline:
         outdir = f"{output_dir}/default"
-        if not complete_result(outdir):
+        if complete_result(outdir):
             os.chdir(self.params['alphafold_default_program_dir'])
             bfd_uniclust_a3ms = []
             mgnify_stos = []

@@ -456,7 +456,8 @@ def _parse_hhr_hit(detailed_lines: Sequence[str]) -> TemplateHit:
             # Parse the hit sequence.
             if (not line.startswith('T ss_dssp') and
                     not line.startswith('T ss_pred') and
-                    not line.startswith('T Consensus')):
+                    not line.startswith('T Consensus') and
+                    not line.startswith('T ss_conf')):
                 # Thus the first 17 characters must be 'T <hit_name> ', and we can
                 # parse everything after that.
                 #              start    sequence       end     total_sequence_length

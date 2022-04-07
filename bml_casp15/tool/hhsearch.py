@@ -31,7 +31,8 @@ class HHSearch:
                  *,
                  binary_path: str,
                  databases: Sequence[str],
-                 maxseq: int = 1_000_000):
+                 maxseq: int = 1_000_000,
+                 input_format: str = 'a3m'):
         """Initializes the Python HHsearch wrapper.
 
     Args:
@@ -48,7 +49,7 @@ class HHSearch:
         self.binary_path = binary_path
         self.databases = databases
         self.maxseq = maxseq
-
+        self.input_format = input_format
         for database_path in self.databases:
             if not glob.glob(database_path + '_*'):
                 logging.error('Could not find HHsearch database %s', database_path)
@@ -58,13 +59,9 @@ class HHSearch:
     def output_format(self) -> str:
         return 'hhr'
 
-    @property
-    def input_format(self) -> str:
-        return 'a3m'
-
     def query(self, a3m: str, outdir: str) -> str:
         """Queries the database using HHsearch using a given a3m."""
-        input_path = os.path.join(outdir, 'query.a3m')
+        input_path = os.path.join(outdir, 'query.' + self.input_format)
         hhr_path = os.path.join(outdir, 'output.hhr')
         with open(input_path, 'w') as f:
             f.write(a3m)
