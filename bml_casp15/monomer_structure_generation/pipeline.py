@@ -201,12 +201,14 @@ class Monomer_structure_prediction_pipeline:
             else:
                 print(errormsg)
 
-    def process(self, monomers, alndir, outdir):
+    def process(self, monomers, alndir, outdir, templatedir=None):
         outdir = os.path.abspath(outdir) + "/"
         for fasta_path in monomers:
             fasta_name = pathlib.Path(fasta_path).stem
             monomer_aln_dir = alndir + '/' + fasta_name
             monomer_outdir = outdir + '/' + fasta_name
-            self.process_single(fasta_path=fasta_path, alndir=monomer_aln_dir, outdir=monomer_outdir)
+            if templatedir is not None:
+                monomer_template_dir = templatedir + '/' + fasta_name
+            self.process_single(fasta_path=fasta_path, alndir=monomer_aln_dir, outdir=monomer_outdir, template_dir=templatedir)
 
         print("The tertiary structure generation for monomers has finished!")

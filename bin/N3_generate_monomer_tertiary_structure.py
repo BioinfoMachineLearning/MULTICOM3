@@ -2,13 +2,14 @@ import os, sys, argparse, time
 from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import check_file, check_dir, makedir_if_not_exists, check_contents, read_option_file
-from bml_casp15.tertiary_structure_generation.pipeline import *
+from bml_casp15.monomer_structure_generation.pipeline import *
 from absl import flags
 from absl import app
 
 flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('aln_dir', None, 'Monomer alignment directory')
 flags.DEFINE_string('output_dir', None, 'Output directory')
+flags.DEFINE_string('template_dir', None, 'Output directory')
 FLAGS = flags.FLAGS
 
 
@@ -36,8 +37,8 @@ def main(argv):
     print(f"Total {len(fasta_paths)} monomers are generating structures")
 
     if len(fasta_paths) > 0:
-        pipeline = Monomer_tertiary_structure_prediction_pipeline(params, methods)
-        pipeline.process(fasta_paths, FLAGS.aln_dir, FLAGS.output_dir)
+        pipeline = Monomer_structure_prediction_pipeline(params, methods)
+        pipeline.process(fasta_paths, FLAGS.aln_dir, FLAGS.output_dir, FLAGS.template_dir)
 
     print("The prediction for monomers has finished!")
 

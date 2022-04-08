@@ -85,14 +85,14 @@ def main(argv):
         makedir_if_not_exists(outdir)
 
         os.system(f"cp {monomer} {outdir}")
-        process_list.append([f"{outdir}/{monomer_name}", outdir, params])
-        # generate_a3ms_for_single_seq([f"{outdir}/{monomer_name}", outdir, params])
+        #process_list.append([f"{outdir}/{monomer_name}", outdir, params])
+        generate_a3ms_for_single_seq([f"{outdir}/{monomer_name}", outdir, params])
 
-    print(f"Total {len(process_list)} monomers to be processed")
-    pool = Pool(processes=5)
-    results = pool.map(generate_a3ms_for_single_seq, process_list)
-    pool.close()
-    pool.join()
+    # print(f"Total {len(process_list)} monomers to be processed")
+    # pool = Pool(processes=5)
+    # results = pool.map(generate_a3ms_for_single_seq, process_list)
+    # pool.close()
+    # pool.join()
 
     print("The alignment generation for monomers has finished!")
 
