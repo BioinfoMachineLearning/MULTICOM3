@@ -5,6 +5,7 @@ from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check
 from bml_casp15.monomer_alignment_generation.alignment import *
 from bml_casp15.monomer_alignment_generation.rosettafold_msa_runner import *
 from bml_casp15.monomer_alignment_generation.colabfold_msa_runner import *
+from bml_casp15.monomer_alignment_generation.img_msa_runner import *
 from bml_casp15.tool import hhblits
 from bml_casp15.tool import jackhmmer
 
@@ -174,8 +175,9 @@ class Monomer_alignment_generation_pipeline:
         if self.unclust30_bfd_msa_runner is not None:
             uniclust30_bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_uniclust30_bfd.a3m')
             print(uniclust30_bfd_out_path)
-            msa_process_list.append([self.unclust30_bfd_msa_runner, input_fasta_path, uniclust30_bfd_out_path, 'uniclust30_bfd_a3m'])
-        
+            msa_process_list.append(
+                [self.unclust30_bfd_msa_runner, input_fasta_path, uniclust30_bfd_out_path, 'uniclust30_bfd_a3m'])
+
         pool = Pool(processes=len(msa_process_list))
         results = pool.map(run_msa_tool, msa_process_list)
         pool.close()
@@ -194,3 +196,37 @@ class Monomer_alignment_generation_pipeline:
         #         result_dict[msa_key] = msa_out_path
 
         return result_dict
+
+
+class Monomer_alignment_generation_pipeline_img:
+    """Runs the alignment tools and assembles the input features."""
+
+    def __init__(self,
+                 deepmsa_binary_path,
+                 bfd_database_path,
+                 img_database_path,
+                 metaclust_database_path,
+                 mgnify_database_path,
+                 uniref90_database_path):
+        """Initializes the data pipeline."""
+
+        # alignment generation pipeline from alphafold
+        self.img_msa_runner = IMG_Msa_runner(binary_path=deepmsa_binary_path,
+                                             bfd_database_path=bfd_database_path,
+                                             img_database_path=img_database_path,
+                                             metaclust_database_path=metaclust_database_path,
+                                             mgnify_database_path=mgnify_database_path,
+                                             uniref90_database_path=uniref90_database_path)
+
+    def process(self, input_fasta_path, msa_output_dir):
+        """Runs alignment tools on the input sequence and creates features."""
+
+        input_id = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
+
+        img_out_path = os.path.join(msa_output_dir, f'{input_id}.a3m')
+        print(img_out_path)
+
+        if not os.path.exists(img_out_path) or len(open(img_out_path).readlines()) == 0:
+            img_out_path = self.img_msa_runner.query(input_fasta_path, msa_output_dir)
+
+        return img_out_path

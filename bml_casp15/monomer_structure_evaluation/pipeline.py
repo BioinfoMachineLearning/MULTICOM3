@@ -82,11 +82,15 @@ class Monomer_structure_evaluation_pipeline:
         pkldir = output_dir + '/pkl'
         makedir_if_not_exists(pkldir)
 
+        msadir = output_dir + '/msa'
+        makedir_if_not_exists(msadir)
+
         for method in os.listdir(monomer_model_dir):
             for i in range(0, 5):
                 os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
                 extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{i + 1}.pkl",
                             output_pkl=f"{pkldir}/{method}_{i}.pkl")
+                os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir}/{method}_{i}.msa")
 
         for method in os.listdir(multimer_model_dir):
             for i in range(0, 5):
@@ -100,6 +104,8 @@ class Monomer_structure_evaluation_pipeline:
                                 residue_start=residue_start,
                                 residue_end=residue_end,
                                 output_pkl=f"{pkldir}/{method}_{i}.pkl")
+                    os.system(f"cp {monomer_model_dir}/{method}/msas/{chainid_in_multimer}/monomer_final.a3m"
+                              f"{msadir}/{method}_{i}.msa")
                 # print(f"start: {residue_start}, end:{residue_end}")
 
         result_dict = {}

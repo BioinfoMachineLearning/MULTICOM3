@@ -35,7 +35,6 @@ class Multimer_iterative_generation_pipeline_monomer:
     def concatenate_msa_and_templates(self,
                                       chain_id_map,
                                       template_results,
-                                      alphafold_multimer_a3ms,
                                       alphafold_monomer_a3ms,
                                       outpath):
 
@@ -106,9 +105,9 @@ class Multimer_iterative_generation_pipeline_monomer:
             with open(msa_out_path + '/' + chain_id_map[chain_id].description + '.temp.interact', 'w') as fw:
                 fw.write('\n'.join(fasta_chunks) + '\n')
 
-            combine_a3ms([alphafold_multimer_a3ms[chain_idx],
-                          msa_out_path + '/' + chain_id_map[chain_id].description + '.temp.interact'],
-                         f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration.multimer.a3m")
+            os.system(f"cp {msa_out_path}/{chain_id_map[chain_id].description}.temp.interact "
+                      f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration.multimer.a3m")
+
             out_multimer_msas += [f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration.multimer.a3m"]
 
             monomer_template_msas = {'desc': [], 'seq': []}
@@ -120,8 +119,8 @@ class Multimer_iterative_generation_pipeline_monomer:
                 out_sequence = ''.join(convert_taln_seq_to_a3m(query_non_gaps, templates.loc[i, f'taln']))
                 aln_full = ['-'] * len(chain_id_map[chain_id].sequence)
 
-                qstart = int(templates.loc[j, f'qstart'])
-                qend = int(templates.loc[j, f'qend'])
+                qstart = int(templates.loc[i, f'qstart'])
+                qend = int(templates.loc[i, f'qend'])
                 aln_full[qstart - 1:qend] = out_sequence
                 taln_full_seq = ''.join(aln_full)
 
@@ -141,13 +140,13 @@ class Multimer_iterative_generation_pipeline_monomer:
 
         interact_dict = {}
         msa_len = -1
-        for i in range(0, len(out_msas)):
-            msa_sequences, msa_descriptions = parse_fasta(out_msas[i])
+        for i in range(0, len(out_multimer_msas)):
+            msa_sequences, msa_descriptions = parse_fasta(out_multimer_msas[i])
             current_len = len(msa_descriptions)
             if msa_len == -1:
                 msa_len = current_len
             elif current_len != msa_len:
-                raise Exception(f"The length of each msas are not equal! {out_msas}")
+                raise Exception(f"The length of each msas are not equal! {out_multimer_msas}")
             interact_dict[f'index_{i + 1}'] = [j for j in range(msa_len)]
 
         interact_df = pd.DataFrame(interact_dict)
@@ -230,7 +229,6 @@ class Multimer_iterative_generation_pipeline_monomer:
 
             template_results = []
             alphafold_monomer_a3ms = []
-            alphafold_multimer_a3ms = []
 
             for chain_id in chain_id_map:
 
@@ -238,14 +236,10 @@ class Multimer_iterative_generation_pipeline_monomer:
 
                 makedir_if_not_exists(monomer_work_dir)
 
-                chain_monomer_final_a3m = monomer_abs_dirs[chain_id] + '/msas/monomer_final.a3m'
-                chain_multimer_final_a3m = monomer_abs_dirs[chain_id] + '/msas/multimer_final.a3m'
+                chain_monomer_final_a3m = monomer_abs_dirs[chain_id] + '/msas/final.a3m'
 
                 if not os.path.exists(chain_monomer_final_a3m):
                     raise Exception(f"Cannot find the monomer final a3m in {monomer_abs_dirs[chain_id]}")
-
-                if not os.path.exists(chain_multimer_final_a3m):
-                    raise Exception(f"Cannot find the multimer final a3m in {monomer_abs_dirs[chain_id]}")
 
                 os.system(f"cp {chain_monomer_final_a3m} "
                           f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m")
@@ -254,7 +248,6 @@ class Multimer_iterative_generation_pipeline_monomer:
                           f"{outdir}/{chain_id_map[chain_id].description}.alphafold.multimer.a3m")
 
                 alphafold_monomer_a3ms += [f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m"]
-                alphafold_multimer_a3ms += [f"{outdir}/{chain_id_map[chain_id].description}.alphafold.multimer.a3m"]
 
                 chain_pdb = monomer_abs_dirs[chain_id] + '/ranked_0.pdb'
 
@@ -283,11 +276,10 @@ class Multimer_iterative_generation_pipeline_monomer:
                           'tmalign': [np.max(np.array(tmaligns))]}
                 return df_all, df_max
 
-            template_files, monomer_msa_files, multimer_msa_files, msa_pair_file = \
+            template_files, multimer_msa_files, monomer_msa_files, msa_pair_file = \
                 self.concatenate_msa_and_templates(chain_id_map=chain_id_map,
                                                    template_results=template_results,
                                                    alphafold_monomer_a3ms=alphafold_monomer_a3ms,
-                                                   alphafold_multimer_a3ms=alphafold_multimer_a3ms,
                                                    outpath=outdir)
 
             if len(template_files) == 1:
@@ -314,7 +306,7 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--output_dir {out_model_dir}"
 
             try:
-                os.chdir(self.params['alphafold_program_dir'])
+                os.chdir(self.params['alphafold_program_dir_v2'])
                 print(cmd)
                 os.system(cmd)
             except Exception as e:
