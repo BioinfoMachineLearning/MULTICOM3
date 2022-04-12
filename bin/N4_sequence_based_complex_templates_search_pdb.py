@@ -2,7 +2,7 @@ import os, sys, argparse, time
 from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, check_dirs
-from bml_casp15.complex_templates_search.sequence_based_pipeline import *
+from bml_casp15.complex_templates_search.sequence_based_pipeline_pdb import *
 from absl import flags
 from absl import app
 
@@ -35,7 +35,7 @@ def main(argv):
     process_list = []
 
     for dimer in FLAGS.dimerlist:
-
+        
         chain1, chain2 = dimer.split('_')
 
         chain1_template_a3m = f"{FLAGS.aln_dir}/{chain1}/{chain1}_uniref90.sto"
@@ -51,9 +51,9 @@ def main(argv):
         seq1 = open(f"{FLAGS.aln_dir}/{chain1}/{chain1}.fasta").readlines()[1].rstrip('\n')
         seq2 = open(f"{FLAGS.aln_dir}/{chain2}/{chain2}.fasta").readlines()[1].rstrip('\n')
 
-        monomer1_template_input = monomer_template_input(name=chain1, msa_path=chain1_template_a3m, seq=seq1)
+        monomer1_template_input = monomer_template_input(name=chain1, msa_path=chain1_template_a3m, hmm_path="", seq=seq1)
 
-        monomer2_template_input = monomer_template_input(name=chain2, msa_path=chain2_template_a3m, seq=seq2)
+        monomer2_template_input = monomer_template_input(name=chain2, msa_path=chain2_template_a3m, hmm_path="", seq=seq2)
 
         dimer_outdir = f"{FLAGS.output_dir}/{chain1}_{chain2}"
 

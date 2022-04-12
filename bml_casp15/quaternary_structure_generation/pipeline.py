@@ -69,16 +69,17 @@ class Quaternary_structure_prediction_pipeline:
                                     'string_interact_uniprot_sto']
 
         self.template_methods = ['original_template_pipeline',
-                                 'sequence_based_template',
+                                 'sequence_based_template_pdb70',
+                                 'sequence_based_template_pdb',
+                                 'sequence_based_template_complex_pdb'
                                  'structure_based_template',
-                                 'structure_based_template_alphafold']
+                                 'alphafold_model_templates']
 
     def process(self,
                 fasta_path,
                 aln_dir,
                 complex_aln_dir,
-                structure_template_dir,
-                sequence_template_dir,
+                template_dir,
                 monomer_model_dir,
                 output_dir):
 
@@ -169,7 +170,7 @@ class Quaternary_structure_prediction_pipeline:
 
                 base_cmd += f"--temp_struct_csv {template_file} "
 
-            elif template_method == "structure_based_template_alphafold":
+            elif template_method == "alphafold_model_templates":
 
                 template_file = f"{structure_template_dir}/structure_templates.csv"
 
@@ -183,13 +184,13 @@ class Quaternary_structure_prediction_pipeline:
                 base_cmd += f"--temp_struct_csv {template_file} "
                 base_cmd += f"--monomer_paths {','.join(monomer_paths)} "
 
-            elif template_method == "sequence_based_template":
+            elif template_method == "sequence_based_template_pdb70":
 
-                template_file = f"{sequence_template_dir}/sequence_templates.csv"
+                template_file = f"{template_dir}/pdb70_seq/sequence_templates.csv"
 
                 template_hits_files = []
                 for monomer in monomers:
-                    template_hits_file = f"{sequence_template_dir}/{monomer}/pdb_hits.hhr"
+                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/pdb_hits.hhr"
                     if not os.path.exists(template_hits_file):
                         raise Exception(f"Cannot find template hit file for {monomer}: {template_hits_file}")
                     template_hits_files += [template_hits_file]
