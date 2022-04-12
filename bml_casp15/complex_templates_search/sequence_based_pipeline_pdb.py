@@ -9,7 +9,7 @@ from bml_casp15.complex_templates_search import parsers
 from bml_casp15.tool import hhsearch
 from bml_casp15.tool import hhalign
 import dataclasses
-
+import numpy as np
 
 # Prefilter exceptions.
 class PrefilterError(Exception):
@@ -36,34 +36,28 @@ class LengthError(PrefilterError):
 class monomer_template_input:
     name: str
     msa_path: str
+    hmm_path: str
     seq: str
 
-
-def create_df(hits):
+def create_df(targetname, hits):
     row_list = []
     for index, hit in enumerate(hits):
         row_dict = dict(index=index,
-                        name=hit.name,
-                        tpdbcode=hit.name[0:4],
-                        aligned_cols=hit.aligned_cols,
+                        query=targetname,
+                        target=hit.name,
+                        alnlen=hit.aligned_cols,
                         sum_probs=hit.sum_probs,
-                        query=hit.query,
-                        hit_sequence=hit.hit_sequence,
-                        indices_query='_'.join([str(i) for i in hit.indices_query]),
-                        indices_hit='_'.join([str(i) for i in hit.indices_hit]))
+                        qaln=hit.query,
+                        qstart=hit.indices_query[0]+1,
+                        qend=hit.indices_query[len(hit.indices_query)-1]+1,
+                        taln=hit.hit_sequence,
+                        tstart=hit.indices_hit[0] + 1,
+                        tend=hit.indices_hit[len(hit.indices_hit) - 1] + 1)
         row_list += [row_dict]
 
     if len(row_list) == 0:
-        empty_dict = dict(index=0,
-                          name='empty',
-                          tpdbcode='empty',
-                          aligned_cols=0,
-                          sum_probs=0,
-                          query='empty',
-                          hit_sequence='empty',
-                          indices_query=None,
-                          indices_hit=None)
-        row_list += [empty_dict]
+        return pd.DataFrame(columns=['query', 'target', 'alnlen', 'sum_probs', 'qaln', 'qstart', 'qend',
+                                     'taln', 'tstart', 'tend'])
     return pd.DataFrame(row_list)
 
 
@@ -102,8 +96,9 @@ class Complex_sequence_based_template_search_pipeline:
         self.params = params
 
         self.template_searcher = hhsearch.HHSearch(
-            binary_path=params['hhsearch_program'],
-            databases=[params['pdb_sort90_hhsuite_database']])
+            binary_path='/home/bml_casp15/BML_CASP15/tools/hhsuite-3.2.0/bin/hhsearch',
+            databases=[params['pdb_sort90_hhsuite_database']],
+            input_format='hmm')
 
         self.seq_template_searcher = hhalign.HHAlign(binary_path=params['hhalign_program'])
 
@@ -141,11 +136,9 @@ class Complex_sequence_based_template_search_pipeline:
 
         return match_members[0]
 
-    def align_template(self, src_name, src_a3m, trg_hmm, outdir):
+    def align_template(self, src_hmm, trg_hmm, outdir):
 
-        os.system(f"{self.hhmake_program} -i {src_a3m} -o {outdir}/{src_name}.hmm\n")
-
-        pdb_templates_result = self.seq_template_searcher.query(f"{outdir}/{src_name}.hmm", trg_hmm, outdir)
+        pdb_templates_result = self.seq_template_searcher.query(src_hmm, trg_hmm, outdir)
 
         pdb_templates_hits = parsers.parse_hhr(hhr_string=pdb_templates_result)
 
@@ -166,13 +159,14 @@ class Complex_sequence_based_template_search_pipeline:
                 continue
             curr_template_hits += [hit]
 
-        prev_pd = create_df(curr_template_hits)
+        prev_pd = create_df(monomer_inputs[0].name, curr_template_hits)
         for i in range(1, len(monomer_template_results)):
             template_count = 0
             seen_templates = []
             curr_template_hits = []
             for j in range(len(prev_pd)):
-                hit1_name = prev_pd.loc[j, 'name'].split()[0]
+                hit1_name = prev_pd.loc[j, 'target'].split()[0]
+                print(f"finding hits for {hit1_name}")
                 if template_count > 50:
                     break
                 for k in range(len(monomer_template_results[i])):
@@ -185,9 +179,10 @@ class Complex_sequence_based_template_search_pipeline:
                         # print(hit1_name)
                         if len(hit_name) > 0:
                             if not os.path.exists(self.template_hmm_dir + '/' + hit_name + '.hmm'):
+                                print(f"cannot find {hit_name}.hmm in {self.template_hmm_dir}")
                                 continue
-                            hit = self.align_template(monomer_inputs[i].name,
-                                                      monomer_inputs[i].msa_path,
+                            hit = self.align_template(
+                                                      monomer_inputs[i].hmm_path,
                                                       self.template_hmm_dir + '/' + hit_name + '.hmm',
                                                       outdir)
 
@@ -210,9 +205,19 @@ class Complex_sequence_based_template_search_pipeline:
                         curr_template_hits += [hit]
                         break
 
-            curr_pd = create_df(curr_template_hits)
+            curr_pd = create_df(monomer_inputs[i].name, curr_template_hits)
             # print(curr_pd)
             prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+
+        max_probs = []
+        for i in range(len(prev_pd)):
+            sum_probs = []
+            for j in range(len(monomer_inputs)):
+                sum_prob = float(prev_pd.loc[i, f'sum_probs{j + 1}'])
+                sum_probs += [sum_prob]
+            max_probs += [np.max(np.array(sum_probs))]
+        prev_pd['max_probs'] = max_probs
+        prev_pd = prev_pd.sort_values(by=['max_probs'], ascending=False)
 
         return prev_pd
 
@@ -228,10 +233,11 @@ class Complex_sequence_based_template_search_pipeline:
 
             makedir_if_not_exists(monomer_outdir)
 
-            pdb_hits_out_path = os.path.join(monomer_outdir, f'pdb_hits.{self.template_searcher.output_format}')
+            pdb_hits_out_path = os.path.join(monomer_outdir, 'output.hhr')
             if os.path.exists(pdb_hits_out_path):
                 pdb_templates_result = open(pdb_hits_out_path).read()
                 monomer_input.msa_path = monomer_outdir + '/' + monomer_input.name + '.a3m'
+                monomer_input.hmm_path = monomer_outdir + '/' + monomer_input.name + '.hmm'
             else:
                 with open(monomer_input.msa_path) as f:
                     msa_for_templates = f.read()
@@ -245,10 +251,11 @@ class Complex_sequence_based_template_search_pipeline:
 
                         monomer_input.msa_path = monomer_outdir + '/' + monomer_input.name + '.a3m'
 
-                    pdb_templates_result = self.template_searcher.query(msa_for_templates, monomer_outdir)
-
-                    with open(pdb_hits_out_path, 'w') as fw:
-                        fw.write(pdb_templates_result)
+                    monomer_input.hmm_path = monomer_outdir + '/' + monomer_input.name + '.hmm'
+                    os.system(f"{self.hhmake_program} -i {monomer_input.msa_path} -o {monomer_input.hmm_path}")
+                    with open(monomer_input.hmm_path) as f:
+                        msa_for_templates = f.read()
+                        pdb_templates_result = self.template_searcher.query(msa_for_templates, monomer_outdir)
 
             pdb_template_hits = parsers.parse_hhr(hhr_string=pdb_templates_result)
 
@@ -262,9 +269,13 @@ class Complex_sequence_based_template_search_pipeline:
 
         concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
 
-        os.chdir(outdir)
+        cwd = os.getcwd()
+        template_dir = outdir + '/templates'
+        makedir_if_not_exists(template_dir)
+        os.chdir(template_dir)
         for i in range(len(concatenated_pd)):
-            for j in len(monomer_inputs):
-                template_pdb = concatenated_pd.loc[i, f'name{j}'].split()[0]
-                os.system(f"cp {self.pdbdir}/{template_pdb}.atom.gz {outdir}")
+            for j in range(len(monomer_inputs)):
+                template_pdb = concatenated_pd.loc[i, f'target{j+1}'].split()[0]
+                os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")
                 os.system(f"gunzip -f {template_pdb}.atom.gz")
+        os.chdir(cwd)

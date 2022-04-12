@@ -157,13 +157,13 @@ class Multimer_iterative_refinement_pipeline:
 
         interact_dict = {}
         msa_len = -1
-        for i in range(0, len(out_msas)):
-            msa_sequences, msa_descriptions = parse_fasta(out_msas[i])
+        for i in range(0, len(out_multimer_msas)):
+            msa_sequences, msa_descriptions = parse_fasta(out_multimer_msas[i])
             current_len = len(msa_descriptions)
             if msa_len == -1:
                 msa_len = current_len
             elif current_len != msa_len:
-                raise Exception(f"The length of each msas are not equal! {out_msas}")
+                raise Exception(f"The length of each msas are not equal! {out_multimer_msas}")
             interact_dict[f'index_{i + 1}'] = [j for j in range(msa_len)]
         interact_df = pd.DataFrame(interact_dict)
         interact_csv = outpath + f'/interaction.iteration{iteration}.csv'
