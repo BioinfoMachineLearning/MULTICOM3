@@ -11,6 +11,7 @@ from bml_casp15.tool import hhalign
 import dataclasses
 import numpy as np
 
+
 # Prefilter exceptions.
 class PrefilterError(Exception):
     """A base class for template prefilter exceptions."""
@@ -39,25 +40,40 @@ class monomer_template_input:
     hmm_path: str
     seq: str
 
-def create_df(targetname, hits):
+
+def create_df(targetname, hits, prev_template_hit_indices=None):
     row_list = []
-    for index, hit in enumerate(hits):
-        row_dict = dict(index=index,
-                        query=targetname,
-                        target=hit.name,
-                        alnlen=hit.aligned_cols,
-                        sum_probs=hit.sum_probs,
-                        qaln=hit.query,
-                        qstart=hit.indices_query[0]+1,
-                        qend=hit.indices_query[len(hit.indices_query)-1]+1,
-                        taln=hit.hit_sequence,
-                        tstart=hit.indices_hit[0] + 1,
-                        tend=hit.indices_hit[len(hit.indices_hit) - 1] + 1)
-        row_list += [row_dict]
+    if prev_template_hit_indices is None:
+        for index, hit in enumerate(hits):
+            row_dict = dict(index=index,
+                            template=hit.name,
+                            aligned_length=hit.aligned_cols,
+                            aln_temp=hit.hit_sequence,
+                            tstart=hit.indices_hit[0] + 1,
+                            tend=hit.indices_hit[len(hit.indices_hit) - 1] + 1,
+                            aln_query=hit.query,
+                            qstart=hit.indices_query[0] + 1,
+                            qend=hit.indices_query[len(hit.indices_query) - 1] + 1,
+                            sum_probs=hit.sum_probs)
+            row_list += [row_dict]
+    else:
+        for index, hit in zip(prev_template_hit_indices, hits):
+            row_dict = dict(index=index,
+                            template=hit.name,
+                            aligned_length=hit.aligned_cols,
+                            aln_temp=hit.hit_sequence,
+                            tstart=hit.indices_hit[0] + 1,
+                            tend=hit.indices_hit[len(hit.indices_hit) - 1] + 1,
+                            aln_query=hit.query,
+                            qstart=hit.indices_query[0] + 1,
+                            qend=hit.indices_query[len(hit.indices_query) - 1] + 1,
+                            sum_probs=hit.sum_probs)
+            row_list += [row_dict]
 
     if len(row_list) == 0:
-        return pd.DataFrame(columns=['query', 'target', 'alnlen', 'sum_probs', 'qaln', 'qstart', 'qend',
-                                     'taln', 'tstart', 'tend'])
+        return pd.DataFrame(columns=['index', 'template', 'aligned_length', 'aln_temp',
+                                     'tstart', 'tend', 'aln_query', 'qstart',
+                                     'qend', 'sum_probs'])
     return pd.DataFrame(row_list)
 
 
@@ -164,8 +180,9 @@ class Complex_sequence_based_template_search_pipeline:
             template_count = 0
             seen_templates = []
             curr_template_hits = []
+            prev_template_hit_indices = []
             for j in range(len(prev_pd)):
-                hit1_name = prev_pd.loc[j, 'target'].split()[0]
+                hit1_name = prev_pd.loc[j, 'template'].split()[0]
                 print(f"finding hits for {hit1_name}")
                 if template_count > 50:
                     break
@@ -182,9 +199,9 @@ class Complex_sequence_based_template_search_pipeline:
                                 print(f"cannot find {hit_name}.hmm in {self.template_hmm_dir}")
                                 continue
                             hit = self.align_template(
-                                                      monomer_inputs[i].hmm_path,
-                                                      self.template_hmm_dir + '/' + hit_name + '.hmm',
-                                                      outdir)
+                                monomer_inputs[i].hmm_path,
+                                self.template_hmm_dir + '/' + hit_name + '.hmm',
+                                outdir)
 
                     if hit is None:
                         continue
@@ -203,9 +220,10 @@ class Complex_sequence_based_template_search_pipeline:
                               f"current count: {template_count}")
                         seen_templates += [hit.name + hit.hit_sequence]
                         curr_template_hits += [hit]
+                        prev_template_hit_indices += [j]
                         break
 
-            curr_pd = create_df(monomer_inputs[i].name, curr_template_hits)
+            curr_pd = create_df(monomer_inputs[i].name, curr_template_hits, prev_template_hit_indices)
             # print(curr_pd)
             prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
 
@@ -275,7 +293,7 @@ class Complex_sequence_based_template_search_pipeline:
         os.chdir(template_dir)
         for i in range(len(concatenated_pd)):
             for j in range(len(monomer_inputs)):
-                template_pdb = concatenated_pd.loc[i, f'target{j+1}'].split()[0]
+                template_pdb = concatenated_pd.loc[i, f'template{j + 1}'].split()[0]
                 os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")
                 os.system(f"gunzip -f {template_pdb}.atom.gz")
         os.chdir(cwd)

@@ -244,9 +244,6 @@ class Multimer_iterative_generation_pipeline_monomer:
                 os.system(f"cp {chain_monomer_final_a3m} "
                           f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m")
 
-                os.system(f"cp {chain_monomer_final_a3m} "
-                          f"{outdir}/{chain_id_map[chain_id].description}.alphafold.multimer.a3m")
-
                 alphafold_monomer_a3ms += [f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m"]
 
                 chain_pdb = monomer_abs_dirs[chain_id] + '/ranked_0.pdb'
@@ -327,3 +324,111 @@ class Multimer_iterative_generation_pipeline_monomer:
                   'tmscore': [np.max(np.array(tmscores))],
                   'tmalign': [np.max(np.array(tmaligns))]}
         return df_all, df_max
+
+    def search_single(self, fasta_file, chain_id_map, monomer_pdb_dirs, monomer_alphafold_a3ms, outdir):
+
+        fasta_file = os.path.abspath(fasta_file)
+
+        targetname = pathlib.Path(fasta_file).stem
+
+        print(f"Processing {targetname}")
+
+        outdir = os.path.abspath(outdir) + "/"
+
+        makedir_if_not_exists(outdir)
+
+        cwd = os.getcwd()
+
+        # outdir = f"{outdir}/{'_'.join(descriptions)}"
+
+        makedir_if_not_exists(outdir)
+
+        out_model_dir = outdir
+
+        prepare_dir = outdir + '/prepare'
+
+        makedir_if_not_exists(prepare_dir)
+
+        if not complete_result(out_model_dir):
+
+            out_template_dir = prepare_dir + '/templates'
+
+            makedir_if_not_exists(out_template_dir)
+
+            template_results = []
+            alphafold_monomer_a3ms = []
+
+            for chain_id in chain_id_map:
+
+                monomer_work_dir = prepare_dir + '/' + chain_id_map[chain_id].description
+
+                makedir_if_not_exists(monomer_work_dir)
+
+                if not os.path.exists(monomer_alphafold_a3ms[chain_id]):
+                    raise Exception(f"Cannot find the monomer final a3m in {monomer_alphafold_a3ms[chain_id]}")
+
+                os.system(f"cp {monomer_alphafold_a3ms[chain_id]} "
+                          f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m")
+
+                alphafold_monomer_a3ms += [f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m"]
+
+                chain_pdb = monomer_pdb_dirs[chain_id]
+
+                os.system(f"cp {chain_pdb} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
+
+                foldseek_res = search_templates_foldseek(
+                    foldseek_program=self.params['foldseek_program'],
+                    databases=[self.params['foldseek_pdb_database'], self.params['foldseek_af_database']],
+                    inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
+                    outdir=monomer_work_dir + '/foldseek')
+
+                if len(foldseek_res['all_alignment']) == 0:
+                    print(
+                        f"Cannot find any templates for {chain_id_map[chain_id].description}")
+                    break
+
+                template_results += [foldseek_res]
+
+                self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
+                                          outdir=out_template_dir)
+
+            if len(template_results) != len(chain_id_map):
+                return None
+
+            template_files, multimer_msa_files, monomer_msa_files, msa_pair_file = \
+                self.concatenate_msa_and_templates(chain_id_map=chain_id_map,
+                                                   template_results=template_results,
+                                                   alphafold_monomer_a3ms=alphafold_monomer_a3ms,
+                                                   outpath=outdir)
+
+            if len(template_files) == 1:
+                cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                      f"--fasta_path {fasta_file} " \
+                      f"--env_dir {self.params['alphafold_env_dir']} " \
+                      f"--database_dir {self.params['alphafold_database_dir']} " \
+                      f"--multimer_a3ms {','.join(multimer_msa_files)} " \
+                      f"--monomer_a3ms {','.join(monomer_msa_files)} " \
+                      f"--msa_pair_file {msa_pair_file} " \
+                      f"--temp_struct_csv {template_files[0]} " \
+                      f"--struct_atom_dir {out_template_dir} " \
+                      f"--output_dir {out_model_dir}"
+            else:
+                cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                      f"--fasta_path {fasta_file} " \
+                      f"--env_dir {self.params['alphafold_env_dir']} " \
+                      f"--database_dir {self.params['alphafold_database_dir']} " \
+                      f"--multimer_a3ms {','.join(multimer_msa_files)} " \
+                      f"--monomer_a3ms {','.join(monomer_msa_files)} " \
+                      f"--msa_pair_file {msa_pair_file} " \
+                      f"--monomer_temp_csvs {','.join(template_files)} " \
+                      f"--struct_atom_dir {out_template_dir} " \
+                      f"--output_dir {out_model_dir}"
+
+            try:
+                os.chdir(self.params['alphafold_program_dir_v2'])
+                print(cmd)
+                os.system(cmd)
+            except Exception as e:
+                print(e)
+
+        os.chdir(cwd)

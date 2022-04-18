@@ -28,10 +28,8 @@ def convert_pairwise_ranking_to_df(pairwise_ranking_file):
 
 class En_qa:
 
-    def __init__(self, program_python, program_path, program_script, use_gpu):
-        self.program_python = program_python
-        self.program_path = program_path
-        self.program_script = program_script
+    def __init__(self, enqa_program, use_gpu):
+        self.enqa_program = enqa_program
         self.use_gpu = use_gpu
 
     def run(self, input_dir, alphafold_prediction_dir, outputdir):
@@ -52,11 +50,8 @@ class En_qa:
                 for i in range(1, 6):
                     os.system(f"ln -s unrelaxed_model_{i}.pdb relaxed_model_{i}.pdb")
 
-        os.chdir(self.program_path)
-
         print("Try to run the ensemble model first")
-        cmd = f"{self.program_python} {self.program_script} --input {input_dir} --output {outputdir} " \
-              f"--method ensemble --alphafold_prediction {outputdir}/alphafold_prediction"
+        cmd = f"sh {self.enqa_program} {input_dir} {outputdir} ensemble {outputdir}/alphafold_prediction"
         if not self.use_gpu:
             cmd += " --cpu"
             
@@ -68,8 +63,7 @@ class En_qa:
 
         if not os.path.exists(f"{outputdir}/result.txt"):
             print("Try to run the EGNN_esto9 model")
-            cmd = f"{self.program_python} {self.program_script} --input {input_dir} --output {outputdir} " \
-                  f"--method EGNN_esto9 --alphafold_prediction {outputdir}/alphafold_prediction"
+            cmd = f"sh {self.enqa_program} {input_dir} {outputdir} EGNN_esto9 {outputdir}/alphafold_prediction"
             if not self.use_gpu:
                 cmd += " --cpu"
             print(cmd)
@@ -120,11 +114,8 @@ class En_qa:
             os.system(f"ln -s {input_dir}/{model} relaxed_model_{i+1}.pdb")
             os.system(f"ln -s {pkl_dir}/{model.replace('.pdb', '.pkl')} result_model_{i+1}.pkl")
 
-        os.chdir(self.program_path)
-
         print("Try to run the ensemble model first")
-        cmd = f"{self.program_python} {self.program_script} --input {input_dir} --output {outputdir} " \
-              f"--method ensemble --alphafold_prediction {outputdir}/alphafold_prediction"
+        cmd = f"sh {self.enqa_program} {input_dir} {outputdir} ensemble {outputdir}/alphafold_prediction"
         if not self.use_gpu:
             cmd += " --cpu"
 
@@ -136,8 +127,7 @@ class En_qa:
 
         if not os.path.exists(f"{outputdir}/result.txt"):
             print("Try to run the EGNN_esto9 model")
-            cmd = f"{self.program_python} {self.program_script} --input {input_dir} --output {outputdir} " \
-                  f"--method EGNN_esto9 --alphafold_prediction {outputdir}/alphafold_prediction"
+            cmd = f"sh {self.enqa_program} {input_dir} {outputdir} EGNN_esto9 {outputdir}/alphafold_prediction"
             if not self.use_gpu:
                 cmd += " --cpu"
             print(cmd)

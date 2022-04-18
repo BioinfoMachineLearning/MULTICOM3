@@ -87,8 +87,19 @@ class Complex_structure_based_template_search_pipeline:
 
         prev_df_sorted = prev_df.sort_values(by='avg_tmscore', ascending=False)
 
-        prev_df_sorted.head(int(self.params['template_count'])).to_csv(outdir + "/structure_templates.csv", index=False)
+        prev_df_sorted.head(50).to_csv(outdir + "/structure_templates.csv", index=False)
 
         print("The structure based template searching for dimers has finished!")
 
         os.system(f"rm -rf {outdir}/tmscore")
+
+        cwd = os.getcwd()
+        template_dir = outdir + '/templates'
+        makedir_if_not_exists(template_dir)
+        os.chdir(template_dir)
+        for i in range(len(prev_df_sorted)):
+            for j in range(len(monomers)):
+                template_pdb = prev_df_sorted.loc[i, f'template{j + 1}'].split()[0]
+                os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb}.atom.gz .")
+                os.system(f"gunzip -f {template_pdb}.atom.gz")
+        os.chdir(cwd)

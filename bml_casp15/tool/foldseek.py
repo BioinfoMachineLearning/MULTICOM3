@@ -183,3 +183,48 @@ class Foldseek:
         result_df.to_csv(f"{outdir}/tmscore.m8", sep='\t')
 
         return result_df
+
+    def query_only_local(self, pdb: str, outdir: str, maxseq=2000) -> str:
+        """Queries the database using HHsearch using a given a3m."""
+        input_path = os.path.join(outdir, 'query.pdb')
+        os.system(f"cp {pdb} {input_path}")
+
+        result_df = pd.DataFrame(
+            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
+
+        for database in self.databases:
+            database_name = pathlib.Path(database).stem
+            if not os.path.exists(f'{outdir}/aln.m8_{database_name}'):
+                cmd = [self.binary_path,
+                       'easy-search',
+                       input_path,
+                       database,
+                       f'{outdir}/aln.m8_{database_name}',
+                       outdir + '/tmp',
+                       '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
+                       '--format-mode', '4',
+                       '--max-seqs', str(maxseq),
+                       '-e', '0.001',
+                       '-c', '0.5',
+                       '--cov-mode', '2']
+                logging.info('Launching subprocess "%s"', ' '.join(cmd))
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                with utils.timing('Foldseek query'):
+                    stdout, stderr = process.communicate()
+                    retcode = process.wait()
+                if retcode:
+                    # Stderr is truncated to prevent proto size errors in Beam.
+                    raise RuntimeError(
+                        'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
+                            stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
+            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
+
+        result_df = result_df.sort_values(by='evalue')
+        result_df.reset_index(inplace=True, drop=True)
+        result_df.to_csv(f"{outdir}/result.m8", sep='\t')
+
+        empty_df = pd.DataFrame(
+            columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
+        return {'local_alignment': result_df,
+                'global_alignment': empty_df,
+                'all_alignment': result_df}

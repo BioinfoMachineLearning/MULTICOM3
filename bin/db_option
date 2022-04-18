@@ -29,6 +29,9 @@ mmalign_program = /home/bml_casp15/BML_CASP15/tools/MMalign
 # hhsearch program path
 hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
 
+# deepmsa2 program path
+deepmsa2_program = /home/bml_casp15/tools/deepmsa/hhsuite2/scripts/build_MSA2.py
+
 # alphafold environment directory
 alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
 
@@ -36,7 +39,6 @@ alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
 alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
 #########################Customized alphafold program###########################
-
 # alphafold program path
 alphafold_program_dir = /home/bml_casp15/tools/alphafold
 
@@ -45,6 +47,9 @@ alphafold_program = run_alphafold_custom_sim.py
 
 # alphafold tertiary structure prediction script
 alphafold_multimer_program = run_alphafold_multimer_custom_sim.py
+
+# alphafold program path
+alphafold_program_dir_v2 = /home/bml_casp15/tools/alphafold_v2
 
 #########################Original alphafold program###########################
 
@@ -107,6 +112,10 @@ smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non
 bfd_database = /home/bml_casp15/BML_CASP15/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
 
 mgnify_database = /home/bml_casp15/BML_CASP15/databases/mgnify/mgy_clusters_2018_12.fa
+
+metaclust_database = /home/bml_casp15/BML_CASP15/databases/Metaclust_2018_06/metaclust_50
+
+img_database = /home/bml_casp15/BML_CASP15/databases/img/img_new.fasta
 
 ###########################Complex alignment generation option#######################
 

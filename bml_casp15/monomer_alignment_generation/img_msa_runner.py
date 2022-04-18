@@ -37,8 +37,8 @@ class IMG_Msa_runner:
               f"{input_fasta_path} " \
               f"-hhblitsdb={self.bfd_database_path} " \
               f"-jackhmmerdb={self.img_database_path}  " \
-              f"-hmmsearchdb={self.metaclust_database}:{self.mgnify_database}:{self.uniref90_database} " \
-              f"-outdir={outpath} -tmpdir={outpath}/tmp -ncpu=8 &"
+              f"-hmmsearchdb={self.metaclust_database_path}:{self.mgnify_database_path}:{self.uniref90_database_path} " \
+              f"-outdir={outpath} -tmpdir={outpath}/tmp -ncpu=8 >/dev/null 2>&1 &"
 
         os.system(cmd)
         #

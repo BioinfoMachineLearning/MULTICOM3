@@ -492,18 +492,14 @@ class Monomer_iterative_refinement_pipeline:
 
             start_pdb = f"{current_work_dir}/start.pdb"
             start_msa = f"{current_work_dir}/start.a3m"
+            start_pkl = f"{current_work_dir}/start.pkl"
 
             os.system(f"cp {ref_start_pdb} {start_pdb}")
             os.system(f"cp {ref_start_msa} {start_msa}")
+            os.system(f"cp {ref_start_pkl} {start_pkl}")
 
-            if num_iteration == 0:
-                with open(ref_start_pkl, 'rb') as f:
-                    ref_avg_lddt = np.mean(pickle.load(f)['plddt'])
-            else:
-                start_ranking_json_file = f"{current_work_dir}/start_ranking.json"
-                os.system(f"cp {ref_start_ranking_json_file} {start_ranking_json_file}")
-                ranking_json = json.loads(open(start_ranking_json_file).read())
-                ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
+            with open(ref_start_pkl, 'rb') as f:
+                ref_avg_lddt = np.mean(pickle.load(f)['plddt'])
 
             model_iteration_scores += [ref_avg_lddt]
 
@@ -516,7 +512,7 @@ class Monomer_iterative_refinement_pipeline:
                     print(f"Cannot find any templates in iteration {num_iteration + 1}")
                     break
 
-                self.generate_msa_from_templates(fasta_file=fasta_file,
+                self.generate_msa_from_templates(fasta_file=fasta_path,
                                                  template_file=f"{current_work_dir}/structure_templates.csv",
                                                  start_msa=start_msa,
                                                  outfile=f"{current_work_dir}/iteration{num_iteration + 1}.a3m")
@@ -528,7 +524,7 @@ class Monomer_iterative_refinement_pipeline:
 
                 makedir_if_not_exists(out_model_dir)
                 cmd = f"python run_alphafold_custom_sim.py " \
-                      f"--fasta_path {fasta_file} " \
+                      f"--fasta_path {fasta_path} " \
                       f"--env_dir {self.params['alphafold_env_dir']} " \
                       f"--database_dir {self.params['alphafold_database_dir']} " \
                       f"--custom_msa {current_work_dir}/iteration{num_iteration + 1}.a3m " \
@@ -552,32 +548,28 @@ class Monomer_iterative_refinement_pipeline:
             if max_lddt_score > ref_avg_lddt:
                 print("Continue to refine")
                 ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
-                ref_start_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+                model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                ref_start_pkl = f"{out_model_dir}/result_model_{model_num}.pkl"
                 ref_start_msa = f"{out_model_dir}/msas/monomer_final.a3m"
                 print('##################################################')
                 if num_iteration + 1 >= self.max_iteration:
                     print("Reach maximum iteration")
-                    ranking_json = json.loads(open(ref_start_ranking_json_file).read())
-                    ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
-                    model_iteration_scores += [ref_avg_lddt]
+                    model_iteration_scores += [max_lddt_score]
             else:
                 # keep the models in iteration 1 even through the plddt score decreases
                 if num_iteration == 0:
                     ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
-                    ref_start_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                    ref_start_pkl = f"{out_model_dir}/result_model_{model_num}.pkl"
                     ref_start_msa = f"{out_model_dir}/msas/monomer_final.a3m"
-                    ranking_json = json.loads(open(ref_start_ranking_json_file).read())
-                    ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
-                    model_iteration_scores += [ref_avg_lddt]
+                    model_iteration_scores += [max_lddt_score]
                 break
 
         while len(model_iteration_scores) <= self.max_iteration:
             model_iteration_scores += [0]
 
-        iteration_scores[f'model{i + 1}'] = model_iteration_scores
-
-        print(iteration_scores)
-        df = pd.DataFrame(iteration_scores)
+        print(model_iteration_scores)
+        df = pd.DataFrame(model_iteration_scores)
         df.to_csv(outdir + '/summary.csv')
 
         final_model_dir = outdir + '/final'
@@ -585,7 +577,7 @@ class Monomer_iterative_refinement_pipeline:
         makedir_if_not_exists(final_model_dir)
 
         os.system(f"cp {ref_start_pdb} {final_model_dir}/final.pdb")
-        os.system(f"cp {ref_start_ranking_json_file} {final_model_dir}/final.json")
+        os.system(f"cp {ref_start_pkl} {final_model_dir}/final.pkl")
         os.system(f"cp {ref_start_msa} {final_model_dir}/final.a3m")
 
         os.chdir(cwd)

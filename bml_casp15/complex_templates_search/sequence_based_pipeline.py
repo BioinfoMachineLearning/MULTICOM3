@@ -36,6 +36,7 @@ class LengthError(PrefilterError):
 class monomer_template_input:
     name: str
     msa_path: str
+    hmm_path: str
     seq: str
 
 

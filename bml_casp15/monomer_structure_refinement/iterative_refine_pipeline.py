@@ -24,7 +24,7 @@ class Monomer_iterative_refinement_pipeline_server:
     def search(self, refinement_inputs, outdir):
         result_dirs = []
 
-        pipeline = Monomer_iterative_refinement_pipeline(params)
+        pipeline = Monomer_iterative_refinement_pipeline(self.params)
 
         for refine_param in refinement_inputs:
             result_dir = pipeline.search_single(fasta_path=refine_param.fasta_path, pdb_path=refine_param.pdb_path,

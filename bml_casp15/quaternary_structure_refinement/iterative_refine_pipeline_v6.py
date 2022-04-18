@@ -11,8 +11,14 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.quaternary_structure_refinement.iterative_refine_pipeline_v1 import *
+from bml_casp15.quaternary_structure_refinement.util import *
 import itertools
+
+
+def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
+    makedir_if_not_exists(outdir)
+    foldseek_runner = Foldseek(binary_path=foldseek_program, databases=databases)
+    return foldseek_runner.query_only_local(pdb=inpdb, outdir=outdir)
 
 
 def reindex_pdb(inpdb):
@@ -51,9 +57,11 @@ def combine_pdbs_to_single_chain(inpdbs, outpdb):
                 fw.write(line[:21] + ' ' + line[22:])
     reindex_pdb(outpdb)
 
+
 class complex_template:
     def __init__(self, monomer_templates):
         self.monomer_templates = monomer_templates
+
 
 class monomer_template:
 
@@ -66,7 +74,6 @@ class monomer_template:
                  qend,
                  taln,
                  qaln):
-
         self.name = name
         self.template = template
         self.tstart = tstart
@@ -75,7 +82,6 @@ class monomer_template:
         self.qend = qend
         self.qaln = qaln
         self.taln = taln
-
 
 
 class Multimer_iterative_refinement_pipeline:
@@ -94,9 +100,7 @@ class Multimer_iterative_refinement_pipeline:
                                       pair_work_dirs,
                                       start_msa_path,
                                       outpath,
-                                      template_path,
-                                      iteration,
-                                      rank_templates_by_monomers=False):
+                                      iteration):
 
         # H0957A_H0957B, H0957B_H0957A
 
@@ -122,12 +126,15 @@ class Multimer_iterative_refinement_pipeline:
                     sep_indices += [dict(start=1,
                                          end=seq_len_dict[member])]
                 else:
-                    sep_indices += [dict(start=sep_indices[i-1]['end']+1,
-                                         end=sep_indices[i-1]['end']+seq_len_dict[member])]
+                    sep_indices += [dict(start=sep_indices[i - 1]['end'] + 1,
+                                         end=sep_indices[i - 1]['end'] + seq_len_dict[member])]
                 chain_tempate_dicts[member] = []
 
             # sep_indices = [60, 120]
             # print(sep_indices)
+            if len(templates) == 0:
+                continue
+
             for i in range(len(templates)):
                 template = templates.loc[i, 'target']
                 qaln = templates.loc[i, 'qaln']
@@ -140,12 +147,13 @@ class Multimer_iterative_refinement_pipeline:
                 aligned_length = int(templates.loc[i, 'alnlen'])
 
                 # check whether the query sequence contains all the chains
-                contain_all_chains = qstart < sep_indices[0]['end'] and qend > sep_indices[len(sep_indices)-1]['start']
+                contain_all_chains = qstart < sep_indices[0]['end'] and qend > sep_indices[len(sep_indices) - 1][
+                    'start']
                 if not contain_all_chains:
                     continue
 
                 # cut query alignment based on seperate indices
-                res_counter = qstart-1
+                res_counter = qstart - 1
                 chain_qalns = []
                 chain_qaln = []
                 sep_index = 0
@@ -160,7 +168,8 @@ class Multimer_iterative_refinement_pipeline:
                 chain_qalns += [''.join(chain_qaln)]
 
                 if len(chain_qalns) != len(order):
-                    raise Exception(f"The length of seperated query alignments and members in order doesn't match: {len(chain_qalns)} and {len(order)}")
+                    raise Exception(
+                        f"The length of seperated query alignments and members in order doesn't match: {len(chain_qalns)} and {len(order)}")
 
                 # print(chain_qalns)
 
@@ -175,7 +184,7 @@ class Multimer_iterative_refinement_pipeline:
                     chain_qstart = curr_chain_qstart
                     chain_qend = curr_chain_qstart + len([char for char in chain_qaln if char != '-']) - 1
 
-                    chain_taln = taln[taln_counter:taln_counter+len(chain_qaln)]
+                    chain_taln = taln[taln_counter:taln_counter + len(chain_qaln)]
                     chain_tstart = curr_chain_tstart
                     chain_tend = curr_chain_tstart + len([char for char in chain_taln if char != '-']) - 1
 
@@ -204,15 +213,20 @@ class Multimer_iterative_refinement_pipeline:
                 member_work_dir = pair_work_dirs[pair] + '/' + chain_id_map[chain_id].description
                 makedir_if_not_exists(member_work_dir)
                 curr_df_reorder = pd.DataFrame(chain_tempate_dicts[chain_id_map[chain_id].description])
+                if len(curr_df_reorder) == 0:
+                    prev_df_reorder = None
+                    break
                 curr_df_reorder.to_csv(member_work_dir + '/structure_templates.csv')
                 if prev_df_reorder is None:
                     prev_df_reorder = curr_df_reorder
                 else:
-                    prev_df_reorder = prev_df_reorder.merge(curr_df_reorder, how="inner", on='merge_id', suffixes=(str(chaind_index), str(chaind_index + 1)))
+                    prev_df_reorder = prev_df_reorder.merge(curr_df_reorder, how="inner", on='merge_id',
+                                                            suffixes=(str(chaind_index), str(chaind_index + 1)))
 
-            prev_df_reorder.to_csv(pair_work_dirs[pair] + '/structure_templates_reorder.csv')
+            if prev_df_reorder is not None:
+                prev_df_reorder.to_csv(pair_work_dirs[pair] + '/structure_templates_reorder.csv')
 
-            complex_templates_reorder += [pair_work_dirs[pair] + '/structure_templates_reorder.csv']
+                complex_templates_reorder += [pair_work_dirs[pair] + '/structure_templates_reorder.csv']
 
         complex_df = None
         for complex_template_reorder in complex_templates_reorder:
@@ -220,6 +234,9 @@ class Multimer_iterative_refinement_pipeline:
                 complex_df = pd.read_csv(complex_template_reorder)
             else:
                 complex_df = complex_df.append(pd.read_csv(complex_template_reorder))
+        if complex_df is None:
+            return None, None, None
+
         complex_df.sort_values(by=['evalue1'])
         complex_df.reset_index(inplace=True, drop=True)
 
@@ -248,7 +265,8 @@ class Multimer_iterative_refinement_pipeline:
                 monomer_template_dict = {'desc': complex_df.loc[i, f'template{j + 1}'], 'seq': taln_full_seq}
                 monomer_template_seqs[chain_id] = monomer_template_dict
 
-            complex_template_seq = "".join([monomer_template_seqs[chain_id]['seq'] for chain_id in monomer_template_seqs])
+            complex_template_seq = "".join(
+                [monomer_template_seqs[chain_id]['seq'] for chain_id in monomer_template_seqs])
             if complex_template_seq not in seen_complex_seq:
                 for chain_id in monomer_template_seqs:
                     chain_template_msas[chain_id]['desc'] += [monomer_template_seqs[chain_id]['desc']]
@@ -417,7 +435,6 @@ class Multimer_iterative_refinement_pipeline:
                     pair_template_files = {}
                     pair_work_dirs = {}
                     for combination_pair in combination_pairs:
-
                         pair_fullname = '_'.join([chain_id_map[member].description for member in combination_pair])
 
                         comb_res_dir = current_work_dir + '/' + pair_fullname
@@ -434,11 +451,11 @@ class Multimer_iterative_refinement_pipeline:
                             inpdb=comb_res_dir + '/' + combine_start_pdb,
                             outdir=comb_res_dir + '/foldseek')
 
-                        if not check_and_rank_templates(foldseek_res,
-                                                        f"{comb_res_dir}/structure_templates.csv"):
-                            print(
-                                f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
-                            break
+                        query_sequence = ''.join([chain_id_map[chain_id].sequence for chain_id in combination_pair])
+                        check_and_rank_monomer_templates_local_or_global(template_result=foldseek_res,
+                                                                         outfile=f"{comb_res_dir}/structure_templates.csv",
+                                                                         query_sequence=query_sequence,
+                                                                         max_template_count=2000)
 
                         pair_template_files[pair_fullname] = comb_res_dir + '/structure_templates.csv'
                         pair_work_dirs[pair_fullname] = comb_res_dir
@@ -454,9 +471,13 @@ class Multimer_iterative_refinement_pipeline:
                         pair_template_files=pair_template_files,
                         pair_work_dirs=pair_work_dirs,
                         start_msa_path=start_msa_path,
-                        template_path=out_template_dir,
                         outpath=current_work_dir,
                         iteration=num_iteration + 1)
+
+                    if template_files is None:
+                        print(
+                            f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        break
 
                     makedir_if_not_exists(out_model_dir)
 

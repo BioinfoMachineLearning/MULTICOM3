@@ -3,19 +3,10 @@ import os
 import sys
 import time
 from bml_casp15.common.util import makedir_if_not_exists, check_dirs
+from bml_casp15.common.protein import complete_result, parse_fasta
 import pandas as pd
 from multiprocessing import Pool
 import pathlib
-
-
-def complete_result(outputdir):
-    complete = True
-    for i in range(0, 5):
-        model = f'{outputdir}/ranked_{i}.pdb'
-        if not os.path.exists(model):
-            complete = False
-            break
-    return complete
 
 
 def get_complex_alignments_by_method(monomers, concatenate_method, aln_dir):
@@ -50,167 +41,91 @@ class Quaternary_structure_prediction_pipeline:
 
         self.params = params
 
-        # self.run_methods = run_methods
+        self.run_methods = ['default', 'default+sequence_based_template_pdb70',
+                            'default+structure_based_template',
+                            'default+sequence_based_template_pdb',
+                            'default+sequence_based_template_complex_pdb',
+                            'default+alphafold_model_templates',
+                            'uniclust_oxmatch_a3m',
+                            'pdb_interact_uniref_a3m',
+                            'species_interact_uniref_a3m',
+                            'species_interact_uniref_a3m+sequence_based_template_pdb70',
+                            'species_interact_uniref_a3m+structure_based_template',
+                            'species_interact_uniref_a3m+sequence_based_template_pdb',
+                            'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
+                            'species_interact_uniref_a3m+alphafold_model_templates',
+                            'uniprot_distance_uniref_a3m',
+                            'string_interact_uniref_a3m',
+                            # 'geno_dist_uniref_a3m',
+                            # 'pdb_interact_uniref_sto',
+                            'species_interact_uniref_sto',
+                            'uniprot_distance_uniref_sto',
+                            'string_interact_uniref_sto',
+                            'string_interact_uniref_sto+sequence_based_template_pdb70',
+                            'string_interact_uniref_sto+structure_based_template',
+                            'string_interact_uniref_sto+sequence_based_template_pdb',
+                            'string_interact_uniref_sto+sequence_based_template_complex_pdb',
+                            'string_interact_uniref_sto+alphafold_model_templates',
+                            # 'geno_dist_uniref_sto',
+                            # 'pdb_interact_uniprot_sto',
+                            'species_interact_uniprot_sto',
+                            'uniprot_distance_uniprot_sto',
+                            'string_interact_uniprot_sto']
 
-        self.concatenate_methods = ['uniclust_oxmatch_a3m',
-                                    'pdb_interact_uniref_a3m',
-                                    'species_interact_uniref_a3m',
-                                    'uniprot_distance_uniref_a3m',
-                                    'string_interact_uniref_a3m',
-                                    # 'geno_dist_uniref_a3m',
-                                    'pdb_interact_uniref_sto',
-                                    'species_interact_uniref_sto',
-                                    'uniprot_distance_uniref_sto',
-                                    'string_interact_uniref_sto',
-                                    # 'geno_dist_uniref_sto',
-                                    'pdb_interact_uniprot_sto',
-                                    'species_interact_uniprot_sto',
-                                    'uniprot_distance_uniprot_sto',
-                                    'string_interact_uniprot_sto']
+        self.method2dir = {'default': 'default',
+                           'default+structure_based_template': 'default_struct',
+                           'default+sequence_based_template_pdb70': 'default_pdb70',
+                           'default+sequence_based_template_pdb': 'default_pdb',
+                           'default+sequence_based_template_complex_pdb': 'default_comp',
+                           'default+alphafold_model_templates': 'default_af',
+                           'uniclust_oxmatch_a3m': 'uniclust_oxmatch_a3m',
+                           'pdb_interact_uniref_a3m': 'pdb_iter_uniref_a3m',
 
-        self.template_methods = ['original_template_pipeline',
-                                 'sequence_based_template_pdb70',
-                                 'sequence_based_template_pdb',
-                                 'sequence_based_template_complex_pdb'
-                                 'structure_based_template',
-                                 'alphafold_model_templates']
+                           'species_interact_uniref_a3m': 'spec_iter_uniref_a3m',
+                           'species_interact_uniref_a3m+structure_based_template': 'spec_struct',
+                           'species_interact_uniref_a3m+sequence_based_template_pdb70': 'spec_pdb70',
+                           'species_interact_uniref_a3m+sequence_based_template_pdb': 'spec_pdb',
+                           'species_interact_uniref_a3m+sequence_based_template_complex_pdb': 'spec_comp',
+                           'species_interact_uniref_a3m+alphafold_model_templates': 'spec_af',
+
+                           'uniprot_distance_uniref_a3m': 'unidist_uniref_a3m',
+                           'string_interact_uniref_a3m': 'str_iter_uniref_a3m',
+                           'species_interact_uniref_sto': 'spec_iter_uniref_sto',
+                           'uniprot_distance_uniref_sto': 'unidist_uniref_sto',
+
+                           'string_interact_uniref_sto': 'str_iter_uniref_sto',
+                           'string_interact_uniref_sto+structure_based_template': 'str_struct',
+                           'string_interact_uniref_sto+sequence_based_template_pdb70': 'str_pdb70',
+                           'string_interact_uniref_sto+sequence_based_template_pdb': 'str_pdb',
+                           'string_interact_uniref_sto+sequence_based_template_complex_pdb': 'str_comp',
+                           'string_interact_uniref_sto+alphafold_model_templates': 'str_af',
+
+                           'species_interact_uniprot_sto': 'spec_iter_uniprot_sto',
+                           'uniprot_distance_uniprot_sto': 'unidist_uniprot_sto',
+                           'string_interact_uniprot_sto': 'str_iter_uniprot_sto'}
 
     def process(self,
                 fasta_path,
+                chain_id_map,
                 aln_dir,
                 complex_aln_dir,
                 template_dir,
                 monomer_model_dir,
                 output_dir):
 
-        self.concatenate_methods = []
-        self.template_methods = []
         makedir_if_not_exists(output_dir)
-
-        os.chdir(self.params['alphafold_program_dir'])
-
-        monomers = []
-
-        for line in open(fasta_path):
-            line = line.rstrip('\n').strip()
-            if line.startswith('>'):
-                monomers += [line[1:]]
-
-        # Customized complex alignment pipelines using original template search pipeline in alphafold
-        template_stos = []
-        for monomer in monomers:
-            monomer_template_sto = f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"
-            if not os.path.exists(monomer_template_sto):
-                raise Exception(f"Cannot find template stos for {monomer}: {monomer_template_sto}")
-            template_stos += [monomer_template_sto]
-
-        for concatenate_method in self.concatenate_methods:
-            msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
-            if len(pd.read_csv(msa_pair_file)) == 0:
-                continue
-
-            outdir = f"{output_dir}/{concatenate_method}"
-
-            if complete_result(outdir):
-                continue
-
-            makedir_if_not_exists(outdir)
-
-            a3m_paths = get_complex_alignments_by_method(monomers=monomers,
-                                                         concatenate_method=concatenate_method,
-                                                         aln_dir=aln_dir)
-
-            cmd = f"python {self.params['alphafold_multimer_program']} " \
-                  f"--fasta_path {fasta_path} " \
-                  f"--a3ms {','.join(a3m_paths)} " \
-                  f"--msa_pair_file {msa_pair_file} " \
-                  f"--template_stos {','.join(template_stos)} " \
-                  f"--env_dir {self.params['alphafold_env_dir']} " \
-                  f"--database_dir {self.params['alphafold_database_dir']} " \
-                  f"--output_dir {outdir}"
-
-            if complete_result(outdir):
-                continue
-
-            print(cmd)
-            os.system(cmd)
-
-        # Customized template search pipelines
-
-        a3m_paths = []
-        for monomer in monomers:
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniprot.sto"
-            if not os.path.exists(monomer_a3m):
-                raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
-            a3m_paths += [monomer_a3m]
-
-        for template_method in self.template_methods:
-
-            outdir = f"{output_dir}/{template_method}"
-
-            if complete_result(outdir):
-                continue
-
-            makedir_if_not_exists(outdir)
-
-            base_cmd = f"python run_alphafold_multimer_custom_sim.py  " \
-                       f"--fasta_path {fasta_path} " \
-                       f"--a3ms {','.join(a3m_paths)} " \
-                       f"--env_dir {self.params['alphafold_env_dir']} " \
-                       f"--database_dir {self.params['alphafold_database_dir']} " \
-                       f"--output_dir {outdir} "
-
-            if template_method == "original_template_pipeline":
-
-                base_cmd += f"--template_stos {','.join(template_stos)} "
-
-            elif template_method == "structure_based_template":
-
-                template_file = f"{structure_template_dir}/structure_templates.csv"
-
-                base_cmd += f"--temp_struct_csv {template_file} "
-
-            elif template_method == "alphafold_model_templates":
-
-                template_file = f"{structure_template_dir}/structure_templates.csv"
-
-                monomer_paths = []
-                for monomer in monomers:
-                    monomer_path = f"{monomer_model_dir}/{monomer}"
-                    if not os.path.exists(monomer_path):
-                        raise Exception(f"Cannot find monomer directory for {monomer}: {monomer_path}")
-                    monomer_paths += [monomer_path]
-
-                base_cmd += f"--temp_struct_csv {template_file} "
-                base_cmd += f"--monomer_paths {','.join(monomer_paths)} "
-
-            elif template_method == "sequence_based_template_pdb70":
-
-                template_file = f"{template_dir}/pdb70_seq/sequence_templates.csv"
-
-                template_hits_files = []
-                for monomer in monomers:
-                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/pdb_hits.hhr"
-                    if not os.path.exists(template_hits_file):
-                        raise Exception(f"Cannot find template hit file for {monomer}: {template_hits_file}")
-                    template_hits_files += [template_hits_file]
-
-                base_cmd += f"--temp_seq_pair_file {template_file} "
-                base_cmd += f"--template_hits_files {','.join(template_hits_files)} "
-
-            if len(base_cmd) > 0:
-                print(base_cmd)
-                os.system(base_cmd)
 
         # run alphafold default pipeline:
         outdir = f"{output_dir}/default"
-        if complete_result(outdir):
+        monomers = [chain_id_map[chain_id].description for chain_id in chain_id_map]
+        if not complete_result(outdir):
             os.chdir(self.params['alphafold_default_program_dir'])
             bfd_uniclust_a3ms = []
             mgnify_stos = []
             uniref90_stos = []
             uniprot_stos = []
-            for monomer in monomers:
+            for chain_id in chain_id_map:
+                monomer = chain_id_map[chain_id].description
                 monomer_bfd_uniclust_a3m = f"{aln_dir}/{monomer}/{monomer}_uniclust30_bfd.a3m"
                 if not os.path.exists(monomer_bfd_uniclust_a3m):
                     raise Exception(f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
@@ -244,4 +159,133 @@ class Quaternary_structure_prediction_pipeline:
             print(cmd)
             os.system(cmd)
 
-        print("The structure based template searching for dimers has finished!")
+        os.chdir(self.params['alphafold_program_dir'])
+
+        # Customized complex alignment pipelines using original template search pipeline in alphafold
+        default_alphafold_monomer_a3ms = []
+        default_alphafold_multimer_a3ms = []
+        template_stos = []
+        for chain_id in chain_id_map:
+            monomer = chain_id_map[chain_id].description
+            monomer_template_sto = f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"
+            if not os.path.exists(monomer_template_sto):
+                raise Exception(f"Cannot find template stos for {monomer}: {monomer_template_sto}")
+            template_stos += [monomer_template_sto]
+
+            default_alphafold_monomer_a3m = f"{output_dir}/default/msas/{chain_id}/monomer_final.a3m"
+            if not os.path.exists(default_alphafold_monomer_a3m):
+                raise Exception(
+                    f"Cannot find default alphafold alignments for {monomer}: {default_alphafold_monomer_a3m}")
+            default_alphafold_monomer_a3ms += [default_alphafold_monomer_a3m]
+
+            default_alphafold_multimer_a3m = f"{output_dir}/default/msas/{monomer}.paired.a3m"
+            if not os.path.exists(default_alphafold_monomer_a3m):
+                raise Exception(
+                    f"Cannot find default alphafold alignments for {monomer}: {default_alphafold_multimer_a3m}")
+            default_alphafold_multimer_a3ms += [default_alphafold_multimer_a3m]
+
+        for method in self.run_methods:
+            if method == "default":
+                continue
+            concatenate_method = ""
+            template_method = ""
+            if method.find('+') > 0:
+                concatenate_method, template_method = method.split('+')
+            else:
+                concatenate_method = method
+
+            if concatenate_method == "default":
+                a3m_paths = default_alphafold_multimer_a3ms
+                msa_pair_file = f"{output_dir}/default/msas/interact.csv"
+                interact_dict = {}
+                msa_len = -1
+                for i in range(len(default_alphafold_multimer_a3ms)):
+                    with open(default_alphafold_multimer_a3ms[i]) as f:
+                        input_fasta_str = f.read()
+                    msa_sequences, msa_descriptions = parse_fasta(input_fasta_str)
+                    current_len = len(msa_descriptions)
+                    if msa_len == -1:
+                        msa_len = current_len
+                    elif current_len != msa_len:
+                        raise Exception(f"The length of each msas are not equal! {default_alphafold_multimer_a3ms}")
+                    interact_dict[f'index_{i + 1}'] = [j for j in range(msa_len)]
+                interact_df = pd.DataFrame(interact_dict)
+                interact_df.to_csv(msa_pair_file)
+            else:
+                msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
+                if len(pd.read_csv(msa_pair_file)) == 0:
+                    continue
+                a3m_paths = get_complex_alignments_by_method(
+                    monomers=monomers,
+                    concatenate_method=concatenate_method,
+                    aln_dir=aln_dir)
+
+            outdir = f"{output_dir}/{self.method2dir[method]}"
+
+            if complete_result(outdir):
+                continue
+
+            makedir_if_not_exists(outdir)
+
+            base_cmd = f"python {self.params['alphafold_multimer_program']} " \
+                       f"--fasta_path {fasta_path} " \
+                       f"--monomer_a3ms {','.join(default_alphafold_monomer_a3ms)} " \
+                       f"--multimer_a3ms {','.join(a3m_paths)} " \
+                       f"--msa_pair_file {msa_pair_file} " \
+                       f"--env_dir {self.params['alphafold_env_dir']} " \
+                       f"--database_dir {self.params['alphafold_database_dir']} " \
+                       f"--output_dir {outdir} "
+
+            if template_method == "":
+                base_cmd += f"--template_stos {','.join(template_stos)} "
+
+            elif template_method == "structure_based_template":
+                template_file = f"{template_dir}/struct_temp/structure_templates.csv"
+                if len(pd.read_csv(template_file)) == 0:
+                    continue
+                base_cmd += f"--temp_struct_csv {template_file} "
+                base_cmd += f"--struct_atom_dir {template_dir}/struct_temp/templates "
+
+            elif template_method == "sequence_based_template_pdb":
+                template_file = f"{template_dir}/pdb_seq/sequence_templates.csv"
+                if len(pd.read_csv(template_file)) == 0:
+                    continue
+                base_cmd += f"--temp_struct_csv {template_file} "
+                base_cmd += f"--struct_atom_dir {template_dir}/pdb_seq/templates "
+
+            elif template_method == "sequence_based_template_complex_pdb":
+                template_file = f"{template_dir}/complex_pdb_seq/sequence_templates.csv"
+                if len(pd.read_csv(template_file)) == 0:
+                    continue
+                base_cmd += f"--temp_struct_csv {template_file} "
+                base_cmd += f"--struct_atom_dir {template_dir}/complex_pdb_seq/templates "
+
+            elif template_method == "sequence_based_template_pdb70":
+                template_file = f"{template_dir}/pdb70_seq/sequence_templates.csv"
+                if len(pd.read_csv(template_file)) == 0:
+                    continue
+                template_hits_files = []
+                for monomer in monomers:
+                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/pdb_hits.hhr"
+                    if not os.path.exists(template_hits_file):
+                        raise Exception(f"Cannot find template hit file for {monomer}: {template_hits_file}")
+                    template_hits_files += [template_hits_file]
+                base_cmd += f"--temp_seq_pair_file {template_file} "
+                base_cmd += f"--template_hits_files {','.join(template_hits_files)} "
+
+            elif template_method == "alphafold_model_templates":
+                monomer_paths = []
+                for monomer in monomers:
+                    monomer_path = f"{monomer_model_dir}/{monomer}/default"
+                    if not os.path.exists(monomer_path):
+                        raise Exception(f"Cannot find monomer directory for {monomer}: {monomer_path}")
+                    monomer_paths += [monomer_path]
+                base_cmd += f"--monomer_model_paths {','.join(monomer_paths)} "
+
+            if complete_result(outdir):
+                continue
+
+            print(base_cmd)
+            os.system(base_cmd)
+
+        print("The quaternary structure generation for multimers has finished!")

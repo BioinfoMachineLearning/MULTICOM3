@@ -99,12 +99,12 @@ class Monomer_alignment_generation_pipeline:
                 database_path=small_bfd_database_path,
                 get_tblout=True)
 
-        if len(uniref30_database_path) > 0 and len(bfd_database_path) > 0:
-            self.rosettafold_msa_runner = RosettaFold_Msa_runner(
-                hhblits_binary_path=hhblits_binary_path,
-                hhfilter_binary_path=hhfilter_binary_path,
-                uniref30_database_path=uniref30_database_path,
-                bfd_database_path=bfd_database_path)
+        # if len(uniref30_database_path) > 0 and len(bfd_database_path) > 0:
+        #     self.rosettafold_msa_runner = RosettaFold_Msa_runner(
+        #         hhblits_binary_path=hhblits_binary_path,
+        #         hhfilter_binary_path=hhfilter_binary_path,
+        #         uniref30_database_path=uniref30_database_path,
+        #         bfd_database_path=bfd_database_path)
 
         if len(uniclust30_database_path) > 0 and len(bfd_database_path) > 0:
             self.unclust30_bfd_msa_runner = hhblits.HHBlits(
@@ -120,6 +120,7 @@ class Monomer_alignment_generation_pipeline:
     def process(self, input_fasta_path, msa_output_dir):
         """Runs alignment tools on the input sequence and creates features."""
 
+        os.system(f"cp {input_fasta_path} {msa_output_dir}")
         input_id = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
 
         msa_process_list = []

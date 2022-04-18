@@ -154,6 +154,34 @@ def split_pdb(complex_pdb, outdir):
     return chain_pdbs
 
 
+def split_pdb_unrelax2relax(complex_pdb, outdir):
+    makedir_if_not_exists(outdir)
+    chain_pdbs = {}
+    pre_chain = None
+    chain_idx = 0
+    fw = None
+    for line in open(complex_pdb, 'r').readlines():
+        if not line.startswith('ATOM'):
+            continue
+        chain_name = line[21]
+        if pre_chain is None:
+            pre_chain = chain_name
+            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+            fw.write(line)
+            chain_pdbs[PDB_CHAIN_IDS[chain_idx]] = outdir + '/' + chain_name + '.pdb'
+        elif chain_name == pre_chain:
+            fw.write(line)
+        else:
+            fw.close()
+            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+            fw.write(line)
+            chain_idx += 1
+            chain_pdbs[PDB_CHAIN_IDS[chain_idx]] = outdir + '/' + chain_name + '.pdb'
+            pre_chain = chain_name
+    fw.close()
+    return chain_pdbs
+
+
 def create_template_df(templates):
     row_list = []
     for i in range(len(templates)):

@@ -66,11 +66,10 @@ class Monomer_structure_evaluation_pipeline:
         self.alphafold_qa = Alphafold_pkl_qa(ranking_methods=['plddt_avg'])
         self.parwise_qa = params['qscore_program']
         self.tmscore = params['tmscore_program']
-        self.enqa = En_qa(program_python=params['enqa_program_python'], program_path=params['enqa_program_path'],
-                          program_script=params['enqa_program_script'], use_gpu=use_gpu)
+        self.enqa = En_qa(enqa_program=params['enqa_program'], use_gpu=use_gpu)
 
     def process(self, targetname, fasta_file, monomer_model_dir, output_dir, multimer_model_dir="",
-                chainid_in_multimer=""):
+                chainid_in_multimer="", unrelaxed_chainid_in_multimer=""):
 
         output_dir_abs = os.path.abspath(output_dir)
 
@@ -90,48 +89,101 @@ class Monomer_structure_evaluation_pipeline:
                 os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
                 extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{i + 1}.pkl",
                             output_pkl=f"{pkldir}/{method}_{i}.pkl")
-                os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir}/{method}_{i}.msa")
+                os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir}/{method}_{i}.a3m")
 
-        for method in os.listdir(multimer_model_dir):
-            for i in range(0, 5):
-                complex_pdb = f"{multimer_model_dir}/{method}/ranked_{i}.pdb"
-                if os.path.exists(complex_pdb):
-                    residue_start, residue_end = extract_monomer_pdb(
-                        complex_pdb=complex_pdb,
-                        chainid=chainid_in_multimer,
-                        output_pdb=f"{pdbdir}/{method}_{i}.pdb")
-                    extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_model_{i + 1}_multimer.pkl",
-                                residue_start=residue_start,
-                                residue_end=residue_end,
-                                output_pkl=f"{pkldir}/{method}_{i}.pkl")
-                    os.system(f"cp {monomer_model_dir}/{method}/msas/{chainid_in_multimer}/monomer_final.a3m"
-                              f"{msadir}/{method}_{i}.msa")
-                # print(f"start: {residue_start}, end:{residue_end}")
+        if os.path.exists(multimer_model_dir):
+            for method in os.listdir(multimer_model_dir):
+                for i in range(0, 5):
+                    complex_pdb = f"{multimer_model_dir}/{method}/ranked_{i}.pdb"
+                    if os.path.exists(complex_pdb):
+                        residue_start, residue_end = extract_monomer_pdb(
+                            complex_pdb=complex_pdb,
+                            chainid=unrelaxed_chainid_in_multimer,
+                            output_pdb=f"{pdbdir}/{method}_{i}.pdb")
+                        extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_model_{i + 1}_multimer.pkl",
+                                    residue_start=residue_start,
+                                    residue_end=residue_end,
+                                    output_pkl=f"{pkldir}/{method}_{i}.pkl")
+                        os.system(f"cp {multimer_model_dir}/{method}/msas/{chainid_in_multimer}/monomer_final.a3m "
+                                  f"{msadir}/{method}_{i}.a3m")
+                    # print(f"start: {residue_start}, end:{residue_end}")
 
         result_dict = {}
+        cwd = os.getcwd()
 
-        if "apollo" in self.run_methods and not os.path.exists(output_dir + '/pairwise_ranking.tm'):
-            with open(f"{output_dir}/model.list", 'w') as fw:
-                for pdb in os.listdir(pdbdir):
-                    fw.write(f"{pdbdir}/{pdb}\n")
-            os.system(
-                f"{self.parwise_qa} {output_dir}/model.list {fasta_file} {self.tmscore} {output_dir} pairwise_ranking")
+        if "apollo" in self.run_methods:
+            if not os.path.exists(output_dir + '/pairwise_ranking.tm'):
+                os.chdir(output_dir)
+                with open("model.list", 'w') as fw:
+                    for pdb in os.listdir(pdbdir):
+                        fw.write(f"pdb/{pdb}\n")
+                os.system(
+                    f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
             result_dict["apollo"] = output_dir + '/pairwise_ranking.tm'
 
-        if "alphafold" in self.run_methods and not os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
-            alphafold_ranking = self.alphafold_qa.run(pkldir)
-            alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
+        if "alphafold" in self.run_methods:
+            if not os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
+                alphafold_ranking = self.alphafold_qa.run(pkldir)
+                alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
             result_dict["alphafold"] = output_dir_abs + '/alphafold_ranking.csv'
 
-        if "enQA" in self.run_methods and not os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
-            # enqa_ranking = self.enqa.run(input_dir=pdbdir,
-            #                              alphafold_prediction_dir=f"{monomer_model_dir}/original",
-            #                              outputdir=output_dir_abs+'/enqa')
-            enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
-                                                               pkl_dir=pkldir,
-                                                               pairwise_ranking_file=output_dir + '/pairwise_ranking.tm',
-                                                               outputdir=output_dir_abs + '/enqa')
-            enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
+        if "enQA" in self.run_methods:
+            if not os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
+                # enqa_ranking = self.enqa.run(input_dir=pdbdir,
+                #                              alphafold_prediction_dir=f"{monomer_model_dir}/original",
+                #                              outputdir=output_dir_abs+'/enqa')
+                enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
+                                                                   pkl_dir=pkldir,
+                                                                   pairwise_ranking_file=output_dir + '/pairwise_ranking.tm',
+                                                                   outputdir=output_dir_abs + '/enqa')
+                enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
             result_dict["enQA"] = output_dir_abs + '/enqa_ranking.csv'
+
+        os.chdir(cwd)
+
+        return result_dict
+
+    def reprocess(self, targetname, fasta_file, output_dir):
+
+        output_dir_abs = os.path.abspath(output_dir)
+
+        makedir_if_not_exists(output_dir)
+
+        pdbdir = output_dir + '/pdb'
+        pkldir = output_dir + '/pkl'
+        msadir = output_dir + '/msa'
+
+        result_dict = {}
+        cwd = os.getcwd()
+
+        if "apollo" in self.run_methods:
+            if not os.path.exists(output_dir + '/pairwise_ranking.tm'):
+                os.chdir(output_dir)
+                with open("model.list", 'w') as fw:
+                    for pdb in os.listdir(pdbdir):
+                        fw.write(f"pdb/{pdb}\n")
+                os.system(
+                    f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
+            result_dict["apollo"] = output_dir + '/pairwise_ranking.tm'
+
+        if "alphafold" in self.run_methods:
+            if not os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
+                alphafold_ranking = self.alphafold_qa.run(pkldir)
+                alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
+            result_dict["alphafold"] = output_dir_abs + '/alphafold_ranking.csv'
+
+        if "enQA" in self.run_methods:
+            if not os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
+                # enqa_ranking = self.enqa.run(input_dir=pdbdir,
+                #                              alphafold_prediction_dir=f"{monomer_model_dir}/original",
+                #                              outputdir=output_dir_abs+'/enqa')
+                enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
+                                                                   pkl_dir=pkldir,
+                                                                   pairwise_ranking_file=output_dir + '/pairwise_ranking.tm',
+                                                                   outputdir=output_dir_abs + '/enqa')
+                enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
+            result_dict["enQA"] = output_dir_abs + '/enqa_ranking.csv'
+
+        os.chdir(cwd)
 
         return result_dict

@@ -492,3 +492,201 @@ class Multimer_iterative_refinement_pipeline:
         os.chdir(cwd)
 
         return iteration_result_all, iteration_result_avg, iteration_result_max
+
+    def search_single(self, chain_id_map, fasta_path, pdb_path, pkl_path, msa_paths, outdir):
+
+        fasta_path = os.path.abspath(fasta_path)
+
+        targetname = pathlib.Path(fasta_path).stem
+
+        print(f"Processing {targetname}")
+
+        outdir = os.path.abspath(outdir) + "/"
+
+        makedir_if_not_exists(outdir)
+
+        cwd = os.getcwd()
+
+        ref_start_pdb = pdb_path
+        ref_start_pkl = pkl_path
+        ref_start_msa_paths = msa_paths
+
+        model_iteration_scores = []
+
+        print(f"Start to refine {ref_start_pdb}")
+
+        for num_iteration in range(self.max_iteration):
+            os.chdir(cwd)
+            current_work_dir = f"{outdir}/iteration{num_iteration + 1}"
+            makedir_if_not_exists(current_work_dir)
+
+            start_pdb = f"{current_work_dir}/start.pdb"
+            start_pkl = f"{current_work_dir}/start.pkl"
+            start_msa_path = f"{current_work_dir}/start_msas"
+            if os.path.exists(start_msa_path):
+                os.system(f"rm -rf {start_msa_path}")
+            makedir_if_not_exists(start_msa_path)
+
+            with open(ref_start_pkl, 'rb') as f:
+                ref_avg_lddt = float(pickle.load(f)['ranking_confidence'])
+
+            for chain_id in ref_start_msa_paths:
+                os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
+                          f"{start_msa_path}/{chain_id_map[chain_id].description}.start.multimer.a3m")
+                os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
+                          f"{start_msa_path}/{chain_id_map[chain_id].description}.start.monomer.a3m")
+
+            os.system(f"cp {ref_start_pdb} {start_pdb}")
+            os.system(f"cp {ref_start_pkl} {start_pkl}")
+
+            model_iteration_scores += [ref_avg_lddt]
+
+            out_model_dir = f"{current_work_dir}/alphafold"
+
+            if not complete_result(out_model_dir):
+
+                chain_pdbs = split_pdb_unrelax2relax(start_pdb, current_work_dir)
+
+                template_results = []
+
+                out_template_dir = current_work_dir + '/templates'
+                makedir_if_not_exists(out_template_dir)
+
+                for chain_id in chain_pdbs:
+                    print(chain_id)
+                    if chain_id not in chain_id_map:
+                        raise Exception("Multimer fasta file and model doesn't match!")
+
+                    monomer_work_dir = current_work_dir + '/' + chain_id_map[chain_id].description
+                    makedir_if_not_exists(monomer_work_dir)
+                    os.system(
+                        f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
+                    foldseek_res = search_templates_foldseek(
+                        foldseek_program=self.params['foldseek_program'],
+                        databases=[self.params['foldseek_pdb_database'], self.params['foldseek_af_database']],
+                        inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
+                        outdir=monomer_work_dir + '/foldseek')
+
+                    if len(foldseek_res['all_alignment']) == 0:
+                        print(
+                            f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        break
+
+                    # os.system(f"cp {foldseek_res} {monomer_work_dir}/structure_templates.csv")
+
+                    template_results += [foldseek_res]
+
+                    self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
+                                              outdir=out_template_dir)
+
+                if len(template_results) != len(chain_id_map):
+                    break
+
+                template_files, monomer_msa_files, multimer_msa_files, msa_pair_file = \
+                    self.concatenate_msa_and_templates(
+                        chain_id_map=chain_id_map,
+                        template_results=template_results,
+                        start_msa_path=start_msa_path,
+                        outpath=current_work_dir,
+                        iteration=num_iteration + 1)
+
+                find_templates = True
+                for chain_id, template_file in zip(chain_id_map, template_files):
+                    if len(pd.read_csv(template_file, sep='\t')) == 0:
+                        print(
+                            f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        find_templates = False
+
+                if not find_templates:
+                    break
+
+                makedir_if_not_exists(out_model_dir)
+
+                if len(template_files) == 1:
+                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                          f"--fasta_path {fasta_path} " \
+                          f"--env_dir {self.params['alphafold_env_dir']} " \
+                          f"--database_dir {self.params['alphafold_database_dir']} " \
+                          f"--multimer_a3ms {','.join(multimer_msa_files)} " \
+                          f"--monomer_a3ms {','.join(monomer_msa_files)} " \
+                          f"--msa_pair_file {msa_pair_file} " \
+                          f"--temp_struct_csv {template_files[0]} " \
+                          f"--struct_atom_dir {out_template_dir} " \
+                          f"--output_dir {out_model_dir}"
+                else:
+                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                          f"--fasta_path {fasta_path} " \
+                          f"--env_dir {self.params['alphafold_env_dir']} " \
+                          f"--database_dir {self.params['alphafold_database_dir']} " \
+                          f"--multimer_a3ms {','.join(multimer_msa_files)} " \
+                          f"--monomer_a3ms {','.join(monomer_msa_files)} " \
+                          f"--msa_pair_file {msa_pair_file} " \
+                          f"--monomer_temp_csvs {','.join(template_files)} " \
+                          f"--struct_atom_dir {out_template_dir} " \
+                          f"--output_dir {out_model_dir}"
+
+                try:
+                    os.chdir(self.params['alphafold_program_dir_v2'])
+                    print(cmd)
+                    os.system(cmd)
+                except Exception as e:
+                    print(e)
+
+            new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+            new_ranking_json = json.loads(open(new_ranking_json_file).read())
+            max_lddt_score = new_ranking_json["iptm+ptm"][list(new_ranking_json["order"])[0]]
+
+            print(f'#########Iteration: {num_iteration + 1}#############')
+            print(f"plddt before: {ref_avg_lddt}")
+            print(f"plddt after: {max_lddt_score}")
+            if max_lddt_score > ref_avg_lddt:
+                print("Continue to refine")
+                ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                ref_start_msa_paths = {}
+                for chain_id in chain_id_map:
+                    ref_start_msa_paths[chain_id] = dict(
+                            paired_msa=f"{out_model_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m",
+                            monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+
+                print('##################################################')
+                if num_iteration + 1 >= self.max_iteration:
+                    print("Reach maximum iteration")
+                    model_iteration_scores += [max_lddt_score]
+            else:
+                # keep the models in iteration 1 even through the plddt score decreases
+                if num_iteration == 0:
+                    ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                    ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                    ref_start_msa_paths = {}
+                    for chain_id in chain_id_map:
+                        ref_start_msa_paths[chain_id] = dict(
+                            paired_msa=f"{out_model_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m",
+                            monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+                    model_iteration_scores += [max_lddt_score]
+                break
+
+        # model_iteration_scores += [max_lddt_score]
+        while len(model_iteration_scores) <= self.max_iteration:
+            model_iteration_scores += [0]
+
+        print(model_iteration_scores)
+        df = pd.DataFrame(model_iteration_scores)
+        df.to_csv(outdir + '/summary.csv')
+
+        final_model_dir = outdir + '/final'
+        makedir_if_not_exists(final_model_dir)
+        os.system(f"cp {ref_start_pdb} {final_model_dir}/final.pdb")
+        os.system(f"cp {ref_start_pkl} {final_model_dir}/final.pkl")
+
+        for chain_id in chain_id_map:
+            os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
+                      f"{final_model_dir}/{chain_id_map[chain_id].description}.paired.a3m")
+            os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
+                      f"{final_model_dir}/{chain_id_map[chain_id].description}.monomer.a3m")
+
+        os.chdir(cwd)
+
+        return final_model_dir

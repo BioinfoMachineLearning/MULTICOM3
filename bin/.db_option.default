@@ -29,6 +29,9 @@ mmalign_program = SOFTWARE_PATH/tools/MMalign
 # hhsearch program path
 hhsearch_program = YOUR_ENV/bin/hhsearch
 
+# deepmsa2 program path
+deepmsa2_program = SOFTWARE_PATH/tools/deepmsa/hhsuite2/scripts/build_MSA2.py
+
 # alphafold environment directory
 alphafold_env_dir = YOUR_ALPHAFOLD_ENV/bin/
 
@@ -107,6 +110,10 @@ smallbfd_database = SOFTWARE_PATH/databases/smallbfd/bfd-first_non_consensus_seq
 bfd_database = SOFTWARE_PATH/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
 
 mgnify_database = SOFTWARE_PATH/databases/mgnify/mgy_clusters_2018_12.fa
+
+metaclust_database = SOFTWARE_PATH/databases/Metaclust_2018_06/metaclust_50
+
+img_database_path = SOFTWARE_PATH/databases/img/img_new.fasta
 
 ###########################Complex alignment generation option#######################
 
