@@ -5,9 +5,10 @@ from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check
 import pandas as pd
 from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
 from bml_casp15.monomer_structure_evaluation.enqa_ranking import En_qa
+from bml_casp15.monomer_structure_evaluation.bfactor_ranking import Bfactor_qa
 import copy
 import pickle
-
+import json
 
 def extract_monomer_pdb(complex_pdb, chainid, output_pdb):
     chain_start = -1
@@ -58,7 +59,7 @@ def extract_pkl(src_pkl, output_pkl, residue_start=-1, residue_end=-1):
 class Monomer_structure_evaluation_pipeline:
     """Runs the alignment tools and assembles the input features."""
 
-    def __init__(self, params, run_methods=["alphafold", "apollo", "enQA"], use_gpu=True):
+    def __init__(self, params, run_methods=["alphafold", "apollo", "enQA", "bfactor"], use_gpu=True):
         """Initializes the data pipeline."""
 
         self.params = params
@@ -67,6 +68,7 @@ class Monomer_structure_evaluation_pipeline:
         self.parwise_qa = params['qscore_program']
         self.tmscore = params['tmscore_program']
         self.enqa = En_qa(enqa_program=params['enqa_program'], use_gpu=use_gpu)
+        self.bfactorqa = Bfactor_qa(params=params)
 
     def process(self, targetname, fasta_file, monomer_model_dir, output_dir, multimer_model_dir="",
                 chainid_in_multimer="", unrelaxed_chainid_in_multimer=""):
@@ -85,14 +87,22 @@ class Monomer_structure_evaluation_pipeline:
         makedir_if_not_exists(msadir)
 
         for method in os.listdir(monomer_model_dir):
+            ranking_json_file = f"{monomer_model_dir}/{method}/ranking_debug.json"
+            ranking_json = json.loads(open(ranking_json_file).read())
             for i in range(0, 5):
                 os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
-                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{i + 1}.pkl",
+
+                model_num = list(ranking_json["order"])[i].split('_')[1]
+                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{model_num}.pkl",
                             output_pkl=f"{pkldir}/{method}_{i}.pkl")
                 os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir}/{method}_{i}.a3m")
 
         if os.path.exists(multimer_model_dir):
             for method in os.listdir(multimer_model_dir):
+                ranking_json_file = f"{multimer_model_dir}/{method}/ranking_debug.json"
+                if not os.path.exists(ranking_json_file):
+                    continue
+                ranking_json = json.loads(open(ranking_json_file).read())
                 for i in range(0, 5):
                     complex_pdb = f"{multimer_model_dir}/{method}/ranked_{i}.pdb"
                     if os.path.exists(complex_pdb):
@@ -100,7 +110,9 @@ class Monomer_structure_evaluation_pipeline:
                             complex_pdb=complex_pdb,
                             chainid=unrelaxed_chainid_in_multimer,
                             output_pdb=f"{pdbdir}/{method}_{i}.pdb")
-                        extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_model_{i + 1}_multimer.pkl",
+
+                        model_num = list(ranking_json["order"])[i].split('_')[1]
+                        extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_model_{model_num}_multimer.pkl",
                                     residue_start=residue_start,
                                     residue_end=residue_end,
                                     output_pkl=f"{pkldir}/{method}_{i}.pkl")
@@ -138,6 +150,11 @@ class Monomer_structure_evaluation_pipeline:
                                                                    outputdir=output_dir_abs + '/enqa')
                 enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
             result_dict["enQA"] = output_dir_abs + '/enqa_ranking.csv'
+        if "bfactor" in self.run_methods:
+            if not os.path.exists(output_dir + '/bfactor_ranking.csv'):
+                bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
+                bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
+            result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
 
         os.chdir(cwd)
 
@@ -155,7 +172,7 @@ class Monomer_structure_evaluation_pipeline:
 
         result_dict = {}
         cwd = os.getcwd()
-
+        
         if "apollo" in self.run_methods:
             if not os.path.exists(output_dir + '/pairwise_ranking.tm'):
                 os.chdir(output_dir)
@@ -184,6 +201,12 @@ class Monomer_structure_evaluation_pipeline:
                 enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
             result_dict["enQA"] = output_dir_abs + '/enqa_ranking.csv'
 
+        if "bfactor" in self.run_methods:
+            if not os.path.exists(output_dir + '/bfactor_ranking.csv'):
+                bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
+                bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
+            result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
+            
         os.chdir(cwd)
 
         return result_dict

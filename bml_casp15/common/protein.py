@@ -112,8 +112,11 @@ def parse_pdb_row(row, param):
         result = row[38:38 + 8]
     elif param == "z":
         result = row[46:46 + 8]
+    elif param == "bfactor":
+        result = row[60:66]
     else:
-        die(f"Invalid row[{row}] or parameter[{param}]")
+        print(f"Invalid row[{row}] or parameter[{param}]")
+        return None
     return result.lstrip().rstrip()
 
 

@@ -42,7 +42,13 @@ class Monomer_refinement_model_selection:
         self.methods = methods
 
     def select_v1(self, indir, outdir):
+        if os.path.exists(outdir):
+            os.system(f"rm -rf {outdir}")
+        makedir_if_not_exists(outdir)
+
         for pdb in os.listdir(indir):
+            if not os.path.exists(indir + '/' + pdb + '/iteration1'):
+                continue
             start_pdb = indir + '/' + pdb + '/iteration1/start.pdb'
             start_pkl = indir + '/' + pdb + '/iteration1/start.pkl'
             os.system(f"cp {start_pdb} {outdir}/{pdb}_ori.pdb")
@@ -51,7 +57,7 @@ class Monomer_refinement_model_selection:
             refine_pdb = indir + '/' + pdb + '/final/final.pdb'
             refine_pkl = indir + '/' + pdb + '/final/final.pkl'
             os.system(f"cp {refine_pdb} {outdir}/{pdb}_ref.pdb")
-            os.system(f"cp {refine_pkl} {outdir}/{pdb}_ref.pdb")
+            os.system(f"cp {refine_pkl} {outdir}/{pdb}_ref.pkl")
 
         pdbs = []
         plddts = []
@@ -64,7 +70,8 @@ class Monomer_refinement_model_selection:
 
         df = pd.DataFrame({'model': pdbs, 'plddt': plddts})
         df = df.sort_values(by=['plddt'], ascending=False)
-        df.reset_index(inplace=True)
+        df.reset_index(inplace=True, drop=True)
+        df.to_csv(outdir + '/final_ranking.csv')
 
         for i in range(5):
             pdb_name = df.loc[i, 'model']
@@ -74,8 +81,17 @@ class Monomer_refinement_model_selection:
         return outdir
 
     def select_v2(self, ranking_df, indir, outdir):
+        if os.path.exists(outdir):
+            os.system(f"rm -rf {outdir}")
+        makedir_if_not_exists(outdir)
+
+        start_pdbs = []
+        refine_pdbs = []
+        start_plddts = []
+        refine_plddts = []
+        final_models = []
         for i in range(5):
-            pdb_name = ranking_df.loc[i, 'model']
+            pdb_name = ranking_df.loc[i, 'model'].replace('.pdb', '')
             start_pdb = indir + '/' + pdb_name + '/iteration1/start.pdb'
             start_pkl = indir + '/' + pdb_name + '/iteration1/start.pkl'
             os.system(f"cp {start_pdb} {outdir}/{pdb_name}_ori.pdb")
@@ -83,17 +99,30 @@ class Monomer_refinement_model_selection:
             with open(start_pkl, 'rb') as f:
                 plddt_start = np.mean(pickle.load(f)['plddt'])
 
+            start_pdbs += [f"{pdb_name}_ori.pdb"]
+            start_plddts += [plddt_start]
+
             refine_pdb = indir + '/' + pdb_name + '/final/final.pdb'
             refine_pkl = indir + '/' + pdb_name + '/final/final.pkl'
             os.system(f"cp {refine_pdb} {outdir}/{pdb_name}_ref.pdb")
-            os.system(f"cp {refine_pkl} {outdir}/{pdb_name}_ref.pdb")
+            os.system(f"cp {refine_pkl} {outdir}/{pdb_name}_ref.pkl")
             with open(refine_pkl, 'rb') as f:
                 plddt_ref = np.mean(pickle.load(f)['plddt'])
+
+            refine_pdbs += [f"{pdb_name}_ref.pdb"]
+            refine_plddts += [plddt_ref]
 
             if plddt_start > plddt_ref:
                 os.system(f"cp {outdir}/{pdb_name}_ori.pdb {outdir}/casp{i + 1}.pdb")
                 os.system(f"cp {outdir}/{pdb_name}_ori.pkl {outdir}/casp{i + 1}.pkl")
+                final_models += [f"{pdb_name}_ori.pdb"]
             else:
                 os.system(f"cp {outdir}/{pdb_name}_ref.pdb {outdir}/casp{i + 1}.pdb")
                 os.system(f"cp {outdir}/{pdb_name}_ref.pkl {outdir}/casp{i + 1}.pkl")
+                final_models += [f"{pdb_name}_ref.pdb"]
+
+        df = pd.DataFrame({'start_model': start_pdbs, 'start_plddt': start_plddts,
+                           'refine_model': refine_pdbs, 'refine_plddt': refine_plddts, 'final_model': final_models})
+        df.to_csv(outdir + '/final_ranking.csv')
+
         return outdir

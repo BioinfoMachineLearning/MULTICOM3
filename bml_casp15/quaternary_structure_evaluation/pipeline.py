@@ -7,13 +7,15 @@ from bml_casp15.quaternary_structure_evaluation.alphafold_ranking import Alphafo
 from bml_casp15.quaternary_structure_evaluation.pairwise_dockq import Pairwise_dockq_qa
 from bml_casp15.quaternary_structure_evaluation.dproq_ranking import DPROQ
 from bml_casp15.quaternary_structure_evaluation.enqa_ranking import En_qa
+from bml_casp15.monomer_structure_evaluation.bfactor_ranking import Bfactor_qa
+from bml_casp15.quaternary_structure_evaluation.multieva_qa import MultiEva_qa
 from bml_casp15.common.protein import complete_result
 
 
 class Quaternary_structure_evaluation_pipeline:
     """Runs the alignment tools and assembles the input features."""
 
-    def __init__(self, params, run_methods=["alphafold", "pairwise", "enqa", "dproq"]): #,  'multieva']):
+    def __init__(self, params, run_methods=["alphafold", "pairwise", "enqa", "dproq", "bfactor", 'multieva']):
         """Initializes the data pipeline."""
 
         self.params = params
@@ -23,8 +25,10 @@ class Quaternary_structure_evaluation_pipeline:
         self.alphafold_qa = Alphafold_pkl_qa()
         self.dproq = DPROQ(dproq_program=params['dproq_program'])
         self.enqa = En_qa(enqa_program=params['enqa_program'])
+        self.bfactorqa = Bfactor_qa()
+        self.multieva = MultiEva_qa(multieva_program=params['multieva_program'])
 
-    def process(self, chain_id_map, model_dir, output_dir):
+    def process(self, chain_id_map, model_dir, monomer_model_dir, output_dir, stoichiometry):
 
         makedir_if_not_exists(output_dir)
 
@@ -81,5 +85,28 @@ class Quaternary_structure_evaluation_pipeline:
                                                                    outputdir=output_dir + '/enqa')
                 enqa_ranking.to_csv(output_dir + '/enqa_ranking.csv')
             result_dict["enQA"] = output_dir + '/enqa_ranking.csv'
+
+        if "bfactor" in self.run_methods:
+            if not os.path.exists(output_dir + '/bfactor_ranking.csv'):
+                bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
+                bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
+            result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
+
+        if "multieva" in self.run_methods:
+            if not os.path.exists(f"{output_dir}/multieva.csv"):
+                workdir = output_dir + '/multieva'
+                makedir_if_not_exists(workdir)
+                refdir = workdir + '/monomer_af'
+                makedir_if_not_exists(refdir)
+
+                for chain_id in chain_id_map:
+                    default_chain_model = monomer_model_dir + '/' + chain_id_map[chain_id].description + '/default_0.pdb'
+                    os.system(f"cp {default_chain_model} {refdir}/{chain_id_map[chain_id].description}.pdb")
+
+                multieva_csv = self.multieva.run(input_dir=pdbdir, stoichiometry=stoichiometry,
+                                                 alphafold_prediction_dir=refdir, outputdir=workdir)
+
+                os.system(f"cp {multieva_csv} {output_dir}/multieva.csv")
+            result_dict["multieva"] = output_dir + '/multieva.csv'
 
         return result_dict

@@ -1,4 +1,4 @@
-source /home/bml_casp15/anaconda3/bin/activate
+source /home/bml_casp15/anaconda3/bin/activate base
 
 conda activate enqa
 

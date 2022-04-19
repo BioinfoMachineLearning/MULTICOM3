@@ -18,7 +18,7 @@ import itertools
 def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
     makedir_if_not_exists(outdir)
     foldseek_runner = Foldseek(binary_path=foldseek_program, databases=databases)
-    return foldseek_runner.query_only_local(pdb=inpdb, outdir=outdir)
+    return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000, maxseq=300)
 
 
 def reindex_pdb(inpdb):
@@ -452,7 +452,7 @@ class Multimer_iterative_refinement_pipeline:
                             outdir=comb_res_dir + '/foldseek')
 
                         query_sequence = ''.join([chain_id_map[chain_id].sequence for chain_id in combination_pair])
-                        check_and_rank_monomer_templates_local_or_global(template_result=foldseek_res,
+                        check_and_rank_monomer_templates_local_and_global(template_result=foldseek_res,
                                                                          outfile=f"{comb_res_dir}/structure_templates.csv",
                                                                          query_sequence=query_sequence,
                                                                          max_template_count=2000)

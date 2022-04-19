@@ -103,7 +103,6 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
     makedir_if_not_exists(outputdir)
     result = None
     pipeline = Monomer_structure_evaluation_pipeline(params=params,
-                                                     run_methods=["apollo", "alphafold", "enQA"],
                                                      use_gpu=True)
     try:
         result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
@@ -129,14 +128,15 @@ def rerun_monomer_evaluation_pipeline(params, targetname, fasta_file, outputdir)
     return result
 
 
-def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir):
+def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir, ranking_df):
     pipeline = iterative_refine_pipeline.Monomer_iterative_refinement_pipeline_server(params=params)
     pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir)
 
     makedir_if_not_exists(finaldir)
 
     pipeline = iterative_refine_pipeline.Monomer_refinement_model_selection()
-    pipeline.select_v1(indir=outdir, outdir=finaldir)
+    pipeline.select_v1(indir=outdir, outdir=finaldir + '/v1')
+    pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
 
 
 def run_concatenate_dimer_msas_pipeline(multimer, monomer_aln_dir, outputdir, params):
@@ -269,12 +269,13 @@ def run_quaternary_structure_generation_pipeline_foldseek(params, fasta_path, ch
     return True
 
 
-def run_multimer_evaluation_pipeline(params, chain_id_map, indir, outdir):
+def run_multimer_evaluation_pipeline(params, chain_id_map, indir, outdir, stoichiometry):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
-        multimer_qa_result = pipeline.process(chain_id_map=chain_id_map, model_dir=indir, output_dir=outdir)
+        multimer_qa_result = pipeline.process(chain_id_map=chain_id_map, model_dir=indir,
+                                              output_dir=outdir, stoichiometry=stoichiometry)
     except Exception as e:
         print(e)
     return multimer_qa_result
