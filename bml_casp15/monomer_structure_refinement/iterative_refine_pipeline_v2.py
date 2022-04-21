@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.quaternary_structure_refinement.util import *
+from bml_casp15.monomer_structure_refinement.util import *
 
 
 class Monomer_iterative_refinement_pipeline:

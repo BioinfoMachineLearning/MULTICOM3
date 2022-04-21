@@ -28,17 +28,17 @@ class Quaternary_structure_evaluation_pipeline:
         self.bfactorqa = Bfactor_qa()
         self.multieva = MultiEva_qa(multieva_program=params['multieva_program'])
 
-    def process(self, chain_id_map, model_dir, monomer_model_dir, output_dir, stoichiometry):
+    def process(self, fasta_path, chain_id_map, model_dir, monomer_model_dir, output_dir, stoichiometry):
 
         makedir_if_not_exists(output_dir)
 
-        pdbdir = output_dir + '/pdb'
+        pdbdir = output_dir + '/pdb/'
         makedir_if_not_exists(pdbdir)
 
-        pkldir = output_dir + '/pkl'
+        pkldir = output_dir + '/pkl/'
         makedir_if_not_exists(pkldir)
 
-        msadir = output_dir + '/msa'
+        msadir = output_dir + '/msa/'
         makedir_if_not_exists(msadir)
 
         for method in os.listdir(model_dir):
@@ -100,10 +100,13 @@ class Quaternary_structure_evaluation_pipeline:
                 makedir_if_not_exists(refdir)
 
                 for chain_id in chain_id_map:
-                    default_chain_model = monomer_model_dir + '/' + chain_id_map[chain_id].description + '/default_0.pdb'
+                    default_chain_model = monomer_model_dir + '/' + chain_id_map[
+                        chain_id].description + '/default_0.pdb'
                     os.system(f"cp {default_chain_model} {refdir}/{chain_id_map[chain_id].description}.pdb")
 
-                multieva_csv = self.multieva.run(input_dir=pdbdir, stoichiometry=stoichiometry,
+                multieva_csv = self.multieva.run(chain_id_map=chain_id_map,
+                                                 fasta_path=fasta_path,
+                                                 input_dir=pdbdir, stoichiometry=stoichiometry,
                                                  alphafold_prediction_dir=refdir, outputdir=workdir)
 
                 os.system(f"cp {multieva_csv} {output_dir}/multieva.csv")

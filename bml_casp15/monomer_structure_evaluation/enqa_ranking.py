@@ -117,7 +117,7 @@ class En_qa:
         print("Try to run the ensemble model first")
         cmd = f"sh {self.enqa_program} {input_dir} {outputdir} ensemble {outputdir}/alphafold_prediction"
         if not self.use_gpu:
-            cmd += " --cpu"
+            cmd += " false"
 
         print(cmd)
         try:
@@ -129,7 +129,7 @@ class En_qa:
             print("Try to run the EGNN_esto9 model")
             cmd = f"sh {self.enqa_program} {input_dir} {outputdir} EGNN_esto9 {outputdir}/alphafold_prediction"
             if not self.use_gpu:
-                cmd += " --cpu"
+                cmd += " false"
             print(cmd)
             try:
                 os.system(cmd)

@@ -28,9 +28,6 @@ def get_avg_factor(infile):
 
 
 class Bfactor_qa:
-    def __init__(self, params):
-        self.params = params
-
     def run(self, input_dir):
         models = []
         avg_bfactors = []

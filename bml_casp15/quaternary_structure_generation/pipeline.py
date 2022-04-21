@@ -72,7 +72,7 @@ class Quaternary_structure_prediction_pipeline:
                             'uniprot_distance_uniprot_sto',
                             'string_interact_uniprot_sto']
 
-        self.method2dir = {'default': 'default',
+        self.method2dir = {'default': 'default_multimer',
                            'default+structure_based_template': 'default_struct',
                            'default+sequence_based_template_pdb70': 'default_pdb70',
                            'default+sequence_based_template_pdb': 'default_pdb',
@@ -116,7 +116,7 @@ class Quaternary_structure_prediction_pipeline:
         makedir_if_not_exists(output_dir)
 
         # run alphafold default pipeline:
-        outdir = f"{output_dir}/default"
+        outdir = f"{output_dir}/default_multimer"
         monomers = [chain_id_map[chain_id].description for chain_id in chain_id_map]
         if not complete_result(outdir):
             os.chdir(self.params['alphafold_default_program_dir'])
@@ -172,13 +172,13 @@ class Quaternary_structure_prediction_pipeline:
                 raise Exception(f"Cannot find template stos for {monomer}: {monomer_template_sto}")
             template_stos += [monomer_template_sto]
 
-            default_alphafold_monomer_a3m = f"{output_dir}/default/msas/{chain_id}/monomer_final.a3m"
+            default_alphafold_monomer_a3m = f"{output_dir}/default_multimer/msas/{chain_id}/monomer_final.a3m"
             if not os.path.exists(default_alphafold_monomer_a3m):
                 raise Exception(
                     f"Cannot find default alphafold alignments for {monomer}: {default_alphafold_monomer_a3m}")
             default_alphafold_monomer_a3ms += [default_alphafold_monomer_a3m]
 
-            default_alphafold_multimer_a3m = f"{output_dir}/default/msas/{monomer}.paired.a3m"
+            default_alphafold_multimer_a3m = f"{output_dir}/default_multimer/msas/{monomer}.paired.a3m"
             if not os.path.exists(default_alphafold_monomer_a3m):
                 raise Exception(
                     f"Cannot find default alphafold alignments for {monomer}: {default_alphafold_multimer_a3m}")
@@ -196,7 +196,7 @@ class Quaternary_structure_prediction_pipeline:
 
             if concatenate_method == "default":
                 a3m_paths = default_alphafold_multimer_a3ms
-                msa_pair_file = f"{output_dir}/default/msas/interact.csv"
+                msa_pair_file = f"{output_dir}/default_multimer/msas/interact.csv"
                 interact_dict = {}
                 msa_len = -1
                 for i in range(len(default_alphafold_multimer_a3ms)):

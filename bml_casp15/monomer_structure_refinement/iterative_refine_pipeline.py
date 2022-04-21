@@ -75,8 +75,8 @@ class Monomer_refinement_model_selection:
 
         for i in range(5):
             pdb_name = df.loc[i, 'model']
-            os.system(f"cp {outdir}/{pdb_name} {outdir}/casp{i + 1}.pdb")
-            os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/casp{i + 1}.pkl")
+            os.system(f"cp {outdir}/{pdb_name} {outdir}/refine{i + 1}.pdb")
+            os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/refine{i + 1}.pkl")
 
         return outdir
 
@@ -113,12 +113,12 @@ class Monomer_refinement_model_selection:
             refine_plddts += [plddt_ref]
 
             if plddt_start > plddt_ref:
-                os.system(f"cp {outdir}/{pdb_name}_ori.pdb {outdir}/casp{i + 1}.pdb")
-                os.system(f"cp {outdir}/{pdb_name}_ori.pkl {outdir}/casp{i + 1}.pkl")
+                os.system(f"cp {outdir}/{pdb_name}_ori.pdb {outdir}/refine{i + 1}.pdb")
+                os.system(f"cp {outdir}/{pdb_name}_ori.pkl {outdir}/refine{i + 1}.pkl")
                 final_models += [f"{pdb_name}_ori.pdb"]
             else:
-                os.system(f"cp {outdir}/{pdb_name}_ref.pdb {outdir}/casp{i + 1}.pdb")
-                os.system(f"cp {outdir}/{pdb_name}_ref.pkl {outdir}/casp{i + 1}.pkl")
+                os.system(f"cp {outdir}/{pdb_name}_ref.pdb {outdir}/refine{i + 1}.pdb")
+                os.system(f"cp {outdir}/{pdb_name}_ref.pkl {outdir}/refine{i + 1}.pkl")
                 final_models += [f"{pdb_name}_ref.pdb"]
 
         df = pd.DataFrame({'start_model': start_pdbs, 'start_plddt': start_plddts,

@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.quaternary_structure_refinement.util import *
+from bml_casp15.monomer_structure_refinement.util import *
 
 
 class Monomer_iterative_refinement_pipeline:
@@ -285,7 +285,7 @@ class Monomer_iterative_refinement_pipeline:
                 else:
                     # keep the models in iteration 1 even through the plddt score decreases
                     if num_iteration == 0:
-
+                        ref_start_pdb = f"ranked_0.pdb"
                         ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
                         ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
 

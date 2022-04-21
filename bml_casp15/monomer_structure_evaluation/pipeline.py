@@ -6,9 +6,11 @@ import pandas as pd
 from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
 from bml_casp15.monomer_structure_evaluation.enqa_ranking import En_qa
 from bml_casp15.monomer_structure_evaluation.bfactor_ranking import Bfactor_qa
+from bml_casp15.common.protein import read_qa_txt_as_df
 import copy
 import pickle
 import json
+
 
 def extract_monomer_pdb(complex_pdb, chainid, output_pdb):
     chain_start = -1
@@ -47,11 +49,13 @@ def extract_pkl(src_pkl, output_pkl, residue_start=-1, residue_end=-1):
         if residue_end != -1 and residue_start != -1:
             prediction_result_monomer = {'plddt': prediction_result['plddt'][residue_start:residue_end, ]}
             distogram_monomer = prediction_result['distogram']
-            distogram_monomer['logits'] = distogram_monomer['logits'][residue_start:residue_end, residue_start:residue_end, :]
+            distogram_monomer['logits'] = distogram_monomer['logits'][residue_start:residue_end,
+                                          residue_start:residue_end, :]
             prediction_result_monomer['distogram'] = distogram_monomer
 
         else:
-            prediction_result_monomer = {'plddt': prediction_result['plddt'], 'distogram': prediction_result['distogram']}
+            prediction_result_monomer = {'plddt': prediction_result['plddt'],
+                                         'distogram': prediction_result['distogram']}
         with open(output_pkl, 'wb') as f:
             pickle.dump(prediction_result_monomer, f, protocol=4)
 
@@ -68,7 +72,7 @@ class Monomer_structure_evaluation_pipeline:
         self.parwise_qa = params['qscore_program']
         self.tmscore = params['tmscore_program']
         self.enqa = En_qa(enqa_program=params['enqa_program'], use_gpu=use_gpu)
-        self.bfactorqa = Bfactor_qa(params=params)
+        self.bfactorqa = Bfactor_qa()
 
     def process(self, targetname, fasta_file, monomer_model_dir, output_dir, multimer_model_dir="",
                 chainid_in_multimer="", unrelaxed_chainid_in_multimer=""):
@@ -129,6 +133,7 @@ class Monomer_structure_evaluation_pipeline:
                 with open("model.list", 'w') as fw:
                     for pdb in os.listdir(pdbdir):
                         fw.write(f"pdb/{pdb}\n")
+                print(f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
                 os.system(
                     f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
             result_dict["apollo"] = output_dir + '/pairwise_ranking.tm'
@@ -156,6 +161,24 @@ class Monomer_structure_evaluation_pipeline:
                 bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
             result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
 
+        if "apollo" in self.run_methods and "alphafold" in self.run_methods:
+            print("1111111111111111111")
+            pairwise_ranking_df = read_qa_txt_as_df(result_dict["apollo"])
+            alphafold_ranking_df = pd.read_csv(result_dict['alphafold'])
+            avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
+            avg_scores = []
+            for i in range(len(avg_ranking_df)):
+                pairwise_score = float(avg_ranking_df.loc[i, 'score'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg']) / 100
+                avg_score = (pairwise_score + alphafold_score) / 2
+                avg_scores += [avg_score]
+            avg_ranking_df['avg_score'] = avg_scores
+            avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
+            avg_ranking_df.reset_index(inplace=True, drop=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
+            avg_ranking_df.to_csv(output_dir + '/pairwise_af_avg.ranking')
+
         os.chdir(cwd)
 
         return result_dict
@@ -172,7 +195,7 @@ class Monomer_structure_evaluation_pipeline:
 
         result_dict = {}
         cwd = os.getcwd()
-        
+
         if "apollo" in self.run_methods:
             if not os.path.exists(output_dir + '/pairwise_ranking.tm'):
                 os.chdir(output_dir)
@@ -206,7 +229,24 @@ class Monomer_structure_evaluation_pipeline:
                 bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
                 bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
             result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
-            
+
+        if "apollo" in self.run_methods and "alphafold" in self.run_methods:
+            pairwise_ranking_df = read_qa_txt_as_df(result_dict["apollo"])
+            alphafold_ranking_df = pd.read_csv(result_dict['alphafold'])
+            avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
+            avg_scores = []
+            for i in range(len(avg_ranking_df)):
+                pairwise_score = float(avg_ranking_df.loc[i, 'score'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg']) / 100
+                avg_score = (pairwise_score + alphafold_score) / 2
+                avg_scores += [avg_score]
+            avg_ranking_df['avg_score'] = avg_scores
+            avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
+            avg_ranking_df.reset_index(inplace=True, drop=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
+            avg_ranking_df.to_csv(output_dir + '/pairwise_af_avg.ranking')
+
         os.chdir(cwd)
 
         return result_dict

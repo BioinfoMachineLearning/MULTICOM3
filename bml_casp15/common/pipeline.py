@@ -15,6 +15,9 @@ from bml_casp15.complex_templates_search import sequence_based_pipeline_complex_
 from bml_casp15.quaternary_structure_generation.pipeline import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
 from bml_casp15.quaternary_structure_evaluation.pipeline import *
+from bml_casp15.common.protein import *
+import pandas as pd
+import numpy as np
 
 
 def run_monomer_msa_pipeline(fasta, outdir, params):
@@ -99,7 +102,8 @@ def run_monomer_structure_generation_pipeline(params, run_methods, fasta_path, a
 
 
 def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monomer_dir, outputdir,
-                                    chainid="", unrelaxed_chainid="", input_multimer_dir=""):
+                                    chainid="", unrelaxed_chainid="", input_multimer_dir="",
+                                    generate_deep_models=False):
     makedir_if_not_exists(outputdir)
     result = None
     pipeline = Monomer_structure_evaluation_pipeline(params=params,
@@ -111,6 +115,33 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
                                   unrelaxed_chainid_in_multimer=unrelaxed_chainid)
     except Exception as e:
         print(e)
+
+    if generate_deep_models:
+        if "apollo" not in result:
+            raise Exception(f"Cannot find pairwise ranking file for generating multicom-deep models: {result['apollo']}")
+        pairwise_ranking_df = read_qa_txt_as_df(result["apollo"])
+        if "alphafold" not in result:
+            raise Exception(
+                f"Cannot find alphafold ranking file for generating multicom-deep models: {result['alphafold']}")
+        alphafold_ranking_df = pd.read_csv(result['alphafold'])
+        avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
+        avg_scores = []
+        for i in range(len(avg_ranking_df)):
+            pairwise_score = float(avg_ranking_df.loc[i, 'score'])
+            alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg'])/100
+            avg_score = (pairwise_score + alphafold_score)/2
+            avg_scores += [avg_score]
+        avg_ranking_df['avg_score'] = avg_scores
+        avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
+        avg_ranking_df.reset_index(inplace=True, drop=True)
+        avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
+        avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
+        avg_ranking_df.to_csv(outputdir + '/pairwise_af_avg.ranking')
+
+        for i in range(5):
+            model = avg_ranking_df.loc[i, 'model']
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{i+1}.pdb")
+
     return result
 
 
@@ -269,12 +300,14 @@ def run_quaternary_structure_generation_pipeline_foldseek(params, fasta_path, ch
     return True
 
 
-def run_multimer_evaluation_pipeline(params, chain_id_map, indir, outdir, stoichiometry):
+def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir, indir, outdir, stoichiometry):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
-        multimer_qa_result = pipeline.process(chain_id_map=chain_id_map, model_dir=indir,
+        multimer_qa_result = pipeline.process(fasta_path=fasta_path,
+                                              chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
+                                              model_dir=indir,
                                               output_dir=outdir, stoichiometry=stoichiometry)
     except Exception as e:
         print(e)

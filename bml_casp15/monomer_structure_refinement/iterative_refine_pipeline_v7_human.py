@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 from bml_casp15.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
 from bml_casp15.complex_templates_search.parsers import TemplateHit
-from bml_casp15.quaternary_structure_refinement.util import *
+from bml_casp15.monomer_structure_refinement.util import *
 
 
 class Monomer_iterative_refinement_pipeline:
@@ -328,7 +328,7 @@ class Monomer_iterative_refinement_pipeline:
                 else:
                     # keep the models in iteration 1 even through the plddt score decreases
                     if num_iteration == 0:
-
+                        ref_start_pdb = f"ranked_0.pdb"
                         ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
                         ref_avg_lddt = ranking_json["plddts"][list(ranking_json["order"])[0]]
 
@@ -389,7 +389,7 @@ class Monomer_iterative_refinement_pipeline:
 
         return iteration_result_all, iteration_result_avg, iteration_result_max
 
-    def search_single(self, fasta_path, pdb_path, pkl_path, server_pdb_dir, outdir):
+    def search_single(self, fasta_path, pdb_path, pkl_path, server_qa_res_dir, outdir):
 
         query_sequence = ""
         for line in open(fasta_path):
@@ -405,7 +405,21 @@ class Monomer_iterative_refinement_pipeline:
 
         ref_start_pdb = pdb_path
         ref_start_pkl = pkl_path
-        ref_start_msa = msa_path
+
+        max_tmscore = 0
+        closest_pdb = None
+        for server_pdb in os.listdir(server_qa_res_dir + '/pdb'):
+            ref_tmscore, _ = cal_tmscore(self.params['tmscore_program'], pdb_path,
+                                         server_qa_res_dir + '/pdb/' + server_pdb, outdir + '/tmp')
+            if ref_tmscore > max_tmscore:
+                max_tmscore = ref_tmscore
+                closest_pdb = server_pdb
+
+        if max_tmscore < 0.5:
+            print(f"Cannot find any similar structures in {server_qa_res_dir}/pdb")
+            return None
+
+        ref_start_msa = server_qa_res_dir + '/msa/' + closest_pdb.replace('.pdb', '.a3m')
 
         model_iteration_scores = []
 

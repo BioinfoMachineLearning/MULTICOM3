@@ -330,7 +330,9 @@ def check_template_overlap_regions(template_info1, template_info2, chain_id_map,
 
     tstart_2 = np.min(np.array(list(mapping.values())))
     # tend_2 = np.max(np.array(list(mapping.values())))
-
+    print(tend_1)
+    print(gap)
+    print(tstart_2)
     return tend_1 + gap > tstart_2
 
 

@@ -449,7 +449,7 @@ class Multimer_iterative_refinement_pipeline:
                     if num_iteration == 0:
                         ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
                         ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
-
+                        ref_start_pdb = f"ranked_0.pdb"
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
