@@ -149,7 +149,7 @@ def write_concatenated_alignment(id_pairing, alignments):
     return sequences_full, sequences_monomers, pd.DataFrame(filter_pair_ids)
 
 
-def write_multimer_a3ms(pair_ids, alignments, outdir, method):
+def write_multimer_a3ms(pair_ids, alignments, outdir, method, is_homomers=False):
     outdir = outdir + '/' + method
 
     makedir_if_not_exists(outdir)
@@ -168,11 +168,46 @@ def write_multimer_a3ms(pair_ids, alignments, outdir, method):
         with open(mon_alignment_file, "w") as of:
             write_a3m(sequences_monomers[monomer_id], of)
 
+    if is_homomers:
+        unpaired_sequences = {}
+        homomers_sequences = {}
+        for alignment, monomer_id in zip(alignments, sequences_monomers):
+            homomers_sequences[monomer_id] = {'headers': [], 'seqs': []}
+
+            unpaired_sequences[monomer_id] = {}
+            paired_headers = [header for header in sequences_monomers[monomer_id]]
+            paired_sequences = [sequences_monomers[monomer_id][header] for header in sequences_monomers[monomer_id]]
+            for seqindx, seq in enumerate(alignment.seqs):
+                if seq not in paired_sequences and alignment.ids[seqindx] not in paired_headers:
+                    unpaired_sequences[monomer_id][alignment.ids[seqindx]] = seq
+
+        seqlen = len(alignments[0].main_seq)
+        for monomer_id in unpaired_sequences:
+            add_count = 0
+            for header in unpaired_sequences[monomer_id]:
+                homomers_sequences[monomer_id]['headers'] += [header]
+                homomers_sequences[monomer_id]['seqs'] += [unpaired_sequences[monomer_id][header]]
+                add_count += 1
+            for other_monomer_id in homomers_sequences:
+                if other_monomer_id == monomer_id:
+                    continue
+                for i in range(add_count):
+                    homomers_sequences[other_monomer_id]['headers'] += ['placeholder']
+                    homomers_sequences[other_monomer_id]['seqs'] += ['-' * seqlen]
+        # print(homomers_sequences)
+
+        for monomer_id in homomers_sequences:
+            mon_alignment_file = f"{outdir}/{monomer_id}_con.a3m"
+            with open(mon_alignment_file, "a") as of:
+                for i in range(len(homomers_sequences[monomer_id]['headers'])):
+                    of.write(f">{homomers_sequences[monomer_id]['headers'][i]}\n"
+                             f"{homomers_sequences[monomer_id]['seqs'][i]}\n")
+
     return {'aln_file': complex_alignment_file, 'pair_ids': pair_ids}
 
 
 def concatenate_alignments(inparams):
-    runners, alignment, methods, hhfilter = inparams
+    runners, alignment, methods, hhfilter, is_homomers = inparams
 
     outdir = alignment['outdir']
     print(f"Concatenating {' and '.join([alignment[chain]['name'] for chain in alignment if chain != 'outdir'])}")
@@ -200,85 +235,104 @@ def concatenate_alignments(inparams):
         for method in methods:
             if method == "pdb_interact":
                 if len(uniref_a3m_alignments) > 0:
-                    pair_ids = runners['pdb_interact'].get_interactions(uniref_a3m_alignments)
+                    pair_ids = runners['pdb_interact'].get_interactions(uniref_a3m_alignments, is_homomers)
                     alignment["pdb_interact_uniref_a3m"] = write_multimer_a3ms(pair_ids, uniref_a3m_alignments,
-                                                                               outdir, 'pdb_interact_uniref_a3m')
+                                                                               outdir, 'pdb_interact_uniref_a3m',
+                                                                               is_homomers)
                     print(f"pdb_interact_uniref_a3m: {len(pair_ids)} pairs")
 
                 if len(uniref_sto_alignments) > 0:
-                    pair_ids = runners['pdb_interact'].get_interactions(uniref_sto_alignments)
+                    pair_ids = runners['pdb_interact'].get_interactions(uniref_sto_alignments, is_homomers)
                     alignment["pdb_interact_uniref_sto"] = write_multimer_a3ms(pair_ids, uniref_sto_alignments,
-                                                                               outdir, 'pdb_interact_uniref_sto')
+                                                                               outdir, 'pdb_interact_uniref_sto',
+                                                                               is_homomers)
                     print(f"pdb_interact_uniref_sto: {len(pair_ids)} pairs")
 
                 if len(uniprot_sto_alignments) > 0:
-                    pair_ids = runners['pdb_interact'].get_interactions(uniprot_sto_alignments)
+                    pair_ids = runners['pdb_interact'].get_interactions(uniprot_sto_alignments, is_homomers)
                     alignment["pdb_interact_uniprot_sto"] = write_multimer_a3ms(pair_ids, uniprot_sto_alignments,
-                                                                                outdir, 'pdb_interact_uniprot_sto')
+                                                                                outdir, 'pdb_interact_uniprot_sto',
+                                                                                is_homomers)
                     print(f"pdb_interact_uniprot_sto: {len(pair_ids)} pairs")
 
             elif method == "species_interact":
                 if len(uniref_a3m_alignments) > 0:
                     pair_ids = Species_interact_v2.get_interactions(uniref_a3m_alignments)
                     alignment["species_interact_uniref_a3m"] = write_multimer_a3ms(pair_ids, uniref_a3m_alignments,
-                                                                                   outdir, 'species_interact_uniref_a3m')
+                                                                                   outdir,
+                                                                                   'species_interact_uniref_a3m',
+                                                                                   is_homomers)
                     print(f"species_interact_uniref_a3m: {len(pair_ids)} pairs")
 
                 if len(uniref_sto_alignments) > 0:
                     pair_ids = Species_interact_v2.get_interactions(uniref_sto_alignments)
                     alignment["species_interact_uniref_sto"] = write_multimer_a3ms(pair_ids, uniref_sto_alignments,
-                                                                                   outdir, 'species_interact_uniref_sto')
+                                                                                   outdir,
+                                                                                   'species_interact_uniref_sto',
+                                                                                   is_homomers)
                     print(f"species_interact_uniref_sto: {len(pair_ids)} pairs")
 
                 if len(uniprot_sto_alignments) > 0:
                     pair_ids = Species_interact_v2.get_interactions(uniprot_sto_alignments)
                     alignment["species_interact_uniprot_sto"] = write_multimer_a3ms(pair_ids, uniprot_sto_alignments,
-                                                                                    outdir, 'species_interact_uniprot_sto')
+                                                                                    outdir,
+                                                                                    'species_interact_uniprot_sto',
+                                                                                    is_homomers)
                     print(f"species_interact_uniprot_sto: {len(pair_ids)} pairs")
 
             elif method == "string_interact":
                 if len(uniref_a3m_alignments) > 0:
                     pair_ids = runners['string_interact'].get_interactions(uniref_a3m_alignments)
                     alignment["string_interact_uniref_a3m"] = write_multimer_a3ms(pair_ids, uniref_a3m_alignments,
-                                                                                  outdir, 'string_interact_uniref_a3m')
+                                                                                  outdir, 'string_interact_uniref_a3m',
+                                                                                  is_homomers)
                     print(f"string_interact_uniref_a3m: {len(pair_ids)} pairs")
 
                 if len(uniref_sto_alignments) > 0:
                     pair_ids = runners['string_interact'].get_interactions(uniref_sto_alignments)
                     alignment["string_interact_uniref_sto"] = write_multimer_a3ms(pair_ids, uniref_sto_alignments,
-                                                                                  outdir, 'string_interact_uniref_sto')
+                                                                                  outdir, 'string_interact_uniref_sto',
+                                                                                  is_homomers)
                     print(f"string_interact_uniref_sto: {len(pair_ids)} pairs")
 
                 if len(uniprot_sto_alignments) > 0:
                     pair_ids = runners['string_interact'].get_interactions(uniprot_sto_alignments)
                     alignment["string_interact_uniprot_sto"] = write_multimer_a3ms(pair_ids, uniprot_sto_alignments,
-                                                                                   outdir, 'string_interact_uniprot_sto')
+                                                                                   outdir,
+                                                                                   'string_interact_uniprot_sto',
+                                                                                   is_homomers)
                     print(f"string_interact_uniprot_sto: {len(pair_ids)} pairs")
 
             elif method == "uniclust_oxmatch":
                 if len(uniclust_a3m_alignments) > 0:
                     pair_ids = UNICLUST_oxmatch_v2.get_interactions(uniclust_a3m_alignments)
                     alignment["uniclust_oxmatch_a3m"] = write_multimer_a3ms(pair_ids, uniclust_a3m_alignments,
-                                                                            outdir, 'uniclust_oxmatch_a3m')
+                                                                            outdir, 'uniclust_oxmatch_a3m', is_homomers)
                     print(f"uniclust_oxmatch_a3m: {len(pair_ids)} pairs")
 
             elif method == "uniprot_distance":
                 if len(uniref_a3m_alignments) > 0:
                     pair_ids = UNIPROT_distance_v2.get_interactions(uniref_a3m_alignments)
                     alignment["uniprot_distance_uniref_a3m"] = write_multimer_a3ms(pair_ids, uniref_a3m_alignments,
-                                                                                outdir, 'uniprot_distance_uniref_a3m')
+                                                                                   outdir,
+                                                                                   'uniprot_distance_uniref_a3m',
+                                                                                   is_homomers)
                     print(f"uniprot_distance_uniref_a3m: {len(pair_ids)} pairs")
 
                 if len(uniref_sto_alignments) > 0:
                     pair_ids = UNIPROT_distance_v2.get_interactions(uniref_sto_alignments)
                     alignment["uniprot_distance_uniref_sto"] = write_multimer_a3ms(pair_ids, uniref_sto_alignments,
-                                                                                outdir, 'uniprot_distance_uniref_sto')
+                                                                                   outdir,
+                                                                                   'uniprot_distance_uniref_sto',
+                                                                                   is_homomers)
                     print(f"uniprot_distance_uniref_sto: {len(pair_ids)} pairs")
 
                 if len(uniprot_sto_alignments) > 0:
                     pair_ids = UNIPROT_distance_v2.get_interactions(uniprot_sto_alignments)
                     alignment["uniprot_distance_uniprot_sto"] = write_multimer_a3ms(pair_ids, uniprot_sto_alignments,
-                                                                                 outdir, 'uniprot_distance_uniprot_sto')
+                                                                                    outdir,
+                                                                                    'uniprot_distance_uniprot_sto',
+                                                                                    is_homomers)
                     print(f"uniprot_distance_uniprot_sto: {len(pair_ids)} pairs")
 
     except Exception as e:
@@ -288,11 +342,11 @@ def concatenate_alignments(inparams):
 
 class Complex_alignment_concatenation_pipeline:
 
-    def __init__(self, params, multiprocess=False, process_num=1):
+    def __init__(self, params, run_methods, multiprocess=False, process_num=1):
 
         self.params = params
 
-        self.methods = params['concatenate_methods'].split(',')
+        self.methods = run_methods
 
         print("Using methods:")
         print(self.methods)
@@ -306,7 +360,8 @@ class Complex_alignment_concatenation_pipeline:
             self.runners['Geno_interact'] = self.Geno_interact_runner
 
         if "pdb_interact" in self.methods:
-            self.pdb_interact_runner = PDB_interact_v2(self.params['uniprot2pdb_mapping_file'])
+            self.pdb_interact_runner = PDB_interact_v2(self.params['uniprot2pdb_mapping_file'],
+                                                       self.params['complexes_list'])
             self.pdb_interact_runner.load_data()
             self.runners['pdb_interact'] = self.pdb_interact_runner
 
@@ -318,17 +373,18 @@ class Complex_alignment_concatenation_pipeline:
         self.multiprocess = multiprocess
         self.process_num = process_num
 
-    def concatenate(self, alignments, hhfilter):
+    def concatenate(self, alignments, hhfilter, is_homomers):
         res_alignments = []
         if self.multiprocess:
             concatenate_list = []
             for alignment in alignments:
-                concatenate_list.append([self.runners, alignment, self.methods, hhfilter])
+                concatenate_list.append([self.runners, alignment, self.methods, hhfilter, is_homomers])
             pool = Pool(processes=self.process_num)
             res_alignments = pool.map(concatenate_alignments, concatenate_list)
             pool.close()
             pool.join()
         else:
             for alignment in alignments:
-                res_alignments += [concatenate_alignments([self.runners, alignment, self.methods, hhfilter])]
+                res_alignments += [
+                    concatenate_alignments([self.runners, alignment, self.methods, hhfilter, is_homomers])]
         return res_alignments

@@ -9,13 +9,14 @@ from bml_casp15.quaternary_structure_evaluation.dproq_ranking import DPROQ
 from bml_casp15.quaternary_structure_evaluation.enqa_ranking import En_qa
 from bml_casp15.monomer_structure_evaluation.bfactor_ranking import Bfactor_qa
 from bml_casp15.quaternary_structure_evaluation.multieva_qa import MultiEva_qa
+from bml_casp15.quaternary_structure_evaluation.foldseek_ranking import FoldSeek_qa
 from bml_casp15.common.protein import complete_result
 
 
 class Quaternary_structure_evaluation_pipeline:
     """Runs the alignment tools and assembles the input features."""
 
-    def __init__(self, params, run_methods=["alphafold", "pairwise", "enqa", "dproq", "bfactor", 'multieva']):
+    def __init__(self, params, run_methods=["alphafold", "pairwise", "enqa", "dproq", "bfactor", 'multieva', 'foldseek']):
         """Initializes the data pipeline."""
 
         self.params = params
@@ -27,8 +28,9 @@ class Quaternary_structure_evaluation_pipeline:
         self.enqa = En_qa(enqa_program=params['enqa_program'])
         self.bfactorqa = Bfactor_qa()
         self.multieva = MultiEva_qa(multieva_program=params['multieva_program'])
+        self.foldseek_qa = FoldSeek_qa(params=params)
 
-    def process(self, fasta_path, chain_id_map, model_dir, monomer_model_dir, output_dir, stoichiometry):
+    def process(self, fasta_path, chain_id_map, model_dir, output_dir, monomer_model_dir = "", stoichiometry = ""):
 
         makedir_if_not_exists(output_dir)
 
@@ -71,7 +73,7 @@ class Quaternary_structure_evaluation_pipeline:
 
         if "dproq" in self.run_methods:
             if not os.path.exists(output_dir + '/DOCKQ_ranking.csv'):
-                dproq_ranking_dockq, dproq_ranking_evalue = self.dproq.run(indir=pdbdir, outdir=output_dir)
+                dproq_ranking_dockq, dproq_ranking_evalue = self.dproq.run(indir=pdbdir, outdir=output_dir+'/dproq')
                 dproq_ranking_dockq.to_csv(output_dir + '/dproq_ranking_dockq.csv')
                 dproq_ranking_evalue.to_csv(output_dir + '/dproq_ranking_evalue.csv')
             result_dict["dproq_ranking_dockq"] = output_dir + '/dproq_ranking_dockq.csv'
@@ -96,12 +98,12 @@ class Quaternary_structure_evaluation_pipeline:
             if not os.path.exists(f"{output_dir}/multieva.csv"):
                 workdir = output_dir + '/multieva'
                 makedir_if_not_exists(workdir)
-                refdir = workdir + '/monomer_af'
+                refdir = workdir + '/monomer_af/'
                 makedir_if_not_exists(refdir)
 
                 for chain_id in chain_id_map:
                     default_chain_model = monomer_model_dir + '/' + chain_id_map[
-                        chain_id].description + '/default_0.pdb'
+                        chain_id].description + '/pdb/default_0.pdb'
                     os.system(f"cp {default_chain_model} {refdir}/{chain_id_map[chain_id].description}.pdb")
 
                 multieva_csv = self.multieva.run(chain_id_map=chain_id_map,
@@ -112,4 +114,11 @@ class Quaternary_structure_evaluation_pipeline:
                 os.system(f"cp {multieva_csv} {output_dir}/multieva.csv")
             result_dict["multieva"] = output_dir + '/multieva.csv'
 
+        if "foldseek" in self.run_methods:
+            if not os.path.exists(f"{output_dir}/foldseek_qa.csv"):
+                foldseek_qa_df = self.foldseek_qa.run(chain_id_map=chain_id_map, input_dir=pdbdir,
+                                                      outputdir=output_dir + '/foldseek')
+                foldseek_qa_df.to_csv(f"{output_dir}/foldseek_qa.csv")
+            result_dict["foldseek"] = output_dir + '/foldseek_qa.csv'
+            
         return result_dict

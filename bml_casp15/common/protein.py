@@ -147,7 +147,7 @@ def extract_pdb(pdb, newpdb, start, end):
                 resCounter = resCounter + 1
             atomCounter = atomCounter + 1
             rnum_string = format(str(resCounter), '>4')
-            anum_string = format(str(resCounter), '>5')
+            anum_string = format(str(atomCounter), '>5')
             row = line[0:6] + anum_string + line[11:11 + 5] + " " + \
                   line[17:17 + 3] + " " + " " + rnum_string + " " + line[27:]
             f.write(row)

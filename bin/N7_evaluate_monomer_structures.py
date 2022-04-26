@@ -29,7 +29,7 @@ def main(argv):
 
     makedir_if_not_exists(output_dir)
 
-    pipeline = Monomer_structure_evaluation_pipeline(params=params, run_methods=["alphafold", "apollo"], use_gpu=FLAGS.use_gpu)
+    pipeline = Monomer_structure_evaluation_pipeline(params=params, run_methods=["alphafold", "apollo", "enQA"], use_gpu=FLAGS.use_gpu)
 
     pipeline.process(FLAGS.targetname, FLAGS.fasta_file, FLAGS.input_monomer_dir, output_dir, FLAGS.input_multimer_dir,
                      FLAGS.chain_in_multimer, FLAGS.chain_in_multimer)

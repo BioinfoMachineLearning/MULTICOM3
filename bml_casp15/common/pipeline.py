@@ -13,6 +13,7 @@ from bml_casp15.complex_alignment_generation.pipeline_v2 import *
 from bml_casp15.complex_templates_search import sequence_based_pipeline_complex_pdb, \
     sequence_based_pipeline_pdb, sequence_based_pipeline, structure_based_pipeline_v2
 from bml_casp15.quaternary_structure_generation.pipeline import *
+from bml_casp15.quaternary_structure_generation.pipeline_homo import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
 from bml_casp15.quaternary_structure_evaluation.pipeline import *
 from bml_casp15.common.protein import *
@@ -103,7 +104,7 @@ def run_monomer_structure_generation_pipeline(params, run_methods, fasta_path, a
 
 def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monomer_dir, outputdir,
                                     chainid="", unrelaxed_chainid="", input_multimer_dir="",
-                                    generate_deep_models=False):
+                                    generate_egnn_models=False):
     makedir_if_not_exists(outputdir)
     result = None
     pipeline = Monomer_structure_evaluation_pipeline(params=params,
@@ -116,9 +117,10 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
     except Exception as e:
         print(e)
 
-    if generate_deep_models:
+    if generate_egnn_models:
         if "apollo" not in result:
-            raise Exception(f"Cannot find pairwise ranking file for generating multicom-deep models: {result['apollo']}")
+            raise Exception(
+                f"Cannot find pairwise ranking file for generating multicom-deep models: {result['apollo']}")
         pairwise_ranking_df = read_qa_txt_as_df(result["apollo"])
         if "alphafold" not in result:
             raise Exception(
@@ -128,8 +130,8 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
         avg_scores = []
         for i in range(len(avg_ranking_df)):
             pairwise_score = float(avg_ranking_df.loc[i, 'score'])
-            alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg'])/100
-            avg_score = (pairwise_score + alphafold_score)/2
+            alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg']) / 100
+            avg_score = (pairwise_score + alphafold_score) / 2
             avg_scores += [avg_score]
         avg_ranking_df['avg_score'] = avg_scores
         avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
@@ -140,7 +142,7 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
 
         for i in range(5):
             model = avg_ranking_df.loc[i, 'model']
-            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{i+1}.pdb")
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{i + 1}.pdb")
 
     return result
 
@@ -170,8 +172,8 @@ def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir,
     pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
 
 
-def run_concatenate_dimer_msas_pipeline(multimer, monomer_aln_dir, outputdir, params):
-    chains = multimer.split('_')
+def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, outputdir, params, is_homomers=False):
+    chains = multimer.split(',')
     # alignment = {'outdir': f"{outputdir}/{'_'.join(chains)}"}
     alignment = {'outdir': outputdir}
     for i in range(len(chains)):
@@ -209,14 +211,17 @@ def run_concatenate_dimer_msas_pipeline(multimer, monomer_aln_dir, outputdir, pa
         alignments = [alignment]
         print(f"Total {len(alignments)} pairs can be concatenated")
         print("Start to concatenate alignments for dimers")
-        complex_alignment_concatenation_pipeline = Complex_alignment_concatenation_pipeline(params)
-        alignments = complex_alignment_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'])
+        complex_alignment_concatenation_pipeline = Complex_alignment_concatenation_pipeline(params=params,
+                                                                                            run_methods=run_methods)
+        alignments = complex_alignment_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'],
+                                                                          is_homomers=is_homomers)
     else:
         print("The a3ms for dimers are not complete!")
 
 
 def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_model_dir, outdir, params):
     monomer_template_inputs = []
+    monomer_sequences = []
     for chain in multimers:
         chain_template_a3m = f"{monomer_aln_dir}/{chain}/{chain}_uniref90.sto"
         if not os.path.exists(chain_template_a3m):
@@ -226,25 +231,30 @@ def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_mod
                                                                               msa_path=chain_template_a3m,
                                                                               hmm_path="", seq=seq)
         monomer_template_inputs += [chain_template_input]
+        monomer_sequences += [seq]
 
+    print("searching complex sequence based template search pipelineL RCSB_PDB")
     pdb_seq_dir = outdir + '/pdb_seq'
     makedir_if_not_exists(pdb_seq_dir)
     if not os.path.exists(pdb_seq_dir + '/sequence_templates.csv'):
         pipeline = sequence_based_pipeline_pdb.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, pdb_seq_dir)
 
+    print("searching complex sequence based template search pipeline: Complex")
     complex_pdb_seq_dir = outdir + '/complex_pdb_seq'
     makedir_if_not_exists(complex_pdb_seq_dir)
     if not os.path.exists(complex_pdb_seq_dir + '/sequence_templates.csv'):
         pipeline = sequence_based_pipeline_complex_pdb.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, complex_pdb_seq_dir)
 
+    print("searching complex sequence based template search pipeline: pdb70")
     pdb70_seq_dir = outdir + '/pdb70_seq'
     makedir_if_not_exists(pdb70_seq_dir)
     if not os.path.exists(pdb70_seq_dir + '/sequence_templates.csv'):
         pipeline = sequence_based_pipeline.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, pdb70_seq_dir)
 
+    print("searching complex structure based template search pipeline")
     struct_temp_dir = outdir + '/struct_temp'
     makedir_if_not_exists(struct_temp_dir)
     if not os.path.exists(struct_temp_dir + '/structure_templates.csv'):
@@ -257,7 +267,7 @@ def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_mod
             os.system(f"cp {monomer_pdb} {struct_temp_dir}/{chain}.pdb")
             monomer_pdbs += [f"{struct_temp_dir}/{chain}.pdb"]
         pipeline = structure_based_pipeline_v2.Complex_structure_based_template_search_pipeline(params)
-        pipeline.search(monomer_pdbs, struct_temp_dir)
+        pipeline.search(monomer_sequences, monomer_pdbs, struct_temp_dir)
 
 
 def run_quaternary_structure_generation_pipeline(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
@@ -278,6 +288,24 @@ def run_quaternary_structure_generation_pipeline(params, fasta_path, chain_id_ma
     return True
 
 
+def run_quaternary_structure_generation_homo_pipeline(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
+                                                      template_dir,
+                                                      monomer_model_dir, output_dir):
+    try:
+        pipeline = Quaternary_structure_prediction_homo_pipeline(params)
+        result = pipeline.process(fasta_path=fasta_path,
+                                  chain_id_map=chain_id_map,
+                                  aln_dir=aln_dir,
+                                  complex_aln_dir=complex_aln_dir,
+                                  template_dir=template_dir,
+                                  monomer_model_dir=monomer_model_dir,
+                                  output_dir=output_dir)
+    except Exception as e:
+        print(e)
+        return False
+    return True
+
+
 class foldseek_iterative_monomer_input:
     def __init__(self, monomer_pdb_dirs, monomer_alphafold_a3ms):
         self.monomer_pdb_dirs = monomer_pdb_dirs
@@ -285,15 +313,22 @@ class foldseek_iterative_monomer_input:
 
 
 def run_quaternary_structure_generation_pipeline_foldseek(params, fasta_path, chain_id_map, pipeline_inputs, outdir,
-                                                          start=0):
+                                                          start=0, is_homomers=False):
     pipeline = Multimer_iterative_generation_pipeline_monomer(params)
     try:
         for i, pipeline_input in enumerate(pipeline_inputs):
-            pipeline.search_single(fasta_file=fasta_path,
-                                   chain_id_map=chain_id_map,
-                                   monomer_pdb_dirs=pipeline_input.monomer_pdb_dirs,
-                                   monomer_alphafold_a3ms=pipeline_input.monomer_alphafold_a3ms,
-                                   outdir=f"{outdir}/iter_{i + 1 + start}")
+            if is_homomers:
+                pipeline.search_single_homo(fasta_file=fasta_path,
+                                            chain_id_map=chain_id_map,
+                                            monomer_pdb_dirs=pipeline_input.monomer_pdb_dirs,
+                                            monomer_alphafold_a3ms=pipeline_input.monomer_alphafold_a3ms,
+                                            outdir=f"{outdir}/iter_{i + 1 + start}")
+            else:
+                pipeline.search_single(fasta_file=fasta_path,
+                                       chain_id_map=chain_id_map,
+                                       monomer_pdb_dirs=pipeline_input.monomer_pdb_dirs,
+                                       monomer_alphafold_a3ms=pipeline_input.monomer_alphafold_a3ms,
+                                       outdir=f"{outdir}/iter_{i + 1 + start}")
     except Exception as e:
         print(e)
         return False
@@ -314,9 +349,9 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
     return multimer_qa_result
 
 
-def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir):
+def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir, is_homomer=False):
     pipeline = iterative_refine_pipeline_multimer.Multimer_iterative_refinement_pipeline_server(params=params)
-    pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir)
+    pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir, is_homomer=is_homomer)
 
     makedir_if_not_exists(finaldir)
 

@@ -6,6 +6,7 @@ import pandas as pd
 import pickle
 from bml_casp15.common.util import makedir_if_not_exists
 import glob
+import pathlib
 
 class MultiEva_qa:
 
@@ -25,7 +26,8 @@ class MultiEva_qa:
         except Exception as e:
             print(e)
 
-        result_csv = f"{outputdir}/{'_'.join([chain_id_map[chain_id].description for chain_id in chain_id_map])}.csv"
+        result_csv = f"{outputdir}/{pathlib.Path(fasta_path).stem}.csv"
+        print(result_csv)
         if not os.path.exists(result_csv):
             return None
 

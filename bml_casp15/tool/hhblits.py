@@ -92,7 +92,7 @@ class HHBlits:
           '-i', input_fasta_path,
           '-cpu', str(self.n_cpu),
           '-oa3m', output_a3m_path,
-          '-o', '/dev/null',
+          '-o', f'{output_a3m_path}.log',
           '-n', str(self.n_iter),
           '-e', str(self.e_value),
           '-maxseq', str(self.maxseq),

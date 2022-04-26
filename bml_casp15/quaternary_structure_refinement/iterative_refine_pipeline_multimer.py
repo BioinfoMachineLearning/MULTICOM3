@@ -4,8 +4,11 @@ import sys
 import time, json
 from bml_casp15.common.util import makedir_if_not_exists, check_dirs
 import dataclasses
-from bml_casp15.quaternary_structure_refinement.iterative_refine_pipeline_v1_with_monomer import *
+from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_v1
+from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_v1_with_monomer
 import pandas as pd
+import pathlib
+import pickle
 
 
 class refinement_input_multimer:
@@ -22,16 +25,47 @@ class Multimer_iterative_refinement_pipeline_server:
     def __init__(self, params):
         self.params = params
 
-    def search(self, refinement_inputs, outdir):
+    def search(self, refinement_inputs, outdir, is_homomer=False):
         result_dirs = []
 
-        pipeline = Multimer_iterative_refinement_pipeline(self.params)
+        pipeline_v1 = iterative_refine_pipeline_v1.Multimer_iterative_refinement_pipeline(self.params)
+        pipeline_v1_with_monomer = iterative_refine_pipeline_v1_with_monomer.Multimer_iterative_refinement_pipeline(
+            self.params)
 
         for refine_param in refinement_inputs:
-            result_dir = pipeline.search_single(chain_id_map=refine_param.chain_id_map,
-                                                fasta_path=refine_param.fasta_path, pdb_path=refine_param.pdb_path,
-                                                pkl_path=refine_param.pkl_path, msa_paths=refine_param.msa_paths,
-                                                outdir=outdir + '/' + pathlib.Path(refine_param.pdb_path).stem)
+
+            if is_homomer:
+                result_dir = pipeline_v1.search_single_homo(chain_id_map=refine_param.chain_id_map,
+                                                            fasta_path=refine_param.fasta_path,
+                                                            pdb_path=refine_param.pdb_path,
+                                                            pkl_path=refine_param.pkl_path,
+                                                            msa_paths=refine_param.msa_paths,
+                                                            outdir=outdir + '/' + pathlib.Path(
+                                                                refine_param.pdb_path).stem)
+            else:
+                use_v1 = True
+                for chain_id in refine_param.chain_id_map:
+                    if len(open(refine_param.msa_paths[chain_id]['paired_msa']).readlines()) < 600 * 2:
+                        use_v1 = False
+                        break
+
+                if use_v1:
+                    result_dir = pipeline_v1.search_single(chain_id_map=refine_param.chain_id_map,
+                                                           fasta_path=refine_param.fasta_path,
+                                                           pdb_path=refine_param.pdb_path,
+                                                           pkl_path=refine_param.pkl_path,
+                                                           msa_paths=refine_param.msa_paths,
+                                                           outdir=outdir + '/' + pathlib.Path(
+                                                               refine_param.pdb_path).stem)
+                else:
+                    result_dir = pipeline_v1_with_monomer.search_single(chain_id_map=refine_param.chain_id_map,
+                                                                        fasta_path=refine_param.fasta_path,
+                                                                        pdb_path=refine_param.pdb_path,
+                                                                        pkl_path=refine_param.pkl_path,
+                                                                        msa_paths=refine_param.msa_paths,
+                                                                        outdir=outdir + '/' + pathlib.Path(
+                                                                            refine_param.pdb_path).stem)
+
             result_dirs += [result_dir]
 
         return result_dirs

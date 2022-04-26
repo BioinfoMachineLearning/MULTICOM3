@@ -213,7 +213,7 @@ class Quaternary_structure_prediction_pipeline:
                 interact_df.to_csv(msa_pair_file)
             else:
                 msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
-                if len(pd.read_csv(msa_pair_file)) == 0:
+                if len(pd.read_csv(msa_pair_file)) <= 1:
                     continue
                 a3m_paths = get_complex_alignments_by_method(
                     monomers=monomers,

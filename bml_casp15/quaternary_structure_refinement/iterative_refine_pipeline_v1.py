@@ -238,6 +238,9 @@ class Multimer_iterative_refinement_pipeline:
 
         cwd = os.getcwd()
 
+        finaldir = outdir + '/final'
+        makedir_if_not_exists(finaldir)
+
         for i in range(0, 5):
             model_outdir = f"{outdir}/ranked_{i}"
             makedir_if_not_exists(model_outdir)
@@ -246,11 +249,18 @@ class Multimer_iterative_refinement_pipeline:
             ref_start_pdb = f"ranked_{i}.pdb"
             ref_start_ranking_json_file = f"ranking_debug.json"
 
+            new_ranking_json = json.loads(open(current_ref_dir + '/' + ref_start_ranking_json_file).read())
+            model_num = list(new_ranking_json["order"])[i].split('_')[1]
+            ref_start_pkl = f"result_model_{model_num}_multimer.pkl"
+
             model_iteration_scores = []
             model_iteration_tmscores = []
             model_iteration_tmaligns = []
 
             print(f"Start to refine {ref_start_pdb}")
+
+            os.system(f"cp {current_ref_dir}/{ref_start_pdb} {finaldir}/ranked_{i}_start.pdb")
+            os.system(f"cp {current_ref_dir}/{ref_start_pkl} {finaldir}/ranked_{i}_start.pkl")
 
             for num_iteration in range(self.max_iteration):
                 os.chdir(cwd)
@@ -259,10 +269,10 @@ class Multimer_iterative_refinement_pipeline:
 
                 start_pdb = f"{current_work_dir}/start.pdb"
                 start_msa_path = f"{current_work_dir}/start_msas"
-                start_ranking_json_file = f"{current_work_dir}/start_ranking.json"
+                start_pkl = f"{current_work_dir}/start.pkl"
 
                 os.system(f"cp {current_ref_dir}/{ref_start_pdb} {start_pdb}")
-                os.system(f"cp {current_ref_dir}/{ref_start_ranking_json_file} {start_ranking_json_file}")
+                os.system(f"cp {current_ref_dir}/{ref_start_pkl} {start_pkl}")
                 if os.path.exists(start_msa_path):
                     os.system(f"rm -rf {start_msa_path}")
                 makedir_if_not_exists(start_msa_path)
@@ -271,12 +281,8 @@ class Multimer_iterative_refinement_pipeline:
                     os.system(f"cp {current_ref_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m "
                               f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m")
 
-                ranking_json = json.loads(open(start_ranking_json_file).read())
-
-                if num_iteration == 0:
-                    ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[i]]
-                else:
-                    ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
+                with open(start_pkl, 'rb') as f:
+                    ref_avg_lddt = np.mean(pickle.load(f)['ranking_confidence'])
 
                 ref_tmscore = 0
                 ref_tmalign = 0
@@ -388,13 +394,11 @@ class Multimer_iterative_refinement_pipeline:
                     print("Continue to refine")
                     current_ref_dir = out_model_dir
                     ref_start_pdb = f"ranked_0.pdb"
-                    ref_start_ranking_json_file = f"ranking_debug.json"
+                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                    ref_start_pkl = f"result_model_{model_num}_multimer.pkl"
                     print('##################################################')
                     if num_iteration + 1 >= self.max_iteration:
                         print("Reach maximum iteration")
-                        ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
-                        ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
-
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
@@ -402,15 +406,16 @@ class Multimer_iterative_refinement_pipeline:
                             ref_tmalign = cal_tmalign(self.params['tmalign_program'],
                                                       out_model_dir + '/' + ref_start_pdb, native_pdb,
                                                       out_model_dir + '/tmp')
-                        model_iteration_scores += [ref_avg_lddt]
+                        model_iteration_scores += [max_lddt_score]
                         model_iteration_tmscores += [ref_tmscore]
                         model_iteration_tmaligns += [ref_tmalign]
                 else:
                     # keep the models in iteration 1 even through the plddt score decreases
                     if num_iteration == 0:
-                        ranking_json = json.loads(open(out_model_dir + '/ranking_debug.json').read())
-                        ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
+                        current_ref_dir = out_model_dir
                         ref_start_pdb = f"ranked_0.pdb"
+                        model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                        ref_start_pkl = f"result_model_{model_num}_multimer.pkl"
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
@@ -418,7 +423,7 @@ class Multimer_iterative_refinement_pipeline:
                             ref_tmalign = cal_tmalign(self.params['tmalign_program'],
                                                       out_model_dir + '/' + ref_start_pdb, native_pdb,
                                                       out_model_dir + '/tmp')
-                        model_iteration_scores += [ref_avg_lddt]
+                        model_iteration_scores += [max_lddt_score]
                         model_iteration_tmscores += [ref_tmscore]
                         model_iteration_tmaligns += [ref_tmalign]
                     break
@@ -446,6 +451,9 @@ class Multimer_iterative_refinement_pipeline:
 
             iteration_scores[f'model{i + 1}'] = model_iteration_scores
             true_tm_scores[f'model{i + 1}'] = model_iteration_tmscores
+
+            os.system(f"cp {current_ref_dir}/{ref_start_pdb} {finaldir}/ranked_{i}_ref.pdb")
+            os.system(f"cp {current_ref_dir}/{ref_start_pkl} {finaldir}/ranked_{i}_ref.pkl")
 
         iteration_result_avg['start_lddt'] = [np.mean(np.array(iteration_result_all['start_lddt']))]
         iteration_result_avg['end_lddt'] = [np.mean(np.array(iteration_result_all['end_lddt']))]
@@ -478,6 +486,465 @@ class Multimer_iterative_refinement_pipeline:
         df = pd.DataFrame(iteration_result_max)
         df.to_csv(outdir + '/iteration_result_max.csv')
 
+        pdbs = []
+        plddts = []
+        for pkl in os.listdir(finaldir):
+            if pkl.find('.pkl') > 0:
+                with open(finaldir + '/' + pkl, 'rb') as f:
+                    prediction_result = pickle.load(f)
+                    pdbs += [pkl.replace('.pkl', '.pdb')]
+                    plddts += [prediction_result['ranking_confidence']]
+
+        df = pd.DataFrame({'model': pdbs, 'plddt': plddts})
+        df = df.sort_values(by=['plddt'], ascending=False)
+        df.reset_index(inplace=True, drop=True)
+        df.to_csv(outdir + '/final_ranking_v1.csv')
+
+        v1_scores_all = []
+        v1_scores_avg = 0
+        v1_scores_max = 0
+        for i in range(5):
+            pdb_name = df.loc[i, 'model']
+            ref_tmscore = cal_tmscore(self.params['mmalign_program'], finaldir + '/' + pdb_name, native_pdb)
+            v1_scores_all += [ref_tmscore]
+
+        v1_scores_avg = np.mean(np.array(v1_scores_all))
+        v1_scores_max = np.max(np.array(v1_scores_all))
+
+        v2_scores_all = []
+        v2_scores_avg = 0
+        v2_scores_max = 0
+        for i in range(5):
+            start_pdb = f"{finaldir}/ranked_{i}_start.pdb"
+            start_pkl = f"{finaldir}/ranked_{i}_start.pkl"
+
+            with open(start_pkl, 'rb') as f:
+                plddt_start = pickle.load(f)['ranking_confidence']
+
+            refine_pdb = f"{finaldir}/ranked_{i}_ref.pdb"
+            refine_pkl = f"{finaldir}/ranked_{i}_ref.pkl"
+
+            with open(refine_pkl, 'rb') as f:
+                plddt_ref = pickle.load(f)['ranking_confidence']
+
+            select_pdb = refine_pdb
+            if plddt_start > plddt_ref:
+                select_pdb = start_pdb
+
+            ref_tmscore = cal_tmscore(self.params['mmalign_program'], select_pdb, native_pdb)
+            v2_scores_all += [ref_tmscore]
+
+        v2_scores_avg = np.mean(np.array(v2_scores_all))
+        v2_scores_max = np.max(np.array(v2_scores_all))
+
+        select_result_all_v1 = {'targetname': [targetname] * 5,
+                                'model': [i + 1 for i in range(5)],
+                                'tmscore': v1_scores_all}
+
+        select_result_avg_v1 = {'targetname': [targetname], 'tmscore': [v1_scores_avg]}
+
+        select_result_max_v1 = {'targetname': [targetname], 'tmscore': [v1_scores_max]}
+
+        select_result_all_v2 = {'targetname': [targetname] * 5,
+                                'model': [i + 1 for i in range(5)],
+                                'tmscore': v2_scores_all}
+
+        select_result_avg_v2 = {'targetname': [targetname], 'tmscore': [v2_scores_avg]}
+
+        select_result_max_v2 = {'targetname': [targetname], 'tmscore': [v2_scores_max]}
+
         os.chdir(cwd)
 
-        return iteration_result_all, iteration_result_avg, iteration_result_max
+        print(select_result_all_v1)
+
+        return iteration_result_all, iteration_result_avg, iteration_result_max, \
+               select_result_all_v1, select_result_avg_v1, select_result_max_v1, \
+               select_result_all_v2, select_result_avg_v2, select_result_max_v2
+
+    def search_single(self, chain_id_map, fasta_path, pdb_path, pkl_path, msa_paths, outdir):
+
+        fasta_path = os.path.abspath(fasta_path)
+
+        targetname = pathlib.Path(fasta_path).stem
+
+        print(f"Processing {targetname}")
+
+        outdir = os.path.abspath(outdir) + "/"
+
+        makedir_if_not_exists(outdir)
+
+        cwd = os.getcwd()
+
+        ref_start_pdb = pdb_path
+        ref_start_pkl = pkl_path
+        ref_start_msa_paths = msa_paths
+
+        model_iteration_scores = []
+
+        print(f"Start to refine {ref_start_pdb}")
+
+        for num_iteration in range(self.max_iteration):
+            os.chdir(cwd)
+            current_work_dir = f"{outdir}/iteration{num_iteration + 1}"
+            makedir_if_not_exists(current_work_dir)
+
+            start_pdb = f"{current_work_dir}/start.pdb"
+            start_pkl = f"{current_work_dir}/start.pkl"
+            start_msa_path = f"{current_work_dir}/start_msas"
+            if os.path.exists(start_msa_path):
+                os.system(f"rm -rf {start_msa_path}")
+            makedir_if_not_exists(start_msa_path)
+
+            with open(ref_start_pkl, 'rb') as f:
+                ref_avg_lddt = float(pickle.load(f)['ranking_confidence'])
+
+            for chain_id in chain_id_map:
+                os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
+                          f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m")
+
+            os.system(f"cp {ref_start_pdb} {start_pdb}")
+            os.system(f"cp {ref_start_pkl} {start_pkl}")
+
+            model_iteration_scores += [ref_avg_lddt]
+
+            out_model_dir = f"{current_work_dir}/alphafold"
+
+            if not complete_result(out_model_dir):
+
+                chain_pdbs = split_pdb_unrelax2relax(start_pdb, current_work_dir)
+
+                template_results = []
+
+                out_template_dir = current_work_dir + '/templates'
+                makedir_if_not_exists(out_template_dir)
+
+                for chain_id in chain_pdbs:
+                    print(chain_id)
+                    if chain_id not in chain_id_map:
+                        raise Exception("Multimer fasta file and model doesn't match!")
+
+                    monomer_work_dir = current_work_dir + '/' + chain_id_map[chain_id].description
+                    makedir_if_not_exists(monomer_work_dir)
+                    os.system(
+                        f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
+                    foldseek_res = search_templates_foldseek(
+                        foldseek_program=self.params['foldseek_program'],
+                        databases=[self.params['foldseek_pdb_database'], self.params['foldseek_af_database']],
+                        inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
+                        outdir=monomer_work_dir + '/foldseek')
+
+                    if len(foldseek_res['all_alignment']) == 0:
+                        print(
+                            f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        break
+
+                    # os.system(f"cp {foldseek_res} {monomer_work_dir}/structure_templates.csv")
+
+                    template_results += [foldseek_res]
+
+                    self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
+                                              outdir=out_template_dir)
+
+                if len(template_results) != len(chain_id_map):
+                    break
+
+                template_files, msa_files, msa_pair_file = self.concatenate_msa_and_templates(
+                    chain_id_map=chain_id_map,
+                    template_results=template_results,
+                    start_msa_path=start_msa_path,
+                    outpath=current_work_dir,
+                    iteration=num_iteration + 1)
+
+                find_templates = True
+                for chain_id, template_file in zip(chain_id_map, template_files):
+                    if len(pd.read_csv(template_file, sep='\t')) == 0:
+                        print(
+                            f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        find_templates = False
+
+                if not find_templates:
+                    break
+
+                makedir_if_not_exists(out_model_dir)
+
+                if len(template_files) == 1:
+                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                          f"--fasta_path {fasta_path} " \
+                          f"--env_dir {self.params['alphafold_env_dir']} " \
+                          f"--database_dir {self.params['alphafold_database_dir']} " \
+                          f"--multimer_a3ms {','.join(msa_files)} " \
+                          f"--monomer_a3ms {','.join(msa_files)} " \
+                          f"--msa_pair_file {msa_pair_file} " \
+                          f"--temp_struct_csv {template_files[0]} " \
+                          f"--struct_atom_dir {out_template_dir} " \
+                          f"--output_dir {out_model_dir}"
+                else:
+                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                          f"--fasta_path {fasta_path} " \
+                          f"--env_dir {self.params['alphafold_env_dir']} " \
+                          f"--database_dir {self.params['alphafold_database_dir']} " \
+                          f"--multimer_a3ms {','.join(msa_files)} " \
+                          f"--monomer_a3ms {','.join(msa_files)} " \
+                          f"--msa_pair_file {msa_pair_file} " \
+                          f"--monomer_temp_csvs {','.join(template_files)} " \
+                          f"--struct_atom_dir {out_template_dir} " \
+                          f"--output_dir {out_model_dir}"
+
+                try:
+                    os.chdir(self.params['alphafold_program_dir_v2'])
+                    print(cmd)
+                    os.system(cmd)
+                except Exception as e:
+                    print(e)
+
+            new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+            new_ranking_json = json.loads(open(new_ranking_json_file).read())
+            max_lddt_score = new_ranking_json["iptm+ptm"][list(new_ranking_json["order"])[0]]
+
+            print(f'#########Iteration: {num_iteration + 1}#############')
+            print(f"plddt before: {ref_avg_lddt}")
+            print(f"plddt after: {max_lddt_score}")
+            if max_lddt_score > ref_avg_lddt:
+                print("Continue to refine")
+                ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                ref_start_msa_paths = {}
+                for chain_id in chain_id_map:
+                    ref_start_msa_paths[chain_id] = dict(
+                        paired_msa=f"{out_model_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m")
+                    # monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+
+                print('##################################################')
+                if num_iteration + 1 >= self.max_iteration:
+                    print("Reach maximum iteration")
+                    model_iteration_scores += [max_lddt_score]
+            else:
+                # keep the models in iteration 1 even through the plddt score decreases
+                if num_iteration == 0:
+                    ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                    ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                    ref_start_msa_paths = {}
+                    for chain_id in chain_id_map:
+                        ref_start_msa_paths[chain_id] = dict(
+                            paired_msa=f"{out_model_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m")
+                        # monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+                    model_iteration_scores += [max_lddt_score]
+                break
+
+        # model_iteration_scores += [max_lddt_score]
+        while len(model_iteration_scores) <= self.max_iteration:
+            model_iteration_scores += [0]
+
+        print(model_iteration_scores)
+        df = pd.DataFrame(model_iteration_scores)
+        df.to_csv(outdir + '/summary.csv')
+
+        final_model_dir = outdir + '/final'
+        makedir_if_not_exists(final_model_dir)
+        os.system(f"cp {ref_start_pdb} {final_model_dir}/final.pdb")
+        os.system(f"cp {ref_start_pkl} {final_model_dir}/final.pkl")
+
+        for chain_id in chain_id_map:
+            os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
+                      f"{final_model_dir}/{chain_id_map[chain_id].description}.paired.a3m")
+            # os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
+            #           f"{final_model_dir}/{chain_id_map[chain_id].description}.monomer.a3m")
+
+        os.chdir(cwd)
+
+        return final_model_dir
+
+    def search_single_homo(self, chain_id_map, fasta_path, pdb_path, pkl_path, msa_paths, outdir):
+
+        fasta_path = os.path.abspath(fasta_path)
+
+        targetname = pathlib.Path(fasta_path).stem
+
+        print(f"Processing {targetname}")
+
+        outdir = os.path.abspath(outdir) + "/"
+
+        makedir_if_not_exists(outdir)
+
+        cwd = os.getcwd()
+
+        ref_start_pdb = pdb_path
+        ref_start_pkl = pkl_path
+        ref_start_msa_paths = msa_paths
+
+        model_iteration_scores = []
+
+        print(f"Start to refine {ref_start_pdb}")
+
+        for num_iteration in range(self.max_iteration):
+            os.chdir(cwd)
+            current_work_dir = f"{outdir}/iteration{num_iteration + 1}"
+            makedir_if_not_exists(current_work_dir)
+
+            start_pdb = f"{current_work_dir}/start.pdb"
+            start_pkl = f"{current_work_dir}/start.pkl"
+            start_msa_path = f"{current_work_dir}/start_msas"
+            if os.path.exists(start_msa_path):
+                os.system(f"rm -rf {start_msa_path}")
+            makedir_if_not_exists(start_msa_path)
+
+            with open(ref_start_pkl, 'rb') as f:
+                ref_avg_lddt = float(pickle.load(f)['ranking_confidence'])
+
+            for chain_id in chain_id_map:
+                os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
+                          f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m")
+
+            os.system(f"cp {ref_start_pdb} {start_pdb}")
+            os.system(f"cp {ref_start_pkl} {start_pkl}")
+
+            model_iteration_scores += [ref_avg_lddt]
+
+            out_model_dir = f"{current_work_dir}/alphafold"
+
+            if not complete_result(out_model_dir):
+
+                chain_pdbs = split_pdb_unrelax2relax(start_pdb, current_work_dir)
+
+                template_results = []
+
+                out_template_dir = current_work_dir + '/templates'
+                makedir_if_not_exists(out_template_dir)
+
+                for chain_id in chain_pdbs:
+                    print(chain_id)
+                    if chain_id not in chain_id_map:
+                        raise Exception("Multimer fasta file and model doesn't match!")
+
+                    monomer_work_dir = current_work_dir + '/' + chain_id_map[chain_id].description
+                    makedir_if_not_exists(monomer_work_dir)
+                    os.system(
+                        f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
+                    foldseek_res = search_templates_foldseek(
+                        foldseek_program=self.params['foldseek_program'],
+                        databases=[self.params['foldseek_pdb_database'], self.params['foldseek_af_database']],
+                        inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
+                        outdir=monomer_work_dir + '/foldseek')
+
+                    if len(foldseek_res['all_alignment']) == 0:
+                        print(
+                            f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        break
+
+                    # os.system(f"cp {foldseek_res} {monomer_work_dir}/structure_templates.csv")
+
+                    template_results += [foldseek_res]
+
+                    self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
+                                              outdir=out_template_dir)
+
+                if len(template_results) != len(chain_id_map):
+                    break
+
+                template_files, msa_files, msa_pair_file = self.concatenate_msa_and_templates(
+                    chain_id_map=chain_id_map,
+                    template_results=template_results,
+                    start_msa_path=start_msa_path,
+                    outpath=current_work_dir,
+                    iteration=num_iteration + 1)
+
+                find_templates = True
+                for chain_id, template_file in zip(chain_id_map, template_files):
+                    if len(pd.read_csv(template_file, sep='\t')) == 0:
+                        print(
+                            f"Cannot find any templates for {chain_id_map[chain_id].description} in iteration {num_iteration + 1}")
+                        find_templates = False
+
+                if not find_templates:
+                    break
+
+                makedir_if_not_exists(out_model_dir)
+
+                if len(template_files) == 1:
+                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                          f"--fasta_path {fasta_path} " \
+                          f"--env_dir {self.params['alphafold_env_dir']} " \
+                          f"--database_dir {self.params['alphafold_database_dir']} " \
+                          f"--multimer_a3ms {','.join(msa_files)} " \
+                          f"--monomer_a3ms {','.join(msa_files)} " \
+                          f"--temp_struct_csv {template_files[0]} " \
+                          f"--struct_atom_dir {out_template_dir} " \
+                          f"--output_dir {out_model_dir}"
+                else:
+                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                          f"--fasta_path {fasta_path} " \
+                          f"--env_dir {self.params['alphafold_env_dir']} " \
+                          f"--database_dir {self.params['alphafold_database_dir']} " \
+                          f"--multimer_a3ms {','.join(msa_files)} " \
+                          f"--monomer_a3ms {','.join(msa_files)} " \
+                          f"--monomer_temp_csvs {','.join(template_files)} " \
+                          f"--struct_atom_dir {out_template_dir} " \
+                          f"--output_dir {out_model_dir}"
+
+                try:
+                    os.chdir(self.params['alphafold_program_dir_v2'])
+                    print(cmd)
+                    os.system(cmd)
+                except Exception as e:
+                    print(e)
+
+            new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+            new_ranking_json = json.loads(open(new_ranking_json_file).read())
+            max_lddt_score = new_ranking_json["iptm+ptm"][list(new_ranking_json["order"])[0]]
+
+            print(f'#########Iteration: {num_iteration + 1}#############')
+            print(f"plddt before: {ref_avg_lddt}")
+            print(f"plddt after: {max_lddt_score}")
+            if max_lddt_score > ref_avg_lddt:
+                print("Continue to refine")
+                ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                ref_start_msa_paths = {}
+                for chain_id in chain_id_map:
+                    ref_start_msa_paths[chain_id] = dict(
+                        # paired_msa=f"{out_model_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m",
+                        monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+
+                print('##################################################')
+                if num_iteration + 1 >= self.max_iteration:
+                    print("Reach maximum iteration")
+                    model_iteration_scores += [max_lddt_score]
+            else:
+                # keep the models in iteration 1 even through the plddt score decreases
+                if num_iteration == 0:
+                    ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
+                    ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                    ref_start_msa_paths = {}
+                    for chain_id in chain_id_map:
+                        ref_start_msa_paths[chain_id] = dict(
+                            # paired_msa=f"{out_model_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m",
+                            monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+                    model_iteration_scores += [max_lddt_score]
+                break
+
+        # model_iteration_scores += [max_lddt_score]
+        while len(model_iteration_scores) <= self.max_iteration:
+            model_iteration_scores += [0]
+
+        print(model_iteration_scores)
+        df = pd.DataFrame(model_iteration_scores)
+        df.to_csv(outdir + '/summary.csv')
+
+        final_model_dir = outdir + '/final'
+        makedir_if_not_exists(final_model_dir)
+        os.system(f"cp {ref_start_pdb} {final_model_dir}/final.pdb")
+        os.system(f"cp {ref_start_pkl} {final_model_dir}/final.pkl")
+
+        for chain_id in chain_id_map:
+            # os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
+            #           f"{final_model_dir}/{chain_id_map[chain_id].description}.paired.a3m")
+            os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
+                      f"{final_model_dir}/{chain_id_map[chain_id].description}.monomer.a3m")
+
+        os.chdir(cwd)
+
+        return final_model_dir

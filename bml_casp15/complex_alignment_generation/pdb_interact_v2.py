@@ -8,8 +8,9 @@ from bml_casp15.monomer_alignment_generation.alignment import *
 
 class PDB_interact_v2:
 
-    def __init__(self, uniprot2pdb_mapping_file):
+    def __init__(self, uniprot2pdb_mapping_file, complexes_cm_file):
         self.uniprot2pdb_mapping_file = uniprot2pdb_mapping_file
+        self.complexes_cm_file = complexes_cm_file
         self.uniprot2pdb_map = {}
 
     def load_data(self):
@@ -23,16 +24,27 @@ class PDB_interact_v2:
                 else:
                     self.uniprot2pdb_map[uniprot_id] = pdbcode
 
-    def get_interactions_from_ids(self, ids):
+    def get_interactions_from_ids(self, ids, is_homomers):
         pdbcodes = self.uniprot2pdb_map[ids[0]]
         prev_df = pd.DataFrame({'pdbcode': [pdbcode[0:4] for pdbcode in pdbcodes]})
         for i in range(1, len(ids)):
             pdbcodes = self.uniprot2pdb_map[ids[i]]
             curr_df = pd.DataFrame({'pdbcode': [pdbcode[0:4] for pdbcode in pdbcodes]})
             prev_df = prev_df.merge(curr_df, on="pdbcode")
+
+        if not is_homomers:
+            keep_indices = []
+            for i in range(len(prev_df)):
+                cmd = f"grep {prev_df.loc[i, 'pdbcode']} {self.complexes_cm_file}"
+                contents = os.popen(cmd).read().split('\n')
+                is_complex = len(contents[0].split()) > 1
+                if is_complex:
+                    keep_indices += [i]
+            return prev_df.iloc[keep_indices]
+
         return prev_df
 
-    def get_interactions_from_two_alignments(self, alignment1, alignment2, suffix):
+    def get_interactions_from_two_alignments(self, alignment1, alignment2, suffix, is_homomers):
         id_1 = []
         id_2 = []
         for id1 in alignment1.ids:
@@ -41,22 +53,22 @@ class PDB_interact_v2:
                     id_1 += [id1]
                     id_2 += [id2]
                 elif id1 in self.uniprot2pdb_map and id2 in self.uniprot2pdb_map:
-                    if len(self.get_interactions_from_ids([id1, id2])) > 0:
+                    if len(self.get_interactions_from_ids([id1, id2], is_homomers)) > 0:
                         id_1 += [id1]
                         id_2 += [id2]
         return pd.DataFrame({f"id_{suffix}": id_1, f"id_{suffix + 1}": id_2})
 
-    def get_interactions(self, alignments):
+    def get_interactions(self, alignments, is_homomers=False):
         prev_df = None
         for i in range(0, len(alignments) - 1):
-            curr_df = self.get_interactions_from_two_alignments(alignments[i], alignments[i + 1], suffix=i+1)
+            curr_df = self.get_interactions_from_two_alignments(alignments[i], alignments[i + 1], i+1, is_homomers)
             if prev_df is None:
                 prev_df = curr_df
             else:
                 prev_df = prev_df.merge(curr_df, on=f"id_{i + 1}")
         return prev_df
 
-    def get_interactions_large(self, alignments):
+    def get_interactions_large(self, alignments, is_homomers = False):
         def create_df(alignment):
             ids = []
             pdbcodes = []

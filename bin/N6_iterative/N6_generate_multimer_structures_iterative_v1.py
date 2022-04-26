@@ -32,6 +32,14 @@ def main(argv):
     all_multimer_res_avg = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': [], 'start_tmalign': [], 'end_tmalign': []}
     all_multimer_res_max = {'targetname': [], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [], 'end_tmscore': [], 'start_tmalign': [], 'end_tmalign': []}
 
+    all_monomer_res_all_v1 = {'targetname': [], 'model': [], 'tmscore': []}
+    all_monomer_res_avg_v1 = {'targetname': [], 'tmscore': []}
+    all_monomer_res_max_v1 = {'targetname': [], 'tmscore': []}
+
+    all_monomer_res_all_v2 = {'targetname': [], 'model': [], 'tmscore': []}
+    all_monomer_res_avg_v2 = {'targetname': [], 'tmscore': []}
+    all_monomer_res_max_v2 = {'targetname': [], 'tmscore': []}
+
     for fasta_path, inpdb_dir in zip(FLAGS.fasta_paths, FLAGS.inpdb_dirs):
         fasta_path = os.path.abspath(fasta_path)
         inpdb_dir = os.path.abspath(inpdb_dir)
@@ -41,9 +49,8 @@ def main(argv):
         if not os.path.exists(inpdb_dir):
             continue
 
-        multimer_res_all, multimer_res_avg, multimer_res_max = pipeline.search(fasta_path, inpdb_dir,
-                                                                               output_dir + '/' + targetname,
-                                                                               FLAGS.atomdir)
+        multimer_res_all, multimer_res_avg, multimer_res_max, v1_all, v1_avg, v1_max, v2_all, v2_avg, v2_max\
+            = pipeline.search(fasta_path, inpdb_dir, output_dir + '/' + targetname, FLAGS.atomdir)
 
         all_multimer_res_all['targetname'] += multimer_res_all['targetname']
         all_multimer_res_all['model'] += multimer_res_all['model']
@@ -70,6 +77,26 @@ def main(argv):
         all_multimer_res_max['start_tmalign'] += multimer_res_max['start_tmalign']
         all_multimer_res_max['end_tmalign'] += multimer_res_max['end_tmalign']
 
+        all_monomer_res_all_v1['targetname'] += v1_all['targetname']
+        all_monomer_res_all_v1['model'] += v1_all['model']
+        all_monomer_res_all_v1['tmscore'] += v1_all['tmscore']
+
+        all_monomer_res_avg_v1['targetname'] += v1_avg['targetname']
+        all_monomer_res_avg_v1['tmscore'] += v1_avg['tmscore']
+
+        all_monomer_res_max_v1['targetname'] += v1_max['targetname']
+        all_monomer_res_max_v1['tmscore'] += v1_max['tmscore']
+
+        all_monomer_res_all_v2['targetname'] += v2_all['targetname']
+        all_monomer_res_all_v2['model'] += v2_all['model']
+        all_monomer_res_all_v2['tmscore'] += v2_all['tmscore']
+
+        all_monomer_res_avg_v2['targetname'] += v2_avg['targetname']
+        all_monomer_res_avg_v2['tmscore'] += v2_avg['tmscore']
+
+        all_monomer_res_max_v2['targetname'] += v2_max['targetname']
+        all_monomer_res_max_v2['tmscore'] += v2_max['tmscore']
+
     df = pd.DataFrame(all_multimer_res_all)
     df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_all.csv')
 
@@ -79,6 +106,19 @@ def main(argv):
     df = pd.DataFrame(all_multimer_res_max)
     df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_multimer_res_max.csv')
 
+    df = pd.DataFrame(all_monomer_res_all_v1)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_all_v1.csv')
+    df = pd.DataFrame(all_monomer_res_avg_v1)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_avg_v1.csv')
+    df = pd.DataFrame(all_monomer_res_max_v1)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_max_v1.csv')
+
+    df = pd.DataFrame(all_monomer_res_all_v2)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_all_v2.csv')
+    df = pd.DataFrame(all_monomer_res_avg_v2)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_avg_v2.csv')
+    df = pd.DataFrame(all_monomer_res_max_v2)
+    df.to_csv(os.path.abspath(FLAGS.output_dir) + '/all_monomer_res_max_v2.csv')
 
 if __name__ == '__main__':
     flags.mark_flags_as_required([

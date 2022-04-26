@@ -55,16 +55,8 @@ def create_df(hits):
         row_list += [row_dict]
 
     if len(row_list) == 0:
-        empty_dict = dict(index=0,
-                          name='empty',
-                          tpdbcode='empty',
-                          aligned_cols=0,
-                          sum_probs=0,
-                          query='empty',
-                          hit_sequence='empty',
-                          indices_query=None,
-                          indices_hit=None)
-        row_list += [empty_dict]
+        return pd.DataFrame(columns=['index', 'name', 'tpdbcode', 'aligned_cols', 'sum_probs',
+                                     'query', 'hit_sequence', 'indices_query', 'indices_hit'])
     return pd.DataFrame(row_list)
 
 

@@ -105,7 +105,7 @@ def main(argv):
     makedir_if_not_exists(N4_outdir)
 
     result = run_monomer_evaluation_pipeline(params=params, targetname=targetname, fasta_file=FLAGS.fasta_path,
-                                             input_monomer_dir=N3_outdir, outputdir=N4_outdir)
+                                             input_monomer_dir=N3_outdir, outputdir=N4_outdir, generate_egnn_models=True)
 
     if result is None:
         raise RuntimeError("Program failed in step 4: monomer model evaluation")
@@ -122,6 +122,8 @@ def main(argv):
 
     makedir_if_not_exists(N5_outdir)
 
+    os.system(f"cp {result['apollo']} {N5_outdir}")
+
     ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
 
     refine_inputs = []
@@ -137,7 +139,7 @@ def main(argv):
 
     final_dir = N5_outdir + '_final'
     run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-                                    outdir=N5_outdir, finaldir=final_dir)
+                                    outdir=N5_outdir, finaldir=final_dir, ranking_df=ref_ranking)
 
     print("The refinement for the top-ranked monomer models has been finished!")
 
@@ -169,7 +171,7 @@ def main(argv):
         makedir_if_not_exists(N6_outdir)
 
         result = run_monomer_evaluation_pipeline(targetname=targetname, fasta_file=FLAGS.fasta_path,
-                                                 inputdir=N3_outdir, outputdir=N6_outdir)
+                                                 inputdir=N3_outdir, outputdir=N6_outdir, generate_egnn_models=True)
 
         if result is None:
             raise RuntimeError("Program failed in step 6: monomer model evaluation")
@@ -189,6 +191,7 @@ def main(argv):
         old_ref_ranking = copy.deepcopy(ref_ranking)
         refined_models = [old_ref_ranking.loc[i, 'model'] for i in range(5)]
         ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
+        os.system(f"cp {result['apollo']} {N7_outdir}")
 
         refine_inputs = []
         for i in range(5):

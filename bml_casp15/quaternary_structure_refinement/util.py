@@ -214,6 +214,39 @@ def create_template_df(templates):
     return pd.DataFrame(row_list)
 
 
+def create_template_df_with_index(templates):
+    row_list = []
+    for i in range(len(templates)):
+        target = templates.loc[i, 'target']
+        qaln = templates.loc[i, 'qaln']
+        qstart = int(templates.loc[i, 'qstart'])
+        qend = int(templates.loc[i, 'qend'])
+        taln = templates.loc[i, 'taln']
+        tstart = templates.loc[i, 'tstart']
+        tend = templates.loc[i, 'tend']
+        evalue = float(templates.loc[i, 'evalue'])
+        aln_len = int(templates.loc[i, 'alnlen'])
+        if target.find('.atom.gz') > 0:
+            pdbcode = target[0:4]
+        else:
+            pdbcode = target
+        row_dict = dict(index=i,
+                        template=target.split()[0],
+                        tpdbcode=pdbcode,
+                        aln_temp=taln,
+                        tstart=tstart,
+                        tend=tend,
+                        aln_query=qaln,
+                        qstart=qstart,
+                        qend=qend,
+                        evalue=evalue,
+                        aligned_length=aln_len)
+        row_list += [row_dict]
+    if len(row_list) == 0:
+        return pd.DataFrame(columns=['index', 'template', 'tpdbcode', 'aln_temp', 'tstart', 'tend',
+                                     'aln_query', 'qstart', 'qend', 'evalue', 'aligned_length'])
+    return pd.DataFrame(row_list)
+
 def get_sequence(inpdb):
     """Enclosing logic in a function to simplify code"""
 
@@ -330,9 +363,9 @@ def check_template_overlap_regions(template_info1, template_info2, chain_id_map,
 
     tstart_2 = np.min(np.array(list(mapping.values())))
     # tend_2 = np.max(np.array(list(mapping.values())))
-    print(tend_1)
-    print(gap)
-    print(tstart_2)
+    # print(tend_1)
+    # print(gap)
+    # print(tstart_2)
     return tend_1 + gap > tstart_2
 
 

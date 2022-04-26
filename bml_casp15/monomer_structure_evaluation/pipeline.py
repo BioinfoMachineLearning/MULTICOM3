@@ -162,17 +162,27 @@ class Monomer_structure_evaluation_pipeline:
             result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
 
         if "apollo" in self.run_methods and "alphafold" in self.run_methods:
-            print("1111111111111111111")
             pairwise_ranking_df = read_qa_txt_as_df(result_dict["apollo"])
+            ranks = [i+1 for i in range(len(pairwise_ranking_df))]
+            print(ranks)
+            pairwise_ranking_df['pairwise_rank'] = ranks
+            print(pairwise_ranking_df)
             alphafold_ranking_df = pd.read_csv(result_dict['alphafold'])
+            ranks = [i + 1 for i in range(len(alphafold_ranking_df))]
+            alphafold_ranking_df['alphafold_rank'] = ranks
             avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
             avg_scores = []
+            avg_rankings = []
+            print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
                 pairwise_score = float(avg_ranking_df.loc[i, 'score'])
                 alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg']) / 100
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
+                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank'])+int(avg_ranking_df.loc[i, 'alphafold_rank']))/2
+                avg_rankings += [avg_rank]
             avg_ranking_df['avg_score'] = avg_scores
+            avg_ranking_df['avg_rank'] = avg_rankings
             avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
             avg_ranking_df.reset_index(inplace=True, drop=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
