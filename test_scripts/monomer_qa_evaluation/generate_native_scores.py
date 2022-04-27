@@ -21,12 +21,29 @@ def cal_scores(tmscore_program, lddt_program, inpdb, nativepdb):
     tmscore_contents = os.popen(cmd).read().split('\n')
     gdtscore = float(tmscore_contents[0].rstrip('\n'))
 
-    cmd = lddt_program + ' ' + inpdb + ' ' + nativepdb + " | grep Global | awk '{print $4}' "
-    print(cmd)
-    lddt_contents = os.popen(cmd).read().split('\n')
-    lddtscore = float(tmscore_contents[0].rstrip('\n'))
+    # cmd = lddt_program + ' ' + inpdb + ' ' + nativepdb + " | grep Global | awk '{print $4}' "
+    # print(cmd)
+    # lddt_contents = os.popen(cmd).read().split('\n')
+    # lddtscore = float(lddt_contents[0].rstrip('\n'))
+    lddtscore=0
     return tmscore, gdtscore, lddtscore
 
+def cal_batch(inparams):
+    inputdir, target, native_pdb, tmscore_program, lddt_program, result_csv = inparams
+    models = []
+    gdt_scores = []
+    tmscores = []
+    lddtscores = []
+    for pdb in os.listdir(args.inputdir + '/' + target + '/pdb'):
+        tmscore, gdtscore, lddtscore = cal_scores(tmscore_program, lddt_program, f"{args.inputdir}/{target}/pdb/{pdb}",
+                                                  native_pdb)
+        models += [pdb]
+        gdt_scores += [gdtscore]
+        tmscores += [tmscore]
+        lddtscores += [lddtscore]
+
+    df = pd.DataFrame({'model': models, 'gdtscore': gdt_scores, 'tmscore': tmscores, 'global_lddt': lddtscores})
+    df.to_csv(result_csv)
 
 if __name__ == '__main__':
 
@@ -37,6 +54,8 @@ if __name__ == '__main__':
     tmscore_program = '/home/bml_casp15/BML_CASP15/tools/TMscore'
     lddt_program = '/home/bml_casp15/BML_CASP15/tools/lddt'
 
+    process_list = []
+
     for target in os.listdir(args.inputdir):
 
         native_pdb = f"{args.atomdir}/{target}.atom"
@@ -44,22 +63,14 @@ if __name__ == '__main__':
             raise Exception(f"Cannot find the native pdb for {target}: {native_pdb}")
 
         result_csv = f"{args.inputdir}/{target}/native_scores.csv"
-        if os.path.exists(result_csv):
-            df = pd.read_csv(result_csv)
-            if 'global_lddt' in df:
-                print(f"The native scores for {target} has been generated: {result_csv}")
-                continue
+        # if os.path.exists(result_csv):
+        #     df = pd.read_csv(result_csv)
+        #     if 'global_lddt' in df:
+        #         print(f"The native scores for {target} has been generated: {result_csv}")
+        #         continue
+        process_list.append([args.inputdir, target, native_pdb, tmscore_program, lddt_program, result_csv])
 
-        models = []
-        gdt_scores = []
-        tmscores = []
-        lddtscores = []
-        for pdb in os.listdir(args.inputdir + '/' + target + '/pdb'):
-            tmscore, gdtscore, lddtscore = cal_scores(tmscore_program, lddt_program, f"{args.inputdir}/{target}/pdb/{pdb}", native_pdb)
-            models += [pdb]
-            gdt_scores += [gdtscore]
-            tmscores += [tmscore]
-            lddtscores += [lddtscore]
-
-        df = pd.DataFrame({'model': models, 'gdtscore': gdt_scores, 'tmscore': tmscores, 'global_lddt': lddtscores})
-        df.to_csv(result_csv)
+    pool = Pool(processes=40)
+    results = pool.map(cal_batch, process_list)
+    pool.close()
+    pool.join()

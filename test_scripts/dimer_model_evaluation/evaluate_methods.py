@@ -163,6 +163,9 @@ if __name__ == '__main__':
         process_list = []
         for line in open(args.dimerlist).readlines():
             chain1, chain2 = line.rstrip('\n').split()
+            if not os.path.exists(f"{args.output_dir}/{method}/{chain1}_{chain2}") or not complete_result(f"{args.output_dir}/{method}/{chain1}_{chain2}"):
+                print(f"cannot find {args.output_dir}/{method}/{chain1}_{chain2}")
+                continue
             process_list.append([f"{chain1}_{chain2}", args.atom_dir, f"{args.output_dir}/{method}/{chain1}_{chain2}",
                                  args.tmpdir, dockq_program, tmscore_program, mmalign_program])
         pool = Pool(processes=20)

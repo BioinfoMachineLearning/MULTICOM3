@@ -25,7 +25,7 @@ class Quaternary_structure_evaluation_pipeline:
         self.pairwise_qa = Pairwise_dockq_qa(params['dockq_program'])
         self.alphafold_qa = Alphafold_pkl_qa()
         self.dproq = DPROQ(dproq_program=params['dproq_program'])
-        self.enqa = En_qa(enqa_program=params['enqa_program'])
+        self.enqa = En_qa(enqa_program=params['enqa_program'],use_gpu=False)
         self.bfactorqa = Bfactor_qa()
         self.multieva = MultiEva_qa(multieva_program=params['multieva_program'])
         self.foldseek_qa = FoldSeek_qa(params=params)

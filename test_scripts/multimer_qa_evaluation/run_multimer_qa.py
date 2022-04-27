@@ -22,6 +22,8 @@ def run_cmd(cmd):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--fastadir', type=is_dir, required=True)
+    parser.add_argument('--monomer_model_dir', type=is_dir, required=True)
     parser.add_argument('--modeldir', type=is_dir, required=True)
     parser.add_argument('--output_dir', type=is_dir, required=True)
     args = parser.parse_args()
@@ -31,11 +33,13 @@ if __name__ == '__main__':
 
     process_list = []
     for dimer in os.listdir(args.modeldir):
-        cmd = f"python {eva_script} --option_file {option_file} --input_dir {args.modeldir}/{dimer} " \
-              f"--output_dir {args.output_dir}/{dimer} > /dev/null 2>/dev/null "
+        cmd = f"python {eva_script} --option_file {option_file} --fasta_path {args.fastadir}/{dimer}.fasta " \
+              f"--input_dir {args.modeldir}/{dimer} " \
+              f"--output_dir {args.output_dir}/{dimer} --monomer_model_dir {args.monomer_model_dir} " \
+              f"--stoichiometry A1B1 > /dev/null 2>/dev/null "
         process_list += [cmd]
 
-    pool = Pool(processes=10)
+    pool = Pool(processes=5)
     results = pool.map(run_cmd, process_list)
     pool.close()
     pool.join()
