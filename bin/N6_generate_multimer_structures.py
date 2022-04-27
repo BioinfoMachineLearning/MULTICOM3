@@ -5,9 +5,11 @@ from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check
 from bml_casp15.quaternary_structure_generation.pipeline import *
 from absl import flags
 from absl import app
+from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_result, make_chain_id_map
+
 
 flags.DEFINE_string('option_file', None, 'option file')
-flags.DEFINE_list('fasta_paths', None, 'option file')
+flags.DEFINE_string('fasta_path', None, 'option file')
 flags.DEFINE_string('aln_dir', None, 'Monomer model directory')
 flags.DEFINE_string('complex_aln_dir', None, 'Monomer model directory')
 flags.DEFINE_string('structure_template_dir', None, 'Monomer model directory')
@@ -20,15 +22,21 @@ FLAGS = flags.FLAGS
 def run_pipeline(inparams):
     params, fasta_path, aln_dir, complex_aln_dir, structure_template_dir, sequence_template_dir, monomer_model_dir, output_dir = inparams
 
+    with open(fasta_path) as f:
+        input_fasta_str = f.read()
+    input_seqs, input_descs = parse_fasta(input_fasta_str)
+    chain_id_map, chain_id_seq_map = make_chain_id_map(sequences=input_seqs,
+                                                       descriptions=input_descs)
+
     pipeline = Quaternary_structure_prediction_pipeline(params)
 
     result = None
     try:
         result = pipeline.process(fasta_path=fasta_path,
+                                  chain_id_map=chain_id_map,
                                   aln_dir=aln_dir,
                                   complex_aln_dir=complex_aln_dir,
-                                  structure_template_dir=structure_template_dir,
-                                  sequence_template_dir=sequence_template_dir,
+                                  template_dir=structure_template_dir,
                                   monomer_model_dir=monomer_model_dir,
                                   output_dir=output_dir)
     except Exception as e:
@@ -47,8 +55,8 @@ def main(argv):
 
     process_list = []
 
-    for fasta_path in FLAGS.fasta_paths:
-
+    for fasta_path in os.listdir(FLAGS.fasta_path):
+        fasta_path = FLAGS.fasta_path + '/' + fasta_path
         monomers = []
         for line in open(fasta_path):
             line = line.rstrip('\n').strip()
@@ -80,7 +88,7 @@ def main(argv):
 
     print(f"Total {len(process_list)} dimers to be processed")
 
-    pool = Pool(processes=10)
+    pool = Pool(processes=1)
     results = pool.map(run_pipeline, process_list)
     pool.close()
     pool.join()
@@ -90,7 +98,7 @@ def main(argv):
 if __name__ == '__main__':
     flags.mark_flags_as_required([
         'option_file',
-        'fasta_paths',
+        'fasta_path',
         'aln_dir',
         'complex_aln_dir',
         'structure_template_dir',
