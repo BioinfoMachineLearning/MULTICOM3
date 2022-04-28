@@ -16,7 +16,7 @@ from bml_casp15.monomer_structure_refinement.util import *
 def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
     makedir_if_not_exists(outdir)
     foldseek_runner = Foldseek(binary_path=foldseek_program, databases=databases)
-    return foldseek_runner.query_with_tmalign(pdb=inpdb, outdir=outdir)
+    return foldseek_runner.query_with_tmalign(pdb=inpdb, outdir=outdir,maxseq=300)
 
 
 def create_template_df(templates, query_sequence):
@@ -31,6 +31,7 @@ def create_template_df(templates, query_sequence):
         tend = templates.loc[i, 'tend']
         evalue = float(templates.loc[i, 'evalue'])
         aln_len = int(templates.loc[i, 'alnlen'])
+
         if target.find('.atom.gz') > 0:
             target = target.replace('.atom.gz', '')
             pdbcode = target[0:4]
@@ -83,6 +84,7 @@ class Complex_structure_based_template_search_pipeline:
         makedir_if_not_exists(outdir)
 
         prev_df = None
+        monomer_template_results = []
         for i, monomer in enumerate(monomers_pdbs):
             monomer_work_dir = outdir + '/' + pathlib.Path(monomer).stem
             makedir_if_not_exists(monomer_work_dir)
@@ -92,6 +94,7 @@ class Complex_structure_based_template_search_pipeline:
                 inpdb=monomer,
                 outdir=monomer_work_dir + '/foldseek')
             curr_df = create_template_df(foldseek_df, monomer_sequences[i])
+            monomer_template_results += [curr_df]
             if prev_df is None:
                 prev_df = curr_df
             else:
@@ -113,7 +116,7 @@ class Complex_structure_based_template_search_pipeline:
         pdbcodes = []
         cover_chains_in_pdb = {}
         for i in range(len(prev_df_sorted)):
-            chain_count = len(set([prev_df_sorted.loc[i, f'template{j+1}'] for j in range(len(monomers_pdbs))]))
+            chain_count = len(set([prev_df_sorted.loc[i, f'template{j + 1}'] for j in range(len(monomers_pdbs))]))
             if prev_df_sorted.loc[i, 'tpdbcode'] not in pdbcodes:
                 if len(pdbcodes) > 0:
                     max_index = -1
@@ -140,7 +143,79 @@ class Complex_structure_based_template_search_pipeline:
 
         prev_df_sorted_filtered = prev_df_sorted.iloc[keep_indices]
 
-        prev_df_sorted_filtered.head(100).to_csv(outdir + "/structure_templates.csv", index=False)
+        if len(keep_indices) < 50:
+            print(f"template count is smaller than 50, add monomer templates")
+            prev_pd = None
+            for i in range(len(monomer_template_results)):
+                row_list = []
+                row_index = 0
+                for j in keep_indices:
+                    row_dict = dict(index=row_index,
+                                    template=prev_df_sorted_filtered.loc[j, f'template{j + 1}'],
+                                    aln_query=prev_df_sorted_filtered.loc[j, f'aln_query{j + 1}'],
+                                    qstart=prev_df_sorted_filtered.loc[j, f'qstart{j + 1}'],
+                                    qend=prev_df_sorted_filtered.loc[j, f'qend{j + 1}'],
+                                    aln_temp=prev_df_sorted_filtered.loc[j, f'aln_temp{j + 1}'],
+                                    tstart=prev_df_sorted_filtered.loc[j, f'tstart{j + 1}'],
+                                    tend=prev_df_sorted_filtered.loc[j, f'tend{j + 1}'],
+                                    tmscore=prev_df_sorted_filtered.loc[j, f'tmscore{j + 1}'],
+                                    aligned_length=prev_df_sorted_filtered.loc[j, f'aligned_length{j + 1}'])
+                    row_list += [row_dict]
+                    row_index += 1
+
+                seen_templates_sequences = [
+                    f"{prev_df_sorted_filtered.loc[j, f'template{j + 1}']}_" \
+                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{j + 1}']}" for j in keep_indices]
+
+                for j in range(len(monomer_template_results[i])):
+                    if row_index > 50:
+                        break
+                    print(monomer_template_results[i])
+                    if f"{monomer_template_results[i].loc[j, 'template']}_{monomer_template_results[i].loc[j, 'aln_temp']}" \
+                            not in seen_templates_sequences:
+
+                        hit = TemplateHit(index=j,
+                                          name=monomer_template_results[i].loc[j, f'template'].split('.')[0],
+                                          aligned_cols=int(monomer_template_results[i].loc[j, 'aligned_length']),
+                                          query=monomer_template_results[i].loc[j, 'aln_query'],
+                                          hit_sequence=monomer_template_results[i].loc[j, 'aln_temp'],
+                                          indices_query=build_alignment_indices(
+                                              monomer_template_results[i].loc[j, 'aln_query'],
+                                              monomer_template_results[i].loc[j, 'qstart']),
+                                          indices_hit=build_alignment_indices(
+                                              monomer_template_results[i].loc[j, 'aln_temp'],
+                                              monomer_template_results[i].loc[j, 'tstart']),
+                                          sum_probs=0.0)
+
+                        try:
+                            assess_hhsearch_hit(hit=hit, query_sequence=monomer_sequences[i])
+                        except PrefilterError as e:
+                            msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                            print(msg)
+                            continue
+
+                        row_dict = dict(index=row_index,
+                                        template=monomer_template_results[i].loc[j, f'template'],
+                                        aln_query=monomer_template_results[i].loc[j, f'aln_query'],
+                                        qstart=monomer_template_results[i].loc[j, f'qstart'],
+                                        qend=monomer_template_results[i].loc[j, f'qend'],
+                                        aln_temp=monomer_template_results[i].loc[j, f'aln_temp'],
+                                        tstart=monomer_template_results[i].loc[j, f'tstart'],
+                                        tend=monomer_template_results[i].loc[j, f'tend'],
+                                        tmscore=monomer_template_results[i].loc[j, f'tmscore'],
+                                        aligned_length=monomer_template_results[i].loc[j, f'aligned_length'])
+                        row_list += [row_dict]
+                        row_index += 1
+
+                curr_pd = pd.DataFrame(row_list)
+
+                if prev_pd is None:
+                    prev_pd = curr_pd
+                else:
+                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+            prev_pd.to_csv(outdir + "/structure_templates.csv", index=False)
+        else:
+            prev_df_sorted_filtered.head(100).to_csv(outdir + "/structure_templates.csv", index=False)
 
         print("The structure based template searching for dimers has finished!")
 

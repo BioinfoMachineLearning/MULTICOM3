@@ -350,7 +350,7 @@ def check_template_overlap_regions(template_info1, template_info2, chain_id_map,
         template_info1['aln_query'], template_info1['aln_temp'], indices_hit, indices_query,
         chain1_seq)
 
-    # tstart_1 = np.min(np.array(list(mapping.values())))
+    tstart_1 = np.min(np.array(list(mapping.values())))
     tend_1 = np.max(np.array(list(mapping.values())))
 
     chain2_id = template_info2['chainid']
@@ -362,11 +362,12 @@ def check_template_overlap_regions(template_info1, template_info2, chain_id_map,
         chain2_seq)
 
     tstart_2 = np.min(np.array(list(mapping.values())))
-    # tend_2 = np.max(np.array(list(mapping.values())))
+    tend_2 = np.max(np.array(list(mapping.values())))
     # print(tend_1)
     # print(gap)
     # print(tstart_2)
-    return tend_1 + gap > tstart_2
+
+    return max(tstart_1, tstart_2) + gap < min(tend_1, tend_2)
 
 
 def assess_complex_templates(chain_id_map, template_infos, gap=0):
@@ -390,6 +391,51 @@ def assess_complex_templates(chain_id_map, template_infos, gap=0):
                                                       chain_id_map=chain_id_map,
                                                       gap=gap):
                         return False
+    return True
+
+
+def cal_sequence_identity_mmseq2(mmseq_program, fasta1, fasta2, tmpdir):
+    cmd = f"{mmseq_program} easy-search {fasta1} {fasta2} {tmpdir}/alnRes_{chain1}_{chain2} {tmpdir} " \
+          + '--format-output "query,target,pident,qstart,qend,qaln,tstart,tend,taln" --alignment-mode 3 >/dev/null 2>&1'
+    os.system(cmd)
+    contents = open(f"{tmpdir}/alnRes_{chain1}_{chain2}").readlines()
+    seqid = 0
+    if len(contents) > 0:
+        line = contents[0].rstrip('\n')
+        aln_name1, aln_name2, seqid, qstart, qend, aln1, tstart, tend, aln2 = line.split('\t')
+    return seqid
+
+
+def assess_complex_templates_homo(chain_id_map, template_infos, mmseq_program, tmpdir, gap=0, seqid=0.95):
+    template_names = []
+    same_template_infos = {}
+    for template_info in template_infos:
+        if template_info['template'] not in template_names:
+            template_names += [template_info['template']]
+            same_template_infos[template_info['template']] = [template_info]
+        else:
+            same_template_infos[template_info['template']] += [template_info]
+
+    for template in same_template_infos:
+        if len(same_template_infos[template]) == 1:
+            continue
+        else:
+            for i in range(len(same_template_infos[template])):
+                for j in range(i + 1, len(same_template_infos[template])):
+                    if check_template_overlap_regions(template_info1=same_template_infos[template][i],
+                                                      template_info2=same_template_infos[template][j],
+                                                      chain_id_map=chain_id_map,
+                                                      gap=gap):
+                        return False
+                with open(f"{tmpdir}/{i}_{template}.fasta", 'w') as fw:
+                    fw.write(f">{i}_{template}\n{same_template_infos[template][i]['aln_temp'].replace('-', '')}")
+
+                with open(f"{tmpdir}/{j}_{template}.fasta", 'w') as fw:
+                    fw.write(f">{j}_{template}\n{same_template_infos[template][j]['aln_temp'].replace('-', '')}")
+
+                if cal_sequence_identity_mmseq2(mmseq_program, f"{tmpdir}/{i}_{template}.fasta"
+                                                f"{tmpdir}/{j}_{template}.fasta", tmpdir) < seqid:
+                    return False
     return True
 
 

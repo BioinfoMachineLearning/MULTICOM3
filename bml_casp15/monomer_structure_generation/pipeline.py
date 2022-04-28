@@ -265,7 +265,7 @@ class Monomer_structure_prediction_pipeline:
             if not os.path.exists(uniref90_sto):
                 errormsg = errormsg + f"Cannot find uniref90 alignment for {targetname}: {uniref90_sto}\n"
 
-            img_a3m = alndir + '/' + targetname + '.a3m'
+            img_a3m = alndir + '/' + targetname + '_img.a3m'
             if not os.path.exists(img_a3m):
                 errormsg = errormsg + f"Cannot find img alignment for {targetname}: {img_a3m}\n"
 
@@ -292,7 +292,7 @@ class Monomer_structure_prediction_pipeline:
             if not os.path.exists(uniref90_sto):
                 errormsg = errormsg + f"Cannot find uniref90 alignment for {targetname}: {uniref90_sto}\n"
 
-            img_a3m = alndir + '/' + targetname + '.a3m'
+            img_a3m = alndir + '/' + targetname + '_img.a3m'
             if not os.path.exists(img_a3m):
                 errormsg = errormsg + f"Cannot find img alignment for {targetname}: {img_a3m}\n"
 

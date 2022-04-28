@@ -8,6 +8,7 @@ from bml_casp15.complex_alignment_generation.species_interact_v2 import Species_
 from bml_casp15.complex_alignment_generation.string_interact_v2 import STRING_interact_v2
 from bml_casp15.complex_alignment_generation.uniclust_oxmatch_v2 import UNICLUST_oxmatch_v2
 from bml_casp15.complex_alignment_generation.uniprot_distance_v2 import UNIPROT_distance_v2
+from bml_casp15.complex_alignment_generation.colabfold_interact_v2 import colabfold_interact_v2
 from bml_casp15.monomer_alignment_generation.alignment import *
 from bml_casp15.common.util import makedir_if_not_exists
 
@@ -163,10 +164,12 @@ def write_multimer_a3ms(pair_ids, alignments, outdir, method, is_homomers=False)
         write_a3m(sequences_full, of)
 
     # save the alignment files
+    monomer_alignment_files = []
     for monomer_id in sequences_monomers:
         mon_alignment_file = f"{outdir}/{monomer_id}_con.a3m"
         with open(mon_alignment_file, "w") as of:
             write_a3m(sequences_monomers[monomer_id], of)
+        monomer_alignment_files += [mon_alignment_file]
 
     if is_homomers:
         unpaired_sequences = {}
@@ -203,7 +206,7 @@ def write_multimer_a3ms(pair_ids, alignments, outdir, method, is_homomers=False)
                     of.write(f">{homomers_sequences[monomer_id]['headers'][i]}\n"
                              f"{homomers_sequences[monomer_id]['seqs'][i]}\n")
 
-    return {'aln_file': complex_alignment_file, 'pair_ids': pair_ids}
+    return {'aln_file': complex_alignment_file, 'pair_ids': pair_ids, 'monomer_files': monomer_alignment_files}
 
 
 def concatenate_alignments(inparams):
@@ -219,6 +222,7 @@ def concatenate_alignments(inparams):
         uniclust_a3m_alignments = []
         uniref_a3m_alignments = []
         uniprot_sto_alignments = []
+        colabfold_alignments = []
 
         for chain in alignment:
             if chain == "outdir":
@@ -231,6 +235,7 @@ def concatenate_alignments(inparams):
                 uniref_a3m_alignments += [Alignment.from_file(f, format="a3m")]
             with open(alignment[chain]["uniprot_sto"]) as f:
                 uniprot_sto_alignments += [Alignment.from_file(f, format="stockholm")]
+            colabfold_alignments += [alignment[chain]["colabfold_a3m"]]
 
         for method in methods:
             if method == "pdb_interact":
@@ -334,6 +339,25 @@ def concatenate_alignments(inparams):
                                                                                     'uniprot_distance_uniprot_sto',
                                                                                     is_homomers)
                     print(f"uniprot_distance_uniprot_sto: {len(pair_ids)} pairs")
+
+            elif method == "species_colabfold_interact":
+                if "species_interact_uniref_a3m" not in alignment and len(uniref_a3m_alignments) > 0:
+                    pair_ids = Species_interact_v2.get_interactions(uniref_a3m_alignments)
+                    alignment["species_interact_uniref_a3m"] = write_multimer_a3ms(pair_ids, uniref_a3m_alignments,
+                                                                                   outdir,
+                                                                                   'species_interact_uniref_a3m',
+                                                                                   is_homomers)
+                    print(f"species_interact_uniref_a3m: {len(pair_ids)} pairs")
+
+                if len(colabfold_alignments) > 0:
+                    pair_ids = colabfold_interact_v2.get_interactions(species_interact_a3m=alignment["species_interact_uniref_a3m"]['aln_file'],
+                                                                      species_interact_alignment_files=alignment["species_interact_uniref_a3m"]['monomer_files'],
+                                                                      colabfold_alignment_files=colabfold_alignments,
+                                                                      outdir=outdir,
+                                                                      method='species_colabfold_interact')
+                    print(f"species_interact_uniprot_sto: {len(pair_ids)} pairs")
+
+        os.system(f"touch {outdir}/DONE")
 
     except Exception as e:
         print(e)

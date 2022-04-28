@@ -41,7 +41,7 @@ class monomer_template_input:
     seq: str
 
 
-def create_df(targetname, hits, prev_template_hit_indices=None):
+def create_df(hits, prev_template_hit_indices=None):
     row_list = []
     if prev_template_hit_indices is None:
         for index, hit in enumerate(hits):
@@ -175,7 +175,7 @@ class Complex_sequence_based_template_search_pipeline:
                 continue
             curr_template_hits += [hit]
 
-        prev_pd = create_df(monomer_inputs[0].name, curr_template_hits)
+        prev_pd = create_df(curr_template_hits)
         for i in range(1, len(monomer_template_results)):
             template_count = 0
             seen_templates = []
@@ -226,7 +226,7 @@ class Complex_sequence_based_template_search_pipeline:
                         prev_template_hit_indices += [j]
                         break
 
-            curr_pd = create_df(monomer_inputs[i].name, curr_template_hits, prev_template_hit_indices)
+            curr_pd = create_df(curr_template_hits, prev_template_hit_indices)
             # print(curr_pd)
             prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
 
@@ -287,6 +287,35 @@ class Complex_sequence_based_template_search_pipeline:
             monomer_names += [monomer_input.name]
 
         concatenated_pd = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir)
+
+        if len(concatenated_pd) < 50:
+
+            print(f"template count is smaller than 50, add monomer templates")
+            prev_pd = None
+            for i in range(len(monomer_template_results)):
+                seen_templates_sequences = [
+                    f"{concatenated_pd.loc[j, f'template{j + 1}']}_{concatenated_pd.loc[j, f'aln_temp{j + 1}']}" for j
+                    in range(len(concatenated_pd))]
+                monomer_template_hits = []
+                for hit in monomer_template_results[i]:
+                    print(f"{hit.name}_{hit.hit_sequence}")
+                    if f"{hit.name}_{hit.hit_sequence}" in seen_templates_sequences:
+                        continue
+                    try:
+                        assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq)
+                    except PrefilterError as e:
+                        msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                        print(msg)
+                        continue
+                    monomer_template_hits += [hit]
+
+                curr_pd = create_df(monomer_template_hits)
+                if prev_pd is None:
+                    prev_pd = curr_pd
+                else:
+                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+
+            concatenated_pd = concatenated_pd.append(prev_pd, ignore_index=True)
 
         concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
 

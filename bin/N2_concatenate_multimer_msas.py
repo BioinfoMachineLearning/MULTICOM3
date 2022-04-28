@@ -35,13 +35,14 @@ def main(argv):
             chain_aln_dir = FLAGS.aln_dir + '/' + chain
             if os.path.exists(chain_aln_dir):
                 chain_a3ms = {'name': chain,
-                               'uniref30_a3m': f"{chain_aln_dir}/{chain}_uniref30.a3m",
-                               'uniref90_sto': f"{chain_aln_dir}/{chain}_uniref90.sto",
-                               'uniprot_sto': f"{chain_aln_dir}/{chain}_uniprot.sto",
-                               'uniclust30_a3m': f"{chain_aln_dir}/{chain}_uniclust30.a3m"}
+                              'colabfold_a3m': f"{chain_aln_dir}/{chain}_colabfold.a3m",
+                              'uniref30_a3m': f"{chain_aln_dir}/{chain}_uniref30.a3m",
+                              'uniref90_sto': f"{chain_aln_dir}/{chain}_uniref90.sto",
+                              'uniprot_sto': f"{chain_aln_dir}/{chain}_uniprot.sto",
+                              'uniclust30_a3m': f"{chain_aln_dir}/{chain}_uniclust30.a3m"}
             else:
                 chain_a3ms = {'name': chain}
-            alignment[f"chain{i+1}"] = chain_a3ms
+            alignment[f"chain{i + 1}"] = chain_a3ms
 
         add = True
         for name in alignment:
@@ -53,6 +54,7 @@ def main(argv):
             for key in a3ms:
                 if key.find('uni') >= 0:
                     if not os.path.exists(a3ms[key]):
+                        print(f"Cannot find file: {a3ms[key]}!")
                         add = False
                     else:
                         contents = open(a3ms[key]).readlines()
@@ -68,8 +70,11 @@ def main(argv):
 
     if len(alignments) > 0:
         print("Start to concatenate alignments for dimers")
-        pipeline = Complex_alignment_concatenation_pipeline(params, multiprocess=True, process_num=10)
-        alignments = pipeline.concatenate(alignments, params['hhfilter_program'])
+        concat_methods = ['species_colabfold_interact']
+        complex_alignment_concatenation_pipeline = Complex_alignment_concatenation_pipeline(params=params,
+                                                                                            run_methods=concat_methods)
+        alignments = complex_alignment_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'],
+                                                                          is_homomers=False)
     print("The alignment concatenation for dimers has finished!")
 
 

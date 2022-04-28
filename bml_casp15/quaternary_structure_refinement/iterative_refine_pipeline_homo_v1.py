@@ -64,11 +64,14 @@ class Multimer_iterative_refinement_pipeline:
                 templates_filtered.reset_index(inplace=True, drop=True)
 
                 curr_df = create_template_df(templates_filtered)
+                curr_df.rename(columns={"tpdbcode", f"tpdbcode{chain_idx+1}"})
                 # print(curr_df)
                 if complex_templates_df is None:
                     complex_templates_df = curr_df
                 else:
-                    complex_templates_df = complex_templates_df.merge(curr_df, how="inner", on='tpdbcode',
+                    complex_templates_df = complex_templates_df.merge(curr_df, how="outer",
+                                                                      left_on=f'tpdbcode{chain_idx}',
+                                                                      right_on=f'tpdbcode{chain_idx+1}',
                                                                       suffixes=(str(chain_idx), str(chain_idx + 1)))
 
             keep_indices = []
@@ -78,8 +81,11 @@ class Multimer_iterative_refinement_pipeline:
                 if len(keep_indices) > self.max_template_count:
                     break
                 template_infos = []
+                pdbcode_count = 0
                 for j, chain_id in enumerate(chain_id_map):
                     template = complex_templates_df.loc[i, f'template{j + 1}']
+                    if template == "NaN":
+                        continue
                     qaln = complex_templates_df.loc[i, f'aln_query{j + 1}']
                     qstart = int(complex_templates_df.loc[i, f'qstart{j + 1}'])
                     qend = int(complex_templates_df.loc[i, f'qend{j + 1}'])
@@ -98,12 +104,23 @@ class Multimer_iterative_refinement_pipeline:
                                     qend=qend,
                                     evalue=evalue)
                     template_infos += [row_dict]
+                    pdbcode_count += 1
 
-                if not assess_complex_templates(chain_id_map, template_infos):
+                if pdbcode_count == 1:
+                    continue
+
+                if not assess_complex_templates_homo(chain_id_map, template_infos,
+                                                     self.params['mmseq_program'], outpath + '/tmp'):
                     continue
 
                 monomer_template_seqs = {}
+                unprocessed_chain_ids = []
+                processed_chain_ids = []
                 for j, chain_id in enumerate(chain_id_map):
+                    if complex_templates_df.loc[i, f'aln_query{j + 1}'] == 'NaN':
+                        unprocessed_chain_ids += [chain_id]
+                        continue
+
                     query_non_gaps = [res != '-' for res in complex_templates_df.loc[i, f'aln_query{j + 1}']]
                     out_sequence = ''.join(
                         convert_taln_seq_to_a3m(query_non_gaps, complex_templates_df.loc[i, f'aln_temp{j + 1}']))
@@ -115,6 +132,14 @@ class Multimer_iterative_refinement_pipeline:
                     monomer_template_dict = {'desc': complex_templates_df.loc[i, f'template{j + 1}'],
                                              'seq': taln_full_seq}
                     monomer_template_seqs[chain_id] = monomer_template_dict
+                    processed_chain_ids += [chain_id]
+
+                processed_idx = 0
+                for chain_id in unprocessed_chain_ids:
+                    monomer_template_seqs[chain_id] = copy.deepcopy(monomer_template_seqs[processed_chain_ids[processed_idx]])
+                    processed_idx += 1
+                    if processed_idx > len(processed_chain_ids):
+                        processed_idx = 0
 
                 complex_template_seq = "".join(
                     [monomer_template_seqs[chain_id]['seq'] for chain_id in monomer_template_seqs])
@@ -143,7 +168,7 @@ class Multimer_iterative_refinement_pipeline:
                             for i in range(len(chain_template_msas[chain_id]['desc'])))
             with open(start_msa + '.temp', 'w') as fw:
                 fw.write('\n'.join(fasta_chunks) + '\n')
-            combine_a3ms([start_msa, f"{start_msa}.temp"],
+            combine_a3ms([f"{start_msa}.temp", start_msa],
                          f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m")
             out_msas += [f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m"]
 
@@ -250,8 +275,8 @@ class Multimer_iterative_refinement_pipeline:
             ref_start_ranking_json_file = f"ranking_debug.json"
 
             new_ranking_json = json.loads(open(current_ref_dir + '/' + ref_start_ranking_json_file).read())
-            model_num = list(new_ranking_json["order"])[i].split('_')[1]
-            ref_start_pkl = f"result_model_{model_num}_multimer.pkl"
+            model_name = list(new_ranking_json["order"])[i]
+            ref_start_pkl = model_name.replace('.pdb', '.pkl')
 
             model_iteration_scores = []
             model_iteration_tmscores = []
@@ -394,8 +419,9 @@ class Multimer_iterative_refinement_pipeline:
                     print("Continue to refine")
                     current_ref_dir = out_model_dir
                     ref_start_pdb = f"ranked_0.pdb"
-                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                    ref_start_pkl = f"result_model_{model_num}_multimer.pkl"
+                    model_name = list(new_ranking_json["order"])[0]
+                    ref_start_pkl = model_name.replace('.pdb', '.pkl')
+
                     print('##################################################')
                     if num_iteration + 1 >= self.max_iteration:
                         print("Reach maximum iteration")
@@ -414,8 +440,8 @@ class Multimer_iterative_refinement_pipeline:
                     if num_iteration == 0:
                         current_ref_dir = out_model_dir
                         ref_start_pdb = f"ranked_0.pdb"
-                        model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                        ref_start_pkl = f"result_model_{model_num}_multimer.pkl"
+                        model_name = list(new_ranking_json["order"])[0]
+                        ref_start_pkl = model_name.replace('.pdb', '.pkl')
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
@@ -755,4 +781,3 @@ class Multimer_iterative_refinement_pipeline:
         os.chdir(cwd)
 
         return final_model_dir
-

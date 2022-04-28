@@ -70,7 +70,8 @@ class Quaternary_structure_prediction_pipeline:
                             # 'pdb_interact_uniprot_sto',
                             'species_interact_uniprot_sto',
                             'uniprot_distance_uniprot_sto',
-                            'string_interact_uniprot_sto']
+                            'string_interact_uniprot_sto',
+                            'species_colabfold_interact']
 
         self.method2dir = {'default': 'default_multimer',
                            'default+structure_based_template': 'default_struct',
@@ -102,7 +103,9 @@ class Quaternary_structure_prediction_pipeline:
 
                            'species_interact_uniprot_sto': 'spec_iter_uniprot_sto',
                            'uniprot_distance_uniprot_sto': 'unidist_uniprot_sto',
-                           'string_interact_uniprot_sto': 'str_iter_uniprot_sto'}
+                           'string_interact_uniprot_sto': 'str_iter_uniprot_sto',
+
+                           'species_colabfold_interact': 'spec_colab_iter'}
 
     def process(self,
                 fasta_path,
@@ -215,10 +218,11 @@ class Quaternary_structure_prediction_pipeline:
                 msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
                 if len(pd.read_csv(msa_pair_file)) <= 1:
                     continue
-                a3m_paths = get_complex_alignments_by_method(
-                    monomers=monomers,
-                    concatenate_method=concatenate_method,
-                    aln_dir=aln_dir)
+                a3m_paths = [f"{complex_aln_dir}/{concatenate_method}/{monomer}_con.a3m" for monomer in monomers]
+                    # get_complex_alignments_by_method(
+                    # monomers=monomers,
+                    # concatenate_method=concatenate_method,
+                    # aln_dir=aln_dir)
 
             outdir = f"{output_dir}/{self.method2dir[method]}"
 

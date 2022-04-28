@@ -169,7 +169,7 @@ def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir,
 
     pipeline = iterative_refine_pipeline.Monomer_refinement_model_selection()
     pipeline.select_v1(indir=outdir, outdir=finaldir + '/v1')
-    pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
+    # pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
 
 
 def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, outputdir, params, is_homomers=False):
@@ -181,6 +181,7 @@ def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, 
         chain_aln_dir = monomer_aln_dir + '/' + chain
         if os.path.exists(chain_aln_dir):
             chain_a3ms = {'name': chain,
+                          'colabfold_a3m': f"{chain_aln_dir}/{chain}_colabfold.a3m",
                           'uniref30_a3m': f"{chain_aln_dir}/{chain}_uniref30.a3m",
                           'uniref90_sto': f"{chain_aln_dir}/{chain}_uniref90.sto",
                           'uniprot_sto': f"{chain_aln_dir}/{chain}_uniprot.sto",
@@ -211,10 +212,14 @@ def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, 
         alignments = [alignment]
         print(f"Total {len(alignments)} pairs can be concatenated")
         print("Start to concatenate alignments for dimers")
-        complex_alignment_concatenation_pipeline = Complex_alignment_concatenation_pipeline(params=params,
+
+        if not os.path.exists(alignment['outdir'] + '/DONE'):
+            complex_alignment_concatenation_pipeline = Complex_alignment_concatenation_pipeline(params=params,
                                                                                             run_methods=run_methods)
-        alignments = complex_alignment_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'],
+            alignments = complex_alignment_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'],
                                                                           is_homomers=is_homomers)
+        else:
+            print("The multimer alignments have been generated!")
     else:
         print("The a3ms for dimers are not complete!")
 

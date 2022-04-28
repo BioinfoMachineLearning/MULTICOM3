@@ -12,6 +12,8 @@ flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Monomer model directory')
 flags.DEFINE_string('input_dir', None, 'Monomer model directory')
 flags.DEFINE_string('output_dir', None, 'Monomer model directory')
+flags.DEFINE_string('monomer_model_dir', None, 'Monomer model directory')
+flags.DEFINE_string('stoichiometry', None, 'Monomer model directory')
 FLAGS = flags.FLAGS
 
 
@@ -31,7 +33,9 @@ def main(argv):
 
     pipeline = Quaternary_structure_evaluation_pipeline(params=params,run_methods=['foldseek'])
 
-    pipeline.process(fasta_path=FLAGS.fasta_path, chain_id_map=chain_id_map, model_dir=FLAGS.input_dir, output_dir=FLAGS.output_dir)
+    pipeline.process(fasta_path=FLAGS.fasta_path, chain_id_map=chain_id_map,
+                     model_dir=FLAGS.input_dir, output_dir=FLAGS.output_dir,
+                     monomer_model_dir=FLAGS.monomer_model_dir, stoichiometry=FLAGS.stoichiometry)
 
     print("The template search dimers has finished!")
 

@@ -1,4 +1,4 @@
-import os, sys, argparse, time
+import os, sys, argparse, time, json
 from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, check_dirs
@@ -44,11 +44,18 @@ class Quaternary_structure_evaluation_pipeline:
         makedir_if_not_exists(msadir)
 
         for method in os.listdir(model_dir):
+            ranking_json_file = f"{model_dir}/{method}/ranking_debug.json"
+            if not os.path.exists(ranking_json_file):
+                continue
+            ranking_json = json.loads(open(ranking_json_file).read())
+
             for i in range(0, 5):
                 if not complete_result(model_dir + '/' + method):
                     continue
                 os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
-                os.system(f"cp {model_dir}/{method}/result_model_{i + 1}_multimer.pkl {pkldir}/{method}_{i}.pkl")
+
+                model_num = list(ranking_json["order"])[i].split('_')[1]
+                os.system(f"cp {model_dir}/{method}/result_model_{model_num}_multimer.pkl {pkldir}/{method}_{i}.pkl")
                 for chain_id in chain_id_map:
                     msa_chain_outdir = msadir + '/' + chain_id_map[chain_id].description
                     makedir_if_not_exists(msa_chain_outdir)

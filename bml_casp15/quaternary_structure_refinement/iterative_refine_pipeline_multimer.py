@@ -6,6 +6,7 @@ from bml_casp15.common.util import makedir_if_not_exists, check_dirs
 import dataclasses
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_v1
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_v1_with_monomer
+from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_homo_v1
 import pandas as pd
 import pathlib
 import pickle
@@ -27,14 +28,9 @@ class Multimer_iterative_refinement_pipeline_server:
 
     def search(self, refinement_inputs, outdir, is_homomer=False):
         result_dirs = []
-
-        pipeline_v1 = iterative_refine_pipeline_v1.Multimer_iterative_refinement_pipeline(self.params)
-        pipeline_v1_with_monomer = iterative_refine_pipeline_v1_with_monomer.Multimer_iterative_refinement_pipeline(
-            self.params)
-
         for refine_param in refinement_inputs:
-
             if is_homomer:
+                pipeline_v1 = iterative_refine_pipeline_homo_v1.Multimer_iterative_refinement_pipeline(self.params)
                 result_dir = pipeline_v1.search_single_homo(chain_id_map=refine_param.chain_id_map,
                                                             fasta_path=refine_param.fasta_path,
                                                             pdb_path=refine_param.pdb_path,
@@ -50,6 +46,7 @@ class Multimer_iterative_refinement_pipeline_server:
                         break
 
                 if use_v1:
+                    pipeline_v1 = iterative_refine_pipeline_v1.Multimer_iterative_refinement_pipeline(self.params)
                     result_dir = pipeline_v1.search_single(chain_id_map=refine_param.chain_id_map,
                                                            fasta_path=refine_param.fasta_path,
                                                            pdb_path=refine_param.pdb_path,
@@ -58,6 +55,8 @@ class Multimer_iterative_refinement_pipeline_server:
                                                            outdir=outdir + '/' + pathlib.Path(
                                                                refine_param.pdb_path).stem)
                 else:
+                    pipeline_v1_with_monomer = iterative_refine_pipeline_v1_with_monomer.Multimer_iterative_refinement_pipeline(
+                        self.params)
                     result_dir = pipeline_v1_with_monomer.search_single(chain_id_map=refine_param.chain_id_map,
                                                                         fasta_path=refine_param.fasta_path,
                                                                         pdb_path=refine_param.pdb_path,

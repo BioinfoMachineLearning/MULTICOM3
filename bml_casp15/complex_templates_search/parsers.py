@@ -49,7 +49,7 @@ class Msa:
                    descriptions=self.descriptions[:max_seqs])
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=False)
 class TemplateHit:
     """Class representing a template hit."""
     index: int
