@@ -39,7 +39,7 @@ if __name__ == '__main__':
               f"--stoichiometry A1B1 > /dev/null 2>/dev/null "
         process_list += [cmd]
 
-    pool = Pool(processes=1)
+    pool = Pool(processes=5)
     results = pool.map(run_cmd, process_list)
     pool.close()
     pool.join()
