@@ -31,7 +31,7 @@ def main(argv):
 
     makedir_if_not_exists(FLAGS.output_dir)
 
-    pipeline = Quaternary_structure_evaluation_pipeline(params=params,run_methods=['foldseek'])
+    pipeline = Quaternary_structure_evaluation_pipeline(params=params,run_methods=['dproq'])
 
     pipeline.process(fasta_path=FLAGS.fasta_path, chain_id_map=chain_id_map,
                      model_dir=FLAGS.input_dir, output_dir=FLAGS.output_dir,

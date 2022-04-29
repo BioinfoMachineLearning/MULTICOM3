@@ -642,8 +642,8 @@ class Multimer_iterative_refinement_pipeline:
             if max_lddt_score > ref_avg_lddt:
                 print("Continue to refine")
                 ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
-                model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                model_name = list(new_ranking_json["order"])[0]
+                ref_start_pkl = out_model_dir + '/' + model_name.replace('.pdb', '.pkl')
                 ref_start_msa_paths = {}
                 for chain_id in chain_id_map:
                     ref_start_msa_paths[chain_id] = dict(
@@ -658,8 +658,8 @@ class Multimer_iterative_refinement_pipeline:
                 # keep the models in iteration 1 even through the plddt score decreases
                 if num_iteration == 0:
                     ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
-                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                    ref_start_pkl = f"{out_model_dir}/result_model_{model_num}_multimer.pkl"
+                    model_name = list(new_ranking_json["order"])[0]
+                    ref_start_pkl = out_model_dir + '/' + model_name.replace('.pdb', '.pkl')
                     ref_start_msa_paths = {}
                     for chain_id in chain_id_map:
                         ref_start_msa_paths[chain_id] = dict(

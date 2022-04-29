@@ -29,7 +29,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     eva_script = '/home/bml_casp15/BML_CASP15/bin/N8_evaluate_multimer_structures.py'
-    option_file = '/home/bml_casp15/BML_CASP15/bin/db_option'
+    option_file = '/home/bml_casp15/BML_CASP15/bin/db_option_test'
 
     process_list = []
     for dimer in os.listdir(args.modeldir):
@@ -39,7 +39,7 @@ if __name__ == '__main__':
               f"--stoichiometry A1B1 > /dev/null 2>/dev/null "
         process_list += [cmd]
 
-    pool = Pool(processes=5)
+    pool = Pool(processes=1)
     results = pool.map(run_cmd, process_list)
     pool.close()
     pool.join()

@@ -64,7 +64,7 @@ class Multimer_iterative_refinement_pipeline:
                 templates_filtered.reset_index(inplace=True, drop=True)
 
                 curr_df = create_template_df(templates_filtered)
-                curr_df.rename(columns={"tpdbcode", f"tpdbcode{chain_idx+1}"})
+                curr_df = curr_df.rename(columns={"tpdbcode": f"tpdbcode{chain_idx+1}"})
                 # print(curr_df)
                 if complex_templates_df is None:
                     complex_templates_df = curr_df
@@ -84,7 +84,7 @@ class Multimer_iterative_refinement_pipeline:
                 pdbcode_count = 0
                 for j, chain_id in enumerate(chain_id_map):
                     template = complex_templates_df.loc[i, f'template{j + 1}']
-                    if template == "NaN":
+                    if pd.isnull(template):
                         continue
                     qaln = complex_templates_df.loc[i, f'aln_query{j + 1}']
                     qstart = int(complex_templates_df.loc[i, f'qstart{j + 1}'])
@@ -117,7 +117,7 @@ class Multimer_iterative_refinement_pipeline:
                 unprocessed_chain_ids = []
                 processed_chain_ids = []
                 for j, chain_id in enumerate(chain_id_map):
-                    if complex_templates_df.loc[i, f'aln_query{j + 1}'] == 'NaN':
+                    if pd.isnull(complex_templates_df.loc[i, f'aln_query{j + 1}']):
                         unprocessed_chain_ids += [chain_id]
                         continue
 
@@ -155,8 +155,11 @@ class Multimer_iterative_refinement_pipeline:
                                                inplace=True)
             complex_templates_df_filtered.reset_index(inplace=True, drop=True)
 
+
             if len(complex_templates_df_filtered) > self.max_template_count:
                 break
+
+        complex_templates_df_filtered.to_csv(f'{outpath}/complex_templates.csv')
 
         msa_out_path = outpath  # + '/msas'
         makedir_if_not_exists(msa_out_path)
@@ -276,7 +279,7 @@ class Multimer_iterative_refinement_pipeline:
 
             new_ranking_json = json.loads(open(current_ref_dir + '/' + ref_start_ranking_json_file).read())
             model_name = list(new_ranking_json["order"])[i]
-            ref_start_pkl = model_name.replace('.pdb', '.pkl')
+            ref_start_pkl = f"result_{model_name}.pkl"
 
             model_iteration_scores = []
             model_iteration_tmscores = []
@@ -302,9 +305,14 @@ class Multimer_iterative_refinement_pipeline:
                     os.system(f"rm -rf {start_msa_path}")
                 makedir_if_not_exists(start_msa_path)
 
-                for chain_id in chain_id_map:
-                    os.system(f"cp {current_ref_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m "
-                              f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m")
+                for chain_idx, chain_id in enumerate(chain_id_map):
+                    if not os.path.exists(f"{current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx]}/monomer_final.a3m"):
+                        lines = open(f"{current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx-1]}/monomer_final.a3m").readlines()
+                        lines[0] = f">{chain_id_map[chain_id].description}"
+                        open(f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m", 'w').writelines(lines)
+                    else:
+                        os.system(f"cp {current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx]}/monomer_final.a3m "
+                                  f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m")
 
                 with open(start_pkl, 'rb') as f:
                     ref_avg_lddt = np.mean(pickle.load(f)['ranking_confidence'])
@@ -381,21 +389,23 @@ class Multimer_iterative_refinement_pipeline:
                     makedir_if_not_exists(out_model_dir)
 
                     if len(template_files) == 1:
-                        cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                        cmd = f"python {self.params['alphafold_multimer_program']} " \
                               f"--fasta_path {fasta_file} " \
                               f"--env_dir {self.params['alphafold_env_dir']} " \
                               f"--database_dir {self.params['alphafold_database_dir']} " \
-                              f"--a3ms {','.join(msa_files)} " \
+                              f"--multimer_a3ms {','.join(msa_files)} " \
+                              f"--monomer_a3ms {','.join(msa_files)} " \
                               f"--msa_pair_file {msa_pair_file} " \
                               f"--temp_struct_csv {template_files[0]} " \
                               f"--struct_atom_dir {out_template_dir} " \
                               f"--output_dir {out_model_dir}"
                     else:
-                        cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                        cmd = f"python {self.params['alphafold_multimer_program']} " \
                               f"--fasta_path {fasta_file} " \
                               f"--env_dir {self.params['alphafold_env_dir']} " \
                               f"--database_dir {self.params['alphafold_database_dir']} " \
-                              f"--a3ms {','.join(msa_files)} " \
+                              f"--multimer_a3ms {','.join(msa_files)} " \
+                              f"--monomer_a3ms {','.join(msa_files)} " \
                               f"--msa_pair_file {msa_pair_file} " \
                               f"--monomer_temp_csvs {','.join(template_files)} " \
                               f"--struct_atom_dir {out_template_dir} " \
@@ -420,7 +430,7 @@ class Multimer_iterative_refinement_pipeline:
                     current_ref_dir = out_model_dir
                     ref_start_pdb = f"ranked_0.pdb"
                     model_name = list(new_ranking_json["order"])[0]
-                    ref_start_pkl = model_name.replace('.pdb', '.pkl')
+                    ref_start_pkl = f"result_{model_name}.pkl"
 
                     print('##################################################')
                     if num_iteration + 1 >= self.max_iteration:
@@ -441,7 +451,7 @@ class Multimer_iterative_refinement_pipeline:
                         current_ref_dir = out_model_dir
                         ref_start_pdb = f"ranked_0.pdb"
                         model_name = list(new_ranking_json["order"])[0]
-                        ref_start_pkl = model_name.replace('.pdb', '.pkl')
+                        ref_start_pkl = f"result_{model_name}.pkl"
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
@@ -694,7 +704,7 @@ class Multimer_iterative_refinement_pipeline:
                 makedir_if_not_exists(out_model_dir)
 
                 if len(template_files) == 1:
-                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                    cmd = f"python {self.params['alphafold_multimer_program']} " \
                           f"--fasta_path {fasta_path} " \
                           f"--env_dir {self.params['alphafold_env_dir']} " \
                           f"--database_dir {self.params['alphafold_database_dir']} " \
@@ -705,7 +715,7 @@ class Multimer_iterative_refinement_pipeline:
                           f"--struct_atom_dir {out_template_dir} " \
                           f"--output_dir {out_model_dir}"
                 else:
-                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                    cmd = f"python {self.params['alphafold_multimer_program']} " \
                           f"--fasta_path {fasta_path} " \
                           f"--env_dir {self.params['alphafold_env_dir']} " \
                           f"--database_dir {self.params['alphafold_database_dir']} " \
@@ -717,7 +727,7 @@ class Multimer_iterative_refinement_pipeline:
                           f"--output_dir {out_model_dir}"
 
                 try:
-                    os.chdir(self.params['alphafold_program_dir_v2'])
+                    os.chdir(self.params['alphafold_program_dir'])
                     print(cmd)
                     os.system(cmd)
                 except Exception as e:
@@ -773,10 +783,10 @@ class Multimer_iterative_refinement_pipeline:
         os.system(f"cp {ref_start_pkl} {final_model_dir}/final.pkl")
 
         for chain_id in chain_id_map:
-            os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
-                      f"{final_model_dir}/{chain_id_map[chain_id].description}.paired.a3m")
-            # os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
-            #           f"{final_model_dir}/{chain_id_map[chain_id].description}.monomer.a3m")
+            # os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
+            #           f"{final_model_dir}/{chain_id_map[chain_id].description}.paired.a3m")
+            os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
+                      f"{final_model_dir}/{chain_id_map[chain_id].description}.monomer.a3m")
 
         os.chdir(cwd)
 

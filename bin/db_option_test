@@ -7,7 +7,7 @@ clustalo_program_dir = /home/bml_casp15/BML_CASP15/tools/clustalo/
 
 # hhblits program path
 hhblits_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhblits
-alphafold_program_dir
+
 # hhfilter program path
 hhfilter_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhfilter
 
@@ -40,7 +40,7 @@ alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
 #########################Customized alphafold program###########################
 # alphafold program path
-alphafold_program_dir = /home/bml_casp15/tools/alphafold_v2.2_official/alphafold
+alphafold_program_dir = /home/bml_casp15/tools/alphafold_v2.2/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom.py
@@ -51,7 +51,7 @@ alphafold_multimer_program = run_alphafold_multimer_custom.py
 #########################Original alphafold program###########################
 
 # alphafold program path
-alphafold_default_program_dir = /home/bml_casp15/tools/alphafold_v2.2_default_official/alphafold
+alphafold_default_program_dir = /home/bml_casp15/tools/alphafold_v2.2_default/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_default_program = run_alphafold_pre.py
@@ -84,23 +84,23 @@ enqa_program = /home/bml_casp15/BML_CASP15/bml_casp15/monomer_structure_evaluati
 dproq_program = /home/bml_casp15/BML_CASP15/bml_casp15/quaternary_structure_evaluation/dproq.sh
 
 #multieva_program
-multieva_program = /bml/bml_casp15/casp15_qa_multimer_eva/MultimerEva/multi_eva_lite_cdpred.py
+multieva_program = /bml/bml_casp15/casp15_qa_multimer_eva/MultimerEva/multi_eva_mmalign.py
 
 ######################Monomer template search option#################################
 
 foldseek_program = /home/bml_casp15/BML_CASP15/tools/foldseek/bin/foldseek
 
-foldseek_pdb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/complex
+foldseek_pdb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex
 
-foldseek_pdb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/complex_pdb
+foldseek_pdb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_pdb
 
-foldseek_af_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/af_db
+foldseek_af_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_db
 
-foldseek_af_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/af_pdbs
+foldseek_af_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_pdbs
 
-foldseek_complex_comb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/complex_comb
+foldseek_complex_comb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_comb
 
-foldseek_complex_comb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/complex_atom_comb
+foldseek_complex_comb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_atom_comb
 
 ################################databases option#####################################
 
@@ -135,11 +135,18 @@ uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
 # uniprot id mapping file
 uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
 
+# complex alignments concatenation method
+concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance,string_interact
+# concatenate_methods = string_interact
+# concatenate_methods = species_interact
+
 ###########################UNIPROT TO PDB database option############################
 
 uniprot2pdb_dir = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb
 
 uniprot2pdb_mapping_file = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/uniprot2pdb.map
+
+complexes_list = /home/bml_casp15/update_complex_dbs_newest/databases/Complex/cm_lib/complexes_cm.list
 
 ###########################STRING database option####################################
 

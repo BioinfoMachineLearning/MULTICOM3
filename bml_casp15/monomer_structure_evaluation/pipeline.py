@@ -115,8 +115,8 @@ class Monomer_structure_evaluation_pipeline:
                             chainid=unrelaxed_chainid_in_multimer,
                             output_pdb=f"{pdbdir}/{method}_{i}.pdb")
 
-                        model_num = list(ranking_json["order"])[i].split('_')[1]
-                        extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_model_{model_num}_multimer.pkl",
+                        model_name = list(ranking_json["order"])[i]
+                        extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_{model_name}.pkl",
                                     residue_start=residue_start,
                                     residue_end=residue_end,
                                     output_pkl=f"{pkldir}/{method}_{i}.pkl")

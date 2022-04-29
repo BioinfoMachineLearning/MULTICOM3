@@ -25,7 +25,7 @@ class Quaternary_structure_evaluation_pipeline:
         self.pairwise_qa = Pairwise_dockq_qa(params['dockq_program'])
         self.alphafold_qa = Alphafold_pkl_qa()
         self.dproq = DPROQ(dproq_program=params['dproq_program'])
-        self.enqa = En_qa(enqa_program=params['enqa_program'],use_gpu=False)
+        self.enqa = En_qa(enqa_program=params['enqa_program'])
         self.bfactorqa = Bfactor_qa()
         self.multieva = MultiEva_qa(multieva_program=params['multieva_program'])
         self.foldseek_qa = FoldSeek_qa(params=params)
@@ -52,17 +52,17 @@ class Quaternary_structure_evaluation_pipeline:
             for i in range(0, 5):
                 if not complete_result(model_dir + '/' + method):
                     continue
-                os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
+                # os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
 
-                model_num = list(ranking_json["order"])[i].split('_')[1]
-                os.system(f"cp {model_dir}/{method}/result_model_{model_num}_multimer.pkl {pkldir}/{method}_{i}.pkl")
+                model_name = list(ranking_json["order"])[i]
+                # os.system(f"cp {model_dir}/{method}/result_{model_name}.pkl {pkldir}/{method}_{i}.pkl")
                 for chain_id in chain_id_map:
                     msa_chain_outdir = msadir + '/' + chain_id_map[chain_id].description
                     makedir_if_not_exists(msa_chain_outdir)
-                    os.system(f"cp {model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
-                              f"{msa_chain_outdir}/{method}_{i}.monomer.a3m")
-                    os.system(f"cp {model_dir}/{method}/msas/{chain_id_map[chain_id].description}.paired.a3m "
-                              f"{msa_chain_outdir}/{method}_{i}.paired.a3m")
+                    # os.system(f"cp {model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
+                    #           f"{msa_chain_outdir}/{method}_{i}.monomer.a3m")
+                    # os.system(f"cp {model_dir}/{method}/msas/{chain_id_map[chain_id].description}.paired.a3m "
+                    #           f"{msa_chain_outdir}/{method}_{i}.paired.a3m")
 
         result_dict = {}
 
