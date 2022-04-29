@@ -357,7 +357,7 @@ class Multimer_iterative_refinement_pipeline:
 
                     if len(template_files) == 1:
                         cmd = f"python {self.params['alphafold_multimer_program']} " \
-                              f"--fasta_path {fasta_path} " \
+                              f"--fasta_path {fasta_file} " \
                               f"--env_dir {self.params['alphafold_env_dir']} " \
                               f"--database_dir {self.params['alphafold_database_dir']} " \
                               f"--multimer_a3ms {','.join(msa_files)} " \
@@ -368,7 +368,7 @@ class Multimer_iterative_refinement_pipeline:
                               f"--output_dir {out_model_dir}"
                     else:
                         cmd = f"python {self.params['alphafold_multimer_program']} " \
-                              f"--fasta_path {fasta_path} " \
+                              f"--fasta_path {fasta_file} " \
                               f"--env_dir {self.params['alphafold_env_dir']} " \
                               f"--database_dir {self.params['alphafold_database_dir']} " \
                               f"--multimer_a3ms {','.join(msa_files)} " \
