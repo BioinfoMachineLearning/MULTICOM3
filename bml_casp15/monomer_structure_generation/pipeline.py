@@ -347,6 +347,7 @@ class Monomer_structure_prediction_pipeline:
             fasta_name = pathlib.Path(fasta_path).stem
             monomer_aln_dir = alndir + '/' + fasta_name
             monomer_outdir = outdir + '/' + fasta_name
+            monomer_template_dir = ""
             if templatedir is not None:
                 monomer_template_dir = templatedir + '/' + fasta_name
             self.process_single(fasta_path=fasta_path, alndir=monomer_aln_dir, outdir=monomer_outdir,
