@@ -117,7 +117,7 @@ class Monomer_alignment_generation_pipeline:
                                                              mmseq_binary_path=mmseq_binary,
                                                              colabfold_databases=colabfold_databases)
 
-    def process(self, input_fasta_path, msa_output_dir):
+    def process(self, input_fasta_path, msa_output_dir, multiprocess=True):
         """Runs alignment tools on the input sequence and creates features."""
 
         os.system(f"cp {input_fasta_path} {msa_output_dir}")
@@ -179,22 +179,23 @@ class Monomer_alignment_generation_pipeline:
             msa_process_list.append(
                 [self.unclust30_bfd_msa_runner, input_fasta_path, uniclust30_bfd_out_path, 'uniclust30_bfd_a3m'])
 
-        pool = Pool(processes=len(msa_process_list))
-        results = pool.map(run_msa_tool, msa_process_list)
-        pool.close()
-        pool.join()
-        #
-        result_dict = {}
-        for result in results:
-            msa_key, msa_out_path = result
-            if os.path.exists(msa_out_path):
-                result_dict[msa_key] = msa_out_path
-
-        # result_dict = {}
-        # for msa_process_params in msa_process_list:
-        #     msa_key, msa_out_path = run_msa_tool(msa_process_params)
-        #     if os.path.exists(msa_out_path):
-        #         result_dict[msa_key] = msa_out_path
+        if multiprocess:
+            pool = Pool(processes=len(msa_process_list))
+            results = pool.map(run_msa_tool, msa_process_list)
+            pool.close()
+            pool.join()
+            #
+            result_dict = {}
+            for result in results:
+                msa_key, msa_out_path = result
+                if os.path.exists(msa_out_path):
+                    result_dict[msa_key] = msa_out_path
+        else:
+            result_dict = {}
+            for msa_process_params in msa_process_list:
+                msa_key, msa_out_path = run_msa_tool(msa_process_params)
+                if os.path.exists(msa_out_path):
+                    result_dict[msa_key] = msa_out_path
 
         return result_dict
 

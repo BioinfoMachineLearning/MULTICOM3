@@ -96,8 +96,8 @@ class Monomer_structure_evaluation_pipeline:
             for i in range(0, 5):
                 os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
 
-                model_num = list(ranking_json["order"])[i].split('_')[1]
-                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_model_{model_num}.pkl",
+                model_name = list(ranking_json["order"])[i]
+                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_{model_name}.pkl",
                             output_pkl=f"{pkldir}/{method}_{i}.pkl")
                 os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir}/{method}_{i}.a3m")
 
@@ -188,6 +188,7 @@ class Monomer_structure_evaluation_pipeline:
             avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
             avg_ranking_df.to_csv(output_dir + '/pairwise_af_avg.ranking')
+            result_dict["pairwise_af_avg"] = output_dir + '/pairwise_af_avg.ranking'
 
         os.chdir(cwd)
 

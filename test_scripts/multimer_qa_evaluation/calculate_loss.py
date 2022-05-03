@@ -5,10 +5,55 @@ import numpy as np
 import pandas as pd
 import pickle
 from scipy.stats import pearsonr
-import torch
-import torch.nn as nn
 from bml_casp15.quaternary_structure_evaluation.pairwise_dockq import *
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, clean_dir
+import pathlib
+
+def cal_scores(tmscore_program, inpdb, nativepdb):
+    cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $3}' "
+    print(cmd)
+    tmscore_contents = os.popen(cmd).read().split('\n')
+    tmscore = float(tmscore_contents[2].rstrip('\n'))
+    cmd = tmscore_program + ' ' + inpdb + ' ' + nativepdb + " | grep GDT-score | awk '{print $3}' "
+    print(cmd)
+    tmscore_contents = os.popen(cmd).read().split('\n')
+    gdtscore = float(tmscore_contents[0].rstrip('\n'))
+    return tmscore, gdtscore
+
+
+def convert_ranking_to_df(infile, index_col='index', ranked_field="", is_csv=True, ascending=False):
+    df = None
+    # af=plddt_avg, enqa=score, native_scores='gdtscore
+    if is_csv:
+        if index_col is None:
+            df = pd.read_csv(infile, index_col=index_col)
+        else:
+            df = pd.read_csv(infile)
+        if ranked_field != 'score':
+            df['score'] = df[ranked_field]
+        df = df.sort_values(by=['score'], ascending=ascending)
+    else:
+        models = []
+        scores = []
+        for line in open(infile):
+            line = line.rstrip('\n')
+            contents = line.split()
+            if contents[0] == "PFRMAT" or contents[0] == "TARGET" or contents[0] == "MODEL" or contents[0] == "QMODE" or \
+                    contents[0] == "END":
+                continue
+            contents = line.split()
+            model = contents[0]
+            score = contents[1]
+            if model.find('BML_CASP15') > 0:
+                model = pathlib.Path(model).name
+            if model.find('.pdb') < 0:
+                model = model + '.pdb'
+            models += [model]
+            scores += [float(score)]
+        df = pd.DataFrame({'model': models, 'score': scores})
+        df = df.sort_values(by=['score'], ascending=False)
+        df.reset_index(inplace=True)
+    return df
 
 
 if __name__ == '__main__':
@@ -17,18 +62,14 @@ if __name__ == '__main__':
     parser.add_argument('--inputdir', type=is_dir, required=True)
     args = parser.parse_args()
 
-    all_af_plddt_corr = []
-    all_af_plddt_loss = []
+    gdt_loss_and_corr = {}
+    lddt_loss_and_corr = {}
 
-    all_af_confidence_corr = []
-    all_af_confidence_loss = []
-
-    all_af_ptm_corr = []
-    all_af_ptm_loss = []
-
-    all_pairwise_corr = []
-    all_pairwise_loss = []
-
+    for method in ['af', 'bfactor', 'foldseek', 'multieva']:#, 'enqa', 'dproq_dockq', 'dproq_evalue']:
+        gdt_loss_and_corr[method] = dict(corr=[],
+                                         loss=[])
+        lddt_loss_and_corr[method] = dict(corr=[],
+                                          loss=[])
 
     targetname = []
     for target in os.listdir(args.inputdir):
@@ -38,85 +79,96 @@ if __name__ == '__main__':
             print(f"The native scores for {target} is missing: {result_csv}")
             continue
 
-        alphafold_ranking_csv = f"{args.inputdir}/{target}/alphafold_ranking.csv"
-        pairwise_ranking_csv = f"{args.inputdir}/{target}/pairwise_ranking.csv"
+        ranking_csvs = {'af': f"{args.inputdir}/{target}/alphafold_ranking.csv",
+                        'bfactor': f"{args.inputdir}/{target}/bfactor_ranking.csv",
+                        #'dproq_dockq': f"{args.inputdir}/{target}/dproq_ranking_dockq.csv",
+                        #'dproq_evalue': f"{args.inputdir}/{target}/dproq_ranking_evalue.csv",
+                        'foldseek': f"{args.inputdir}/{target}/foldseek_qa.csv",
+                        'multieva': f"{args.inputdir}/{target}/multieva.csv"}
+                        #'enqa': f"{args.inputdir}/{target}/enqa_ranking.csv"}
 
-        if not os.path.exists(alphafold_ranking_csv) or not os.path.exists(pairwise_ranking_csv):
+        find_all_res = True
+        for method in ranking_csvs:
+            if not os.path.exists(ranking_csvs[method]):
+                print(f"cannot find {ranking_csvs[method]}")
+                find_all_res = False
+                break
+
+        if not find_all_res:
             continue
 
-        native_scores = pd.read_csv(result_csv).sort_values(by=['dockq_score'], ascending=False)
-        # print(native_scores)
-        global_scores = pd.read_csv(alphafold_ranking_csv).sort_values(by=['ptm'], ascending=False)
-        native_scores_corr = global_scores.merge(native_scores, on=['model'], how='inner')
-        corr, _ = pearsonr(np.array(native_scores_corr.dockq_score), np.array(native_scores_corr.ptm))
-        top1_model = global_scores.model[0]
-        top1_model_score = float(native_scores[native_scores.model == top1_model].dockq_score)
-        best_model_score = native_scores.dockq_score[0]
-        # print(top1_model_score)
-        # print(best_model_score)
-        dockq_loss = best_model_score - top1_model_score
-        all_af_ptm_loss += [dockq_loss]
-        all_af_ptm_corr += [corr]
-        ptm_top_1_model = top1_model
-
-        global_scores = pd.read_csv(alphafold_ranking_csv).sort_values(by=['plddt_avg'], ascending=False)
-        native_scores_corr = global_scores.merge(native_scores, on=['model'], how='inner')
-        corr, _ = pearsonr(np.array(native_scores_corr.dockq_score), np.array(native_scores_corr.plddt_avg))
-        top1_model = global_scores.model[0]
-        top1_model_score = float(native_scores[native_scores.model == top1_model].dockq_score)
-        best_model_score = native_scores.dockq_score[0]
-        dockq_loss = best_model_score - top1_model_score
-        all_af_plddt_loss += [dockq_loss]
-        all_af_plddt_corr += [corr]
-        plddt_top1_model = top1_model
-
-        global_scores = pd.read_csv(alphafold_ranking_csv).sort_values(by=['confidence'], ascending=False)
-        native_scores_corr = global_scores.merge(native_scores, on=['model'], how='inner')
-        corr, _ = pearsonr(np.array(native_scores_corr.dockq_score), np.array(native_scores_corr.confidence))
-        top1_model = global_scores.model[0]
-        top1_model_score = float(native_scores[native_scores.model == top1_model].dockq_score)
-        best_model_score = native_scores.dockq_score[0]
-        dockq_loss = best_model_score - top1_model_score
-        all_af_confidence_loss += [dockq_loss]
-        all_af_confidence_corr += [corr]
-        confidence_top1_model = top1_model
+        native_gdt_scores = pd.read_csv(result_csv)
+        native_gdt_scores = native_gdt_scores.sort_values(by=['tmscore'], ascending=False)
+        native_gdt_scores.reset_index(inplace=True)
 
 
-        global_scores = pd.read_csv(pairwise_ranking_csv).sort_values(by=['pairwise_score'], ascending=False)
-        native_scores_corr = global_scores.merge(native_scores, on=['model'], how='inner')
-        corr, _ = pearsonr(np.array(native_scores_corr.dockq_score), np.array(native_scores_corr.pairwise_score))
-        top1_model = global_scores.model[0]
-        top1_model_score = float(native_scores[native_scores.model == top1_model].dockq_score)
-        best_model_score = native_scores.dockq_score[0]
-        dockq_loss = best_model_score - top1_model_score
-        all_pairwise_loss += [dockq_loss]
-        all_pairwise_corr += [corr]
+        # print(native_gdt_scores)
+        for method in ranking_csvs:
+            print(ranking_csvs[method])
+            if method == 'af':
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      ranked_field='confidence',
+                                                      is_csv=True)
+            elif method == 'bfactor':
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      ranked_field='bfactor',
+                                                      is_csv=True)
+            elif method == 'dproq_dockq' or method == 'dproq_evalue':
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      ranked_field='score',
+                                                      is_csv=True)
+            elif method == "foldseek":
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      ranked_field='score2',
+                                                      is_csv=True)
+            elif method == "multieva":
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      ranked_field='MMalign score',
+                                                      is_csv=True, index_col=None)
+                print(global_scores)
+                global_scores['model'] = global_scores['Name'] + '.pdb'
+            elif method == 'enqa':
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      ranked_field='score',
+                                                      is_csv=True)
+            else:
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      is_csv=False)
+            # print(global_scores)
+            native_gdt_scores_corr = global_scores.merge(native_gdt_scores, on=['model'], how='inner')
+
+            corr, _ = pearsonr(np.array(native_gdt_scores_corr.tmscore), np.array(native_gdt_scores_corr.score))
+            gdt_loss_and_corr[method]['corr'] += [corr]
+            top1_model = global_scores.model[0]
+            # print(top1_model)
+            top1_model_score = float(native_gdt_scores[native_gdt_scores.model == top1_model].tmscore)
+            best_model_score = native_gdt_scores.tmscore[0]
+            gdt_loss = best_model_score - top1_model_score
+            gdt_loss_and_corr[method]['loss'] += [gdt_loss]
+
+            # print(corr)
+            # print(gdt_loss)
+
+
 
         targetname += [target]
 
-        if ptm_top_1_model == plddt_top1_model == confidence_top1_model:
-            print("same alphafold ranking result")
+    methods = []
+    gdt_losses = []
+    gdt_corrs = []
+    for method in gdt_loss_and_corr:
+        print(
+            f"{method}: \n"
+            f"gdt loss:{np.mean(np.array(gdt_loss_and_corr[method]['loss']))}\n"
+            f"gdt correlation:{np.mean(np.array(gdt_loss_and_corr[method]['corr']))}")
+        df = pd.DataFrame({'target': targetname,
+                           'gdt_loss': gdt_loss_and_corr[method]['loss'],
+                           'gdt_corr': gdt_loss_and_corr[method]['corr']})
+        df.to_csv(f"{method}_eva_per_target.csv")
+        gdt_losses += [np.mean(np.array(gdt_loss_and_corr[method]['loss']))]
+        gdt_corrs += [np.mean(np.array(gdt_loss_and_corr[method]['corr']))]
+        methods += [method]
 
-    print(f"alphafold_plddt: \ndockq loss:{np.mean(np.array(all_af_plddt_loss))}\ndockq correlation:{np.mean(np.array(all_af_plddt_corr))}")
-    df = pd.DataFrame({'target': targetname,
-                       'dockq_loss': all_af_plddt_loss,
-                       'dockq_corr': all_af_plddt_corr})
-    df.to_csv("alphafold_plddt_eva_per_dimer.csv")
-
-    print(f"alphafold_ptm: \ndockq loss:{np.mean(np.array(all_af_ptm_loss))}\ndockq correlation:{np.mean(np.array(all_af_ptm_corr))}")
-    df = pd.DataFrame({'target': targetname,
-                       'dockq_loss': all_af_ptm_loss,
-                       'dockq_corr': all_af_ptm_corr})
-    df.to_csv("alphafold_ptm_eva_per_dimer.csv")
-
-    print(f"alphafold_confidence: \ndockq loss:{np.mean(np.array(all_af_confidence_loss))}\ndockq correlation:{np.mean(np.array(all_af_confidence_corr))}")
-    df = pd.DataFrame({'target': targetname,
-                       'dockq_loss': all_af_confidence_loss,
-                       'dockq_corr': all_af_confidence_corr})
-    df.to_csv("alphafold_confidence_eva_per_dimer.csv")
-
-    print(f"pairwise: \ndockq loss:{np.mean(np.array(all_pairwise_loss))}\ndockq correlation:{np.mean(np.array(all_pairwise_corr))}")
-    df = pd.DataFrame({'target': targetname,
-                       'dockq_loss': all_pairwise_loss,
-                       'dockq_corr': all_pairwise_corr})
-    df.to_csv("pairwise_eva_per_dimer.csv")
+    result_df = pd.DataFrame({'method': methods, 'gdt_loss': gdt_losses, 'gdt_corr': gdt_corrs})
+    result_df.to_csv('summary.csv')
+    print(pd.DataFrame({'method': methods, 'gdt_loss': gdt_losses, 'gdt_corr': gdt_corrs}))

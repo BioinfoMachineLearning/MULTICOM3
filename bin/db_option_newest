@@ -33,14 +33,14 @@ hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
 deepmsa2_program = /home/bml_casp15/tools/deepmsa/hhsuite2/scripts/build_MSA2.py
 
 # alphafold environment directory
-alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
+alphafold_env_dir = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/
 
 # alphafold database directory
 alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
 #########################Customized alphafold program###########################
 # alphafold program path
-alphafold_program_dir = /home/bml_casp15/tools/alphafold_v2.2_official/alphafold
+alphafold_program_dir = /home/bml_casp15/tools/alphafold_casp/alphafold_v2.2/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom.py
@@ -51,7 +51,7 @@ alphafold_multimer_program = run_alphafold_multimer_custom.py
 #########################Original alphafold program###########################
 
 # alphafold program path
-alphafold_default_program_dir = /home/bml_casp15/tools/alphafold_v2.2_default_official/alphafold
+alphafold_default_program_dir = /home/bml_casp15/tools/alphafold_casp/alphafold_v2.2_default/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_default_program = run_alphafold_pre.py
@@ -141,6 +141,8 @@ uniprot2pdb_dir = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb
 
 uniprot2pdb_mapping_file = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/uniprot2pdb.map
 
+complexes_list = /home/bml_casp15/update_complex_dbs_newest/databases/Complex/cm_lib/complexes_cm.list
+
 ###########################STRING database option####################################
 
 string_dir = /home/bml_casp15/BML_CASP15/databases/STRING
@@ -171,11 +173,11 @@ genome_distance_threshold = 10000
 
 ###########################Sequence and structure based template search option####################
 
-pdb70_hhsuite_database = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70
+pdb70_hhsuite_database = /home/bml_casp15/databases/alphafold_databases/pdb70/pdb70
 
-pdb70_hhsuite_cluster_tsv = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70_clu.tsv
+pdb70_hhsuite_cluster_tsv = /home/bml_casp15/databases/alphafold_databases/pdb70/pdb70_clu.tsv
 
-pdb_seqs_dir = /home/bml_casp15/tools/alphafold_databases/pdb_seqres/pdb_seqs
+pdb_seqs_dir = /home/bml_casp15/databases/alphafold_databases/pdb_seqres/pdb_seqs
 
 pdb_sort90_hhsuite_database = /home/bml_casp15/update_complex_dbs_newest/databases/hhsuite_pdb/hhsuitedb3
 

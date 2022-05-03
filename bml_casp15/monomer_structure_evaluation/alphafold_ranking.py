@@ -29,4 +29,4 @@ class Alphafold_pkl_qa:
                     ranking['confidence'] = float(prediction_result['ranking_confidence'])
                 ranking_pd = ranking_pd.append(pd.DataFrame(ranking, index=[model_count]))
                 model_count += 1
-        return ranking_pd#.sort_values(by=['confidence'], ascending=False, ignore_index=True)
+        return ranking_pd.sort_values(by=['plddt_avg'], ascending=False, ignore_index=True)

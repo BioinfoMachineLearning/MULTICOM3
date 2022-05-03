@@ -20,6 +20,7 @@ def combine_pdb(pdb1, pdb2, combine_pdb):
             if not line.startswith('ATOM'): continue
             out.write(line[:21] + 'C' + line[22:])
 
+
 def cal_scores(dockq_program, model, combine_atom):
     cmd = "python " + dockq_program + " -short " + model + " " + combine_atom + "| grep DockQ | awk " \
                                                                                 "'{print $2}' "
@@ -29,9 +30,18 @@ def cal_scores(dockq_program, model, combine_atom):
         return -1
     return float(score)
 
+
+def cal_tmscore(mmalign_program, inpdb, nativepdb):
+    cmd = mmalign_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $2}' "
+    print(cmd)
+    tmscore_contents = os.popen(cmd).read().split('\n')
+    tmscore = float(tmscore_contents[1].rstrip('\n'))
+    return tmscore
+
+
 def generate_native_score(inparams):
 
-    atomdir, dimer, inputdir, dockq_program = inparams
+    atomdir, dimer, inputdir, dockq_program, mmalign_program = inparams
 
     chain1, chain2 = dimer.split('_')
 
@@ -50,13 +60,16 @@ def generate_native_score(inparams):
 
     models = []
     dockq_scores = []
+    tmscores = []
     for pdb in os.listdir(inputdir + '/' + dimer + '/pdb'):
-        dockq_score = cal_scores(dockq_program, f"{inputdir}/{dimer}/pdb/{pdb}", combine_atom)
+        # dockq_score = cal_scores(dockq_program, f"{inputdir}/{dimer}/pdb/{pdb}", combine_atom)
+        tmscore = cal_tmscore(mmalign_program, f"{inputdir}/{dimer}/pdb/{pdb}", combine_atom)
         models += [pdb]
-        dockq_scores += [dockq_score]
+        dockq_scores += [0]
+        tmscores += [tmscore]
 
-    df = pd.DataFrame({'model': models, 'dockq_score': dockq_scores})
-    df = df.sort_values(by=['dockq_score'], ascending=False)
+    df = pd.DataFrame({'model': models, 'dockq_score': dockq_scores, 'tmscore': tmscores})
+    df = df.sort_values(by=['tmscore'], ascending=False)
     df.to_csv(result_csv)
 
 if __name__ == '__main__':
@@ -67,12 +80,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dockq_program = '/home/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py'
+    mmalign_program = '/home/bml_casp15/BML_CASP15/tools/MMalign'
 
     process_list = []
     for dimer in os.listdir(args.inputdir):
-        process_list.append([args.atomdir, dimer, args.inputdir, dockq_program])
+        process_list.append([args.atomdir, dimer, args.inputdir, dockq_program, mmalign_program])
 
-    pool = Pool(processes=10)
+    pool = Pool(processes=30)
     results = pool.map(generate_native_score, process_list)
     pool.close()
     pool.join()

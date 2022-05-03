@@ -64,19 +64,20 @@ class Multimer_iterative_refinement_pipeline:
                 templates_filtered.reset_index(inplace=True, drop=True)
 
                 curr_df = create_template_df(templates_filtered)
-                curr_df = curr_df.rename(columns={"tpdbcode": f"tpdbcode{chain_idx+1}"})
+                curr_df = curr_df.rename(columns={"tpdbcode": f"tpdbcode{chain_idx + 1}"})
                 # print(curr_df)
                 if complex_templates_df is None:
                     complex_templates_df = curr_df
                 else:
                     complex_templates_df = complex_templates_df.merge(curr_df, how="outer",
                                                                       left_on=f'tpdbcode{chain_idx}',
-                                                                      right_on=f'tpdbcode{chain_idx+1}',
+                                                                      right_on=f'tpdbcode{chain_idx + 1}',
                                                                       suffixes=(str(chain_idx), str(chain_idx + 1)))
 
             keep_indices = []
             seen_complex_seq = []
             seen_complex_seq += ["".join([chain_template_msas[chain_id]['seq'][0] for chain_id in chain_template_msas])]
+            seen_pdbcode = []
             for i in range(len(complex_templates_df)):
                 if len(keep_indices) > self.max_template_count:
                     break
@@ -109,6 +110,9 @@ class Multimer_iterative_refinement_pipeline:
                 if pdbcode_count == 1:
                     continue
 
+                if complex_templates_df.loc[i, 'tpdbcode'] in seen_pdbcode:
+                    continue
+
                 if not assess_complex_templates_homo(chain_id_map, template_infos,
                                                      self.params['mmseq_program'], outpath + '/tmp'):
                     continue
@@ -136,7 +140,8 @@ class Multimer_iterative_refinement_pipeline:
 
                 processed_idx = 0
                 for chain_id in unprocessed_chain_ids:
-                    monomer_template_seqs[chain_id] = copy.deepcopy(monomer_template_seqs[processed_chain_ids[processed_idx]])
+                    monomer_template_seqs[chain_id] = copy.deepcopy(
+                        monomer_template_seqs[processed_chain_ids[processed_idx]])
                     processed_idx += 1
                     if processed_idx > len(processed_chain_ids):
                         processed_idx = 0
@@ -149,12 +154,12 @@ class Multimer_iterative_refinement_pipeline:
                         chain_template_msas[chainid]['seq'] += [monomer_template_seqs[chainid]['seq']]
                     seen_complex_seq += [complex_template_seq]
                     keep_indices += [i]
+                    seen_pdbcodes += [complex_templates_df.loc[i, 'tpdbcode']]
 
             complex_templates_df_filtered = copy.deepcopy(complex_templates_df.iloc[keep_indices])
             complex_templates_df_filtered.drop(complex_templates_df_filtered.filter(regex="Unnamed"), axis=1,
                                                inplace=True)
             complex_templates_df_filtered.reset_index(inplace=True, drop=True)
-
 
             if len(complex_templates_df_filtered) > self.max_template_count:
                 break
@@ -171,7 +176,7 @@ class Multimer_iterative_refinement_pipeline:
                             for i in range(len(chain_template_msas[chain_id]['desc'])))
             with open(start_msa + '.temp', 'w') as fw:
                 fw.write('\n'.join(fasta_chunks) + '\n')
-            combine_a3ms([f"{start_msa}.temp", start_msa],
+            combine_a3ms([start_msa, f"{start_msa}.temp"],
                          f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m")
             out_msas += [f"{msa_out_path}/{chain_id_map[chain_id].description}.iteration{iteration}.a3m"]
 
@@ -307,7 +312,8 @@ class Multimer_iterative_refinement_pipeline:
 
                 for chain_idx, chain_id in enumerate(chain_id_map):
                     if not os.path.exists(f"{current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx]}/monomer_final.a3m"):
-                        lines = open(f"{current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx-1]}/monomer_final.a3m").readlines()
+                        lines = open(
+                            f"{current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx - 1]}/monomer_final.a3m").readlines()
                         lines[0] = f">{chain_id_map[chain_id].description}"
                         open(f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m", 'w').writelines(lines)
                     else:

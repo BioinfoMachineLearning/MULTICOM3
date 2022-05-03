@@ -3,173 +3,169 @@
 ################################tools option#########################################
 
 # clustalo program path
-clustalo_program_dir = /home/bml_casp15/BML_CASP15/tools/clustalo/
+clustalo_program_dir = /bmlfast/bml_casp15/BML_CASP15/tools/clustalo/
 
 # hhblits program path
-hhblits_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhblits
+hhblits_program = YOUR_ENV/bin/hhblits
 
 # hhfilter program path
-hhfilter_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhfilter
+hhfilter_program = YOUR_ENV/bin/hhfilter
 
 # hhmake program path
-hhmake_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhmake
+hhmake_program = YOUR_ENV/bin/hhmake
 
 # hhalign program path
-hhalign_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhalign
+hhalign_program = YOUR_ENV/bin/hhalign
 
 # jackhmmer program path
-jackhmmer_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/jackhmmer
+jackhmmer_program = YOUR_ENV/bin/jackhmmer
 
 # tmalign program path
-tmalign_program = /home/bml_casp15/BML_CASP15/tools/tmalign/TMalign
+tmalign_program = /bmlfast/bml_casp15/BML_CASP15/tools/tmalign/TMalign
 
 # mmalign program path
-mmalign_program = /home/bml_casp15/BML_CASP15/tools/MMalign
+mmalign_program = /bmlfast/bml_casp15/BML_CASP15/tools/MMalign
 
 # hhsearch program path
-hhsearch_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/hhsearch
+hhsearch_program = YOUR_ENV/bin/hhsearch
 
 # deepmsa2 program path
-deepmsa2_program = /home/bml_casp15/tools/deepmsa/hhsuite2/scripts/build_MSA2.py
+deepmsa2_program = /bmlfast/bml_casp15/BML_CASP15/tools/deepmsa/hhsuite2/scripts/build_MSA2.py
 
 # alphafold environment directory
-alphafold_env_dir = /home/bml_casp15/anaconda3/envs/alphafold/bin/
+alphafold_env_dir = YOUR_ALPHAFOLD_ENV/bin/
 
 # alphafold database directory
-alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
+alphafold_database_dir = /bmlfast/bml_casp15/BML_CASP15/tools/alphafold_databases/
 
 #########################Customized alphafold program###########################
+
 # alphafold program path
-alphafold_program_dir = /home/bml_casp15/tools/alphafold
+alphafold_program_dir = /bmlfast/bml_casp15/BML_CASP15/tools/alphafold
 
 # alphafold tertiary structure prediction script
-alphafold_program = run_alphafold_custom_sim.py
+alphafold_program = run_alphafold_custom.py
 
 # alphafold tertiary structure prediction script
 alphafold_multimer_program = run_alphafold_multimer_custom_sim.py
 
-# alphafold program path
-alphafold_program_dir_v2 = /home/bml_casp15/tools/alphafold_v2
-
 #########################Original alphafold program###########################
 
 # alphafold program path
-alphafold_default_program_dir = /home/bml_casp15/tools/alphafold_default/alphafold
+alphafold_default_program_dir = /bmlfast/bml_casp15/BML_CASP15/tools/alphafold_default/alphafold
 
 # alphafold tertiary structure prediction script
 alphafold_default_program = run_alphafold_pre_sim.py
 
 ################################MSA generation tool###########################
 
-colabfold_search_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabfold_search
+colabfold_search_program = YOUR_ENV/bin/colabfold_search
 
-colabfold_split_msas_program = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/colabfold_split_msas
+colabfold_split_msas_program = YOUR_ENV/bin/colabfold_split_msas
 
-colabfold_databases = /home/bml_casp15/BML_CASP15/tools/ColabFold/databases
+colabfold_databases = /bmlfast/bml_casp15/BML_CASP15/tools/ColabFold/databases/
 
-mmseq_program = /home/bml_casp15/BML_CASP15/tools/mmseqs/bin/mmseqs
+mmseq_program = /bmlfast/bml_casp15/BML_CASP15/tools/mmseqs/bin/mmseqs
 
 ################################QA option#####################################
 
 # dockq program
-dockq_program = /home/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py
+dockq_program = /bmlfast/bml_casp15/BML_CASP15/tools/DockQ/DockQ.py
 
 # qscore program
-qscore_program = /home/bml_casp15/BML_CASP15/tools/pairwiseQA/q_score
+qscore_program = /bmlfast/bml_casp15/BML_CASP15/tools/pairwiseQA/q_score
 
 # tmscore program
-tmscore_program = /home/bml_casp15/BML_CASP15/tools/TMscore
+tmscore_program = /bmlfast/bml_casp15/BML_CASP15/tools/TMscore
 
 # enqa_program_python
-enqa_program_python = /home/bml_casp15/anaconda3/envs/enqa/bin/python
+enqa_program_python = YOUR_ENQA_ENV_PATH/bin/python
 
 # enqa_program_path
-enqa_program_path = /home/bml_casp15/tools/EnQA
+enqa_program_path = YOUR_ENQA_PATH
 
 # enqa_program_script
 enqa_program_script = predict_batch.py
 
 ######################Monomer template search option#################################
 
-foldseek_program = /home/bml_casp15/BML_CASP15/tools/foldseek/bin/foldseek
+foldseek_program = /bmlfast/bml_casp15/BML_CASP15/tools/foldseek/bin/foldseek
 
-foldseek_pdb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex
+foldseek_pdb_database = /bmlfast/bml_casp15/BML_CASP15/tools/foldseek/databases/complex
 
-foldseek_pdb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_pdb
+foldseek_pdb_database_dir = /bmlfast/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_pdb
 
-foldseek_af_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_db
+foldseek_af_database = /bmlfast/bml_casp15/BML_CASP15/tools/foldseek/databases/af_db
 
-foldseek_af_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/af_pdbs
+foldseek_af_database_dir = /bmlfast/bml_casp15/BML_CASP15/tools/foldseek/databases/af_pdbs
 
-foldseek_complex_comb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_comb
+foldseek_complex_comb_database = /bmlfast/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_comb
 
-foldseek_complex_comb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_atom_comb
+foldseek_complex_comb_database_dir = /bmlfast/bml_casp15/BML_CASP15/tools/foldseek/databases/complex_atom_comb
 
 ################################databases option#####################################
 
-smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
+smallbfd_database = /bmlfast/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
 
-bfd_database = /home/bml_casp15/BML_CASP15/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
+bfd_database = /bmlfast/bml_casp15/BML_CASP15/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
 
-mgnify_database = /home/bml_casp15/BML_CASP15/databases/mgnify/mgy_clusters_2018_12.fa
+mgnify_database = /bmlfast/bml_casp15/BML_CASP15/databases/mgnify/mgy_clusters_2018_12.fa
 
-metaclust_database = /home/bml_casp15/BML_CASP15/databases/Metaclust_2018_06/metaclust_50
+metaclust_database = /bmlfast/bml_casp15/BML_CASP15/databases/Metaclust_2018_06/metaclust_50
 
-img_database = /home/bml_casp15/BML_CASP15/databases/img/img_new.fasta
+img_database_path = /bmlfast/bml_casp15/BML_CASP15/databases/img/img_new.fasta
 
 ###########################Complex alignment generation option#######################
 
 ###########################UNIPROT TO PDB database option############################
 
 # uniref database
-uniref_db_dir = /home/bml_casp15/BML_CASP15/databases/UniRef30_2021_03
+uniref_db_dir = /bmlfast/bml_casp15/BML_CASP15/databases/UniRef30_2021_03
 
 uniref_db = UniRef30_2021_03
 
-uniref90_fasta = /home/bml_casp15/BML_CASP15/databases/uniref90/uniref90.fasta
+uniref90_fasta = /bmlfast/bml_casp15/BML_CASP15/databases/uniref90/uniref90_2021_03.fasta
 
 # uniclust database
-uniclust_db_dir = /home/bml_casp15/BML_CASP15/databases/uniclust30_2018_08
+uniclust_db_dir = /bmlfast/bml_casp15/BML_CASP15/databases/uniclust30_2018_08
 
 uniclust_db = uniclust30_2018_08
 
-uniprot_fasta = /home/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
+uniprot_fasta = /bmlfast/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
 
 # uniprot id mapping file
-uniprot_official_mapping_file = /home/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
+uniprot_official_mapping_file = /bmlfast/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
 
 # complex alignments concatenation method
-# concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance
-# concatenate_methods = string_interact
-concatenate_methods = species_interact
+concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance,string_interact
 
 ###########################UNIPROT TO PDB database option############################
 
-uniprot2pdb_dir = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb
+uniprot2pdb_dir = /bmlfast/bml_casp15/BML_CASP15/databases/uniprot2pdb
 
-uniprot2pdb_mapping_file = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/uniprot2pdb.map
+uniprot2pdb_mapping_file = /bmlfast/bml_casp15/BML_CASP15/databases/uniprot2pdb/uniprot2pdb.map
 
-dimers_list = /home/bml_casp15/BML_CASP15/databases/uniprot2pdb/dimers_cm.list
+dimers_list = /bmlfast/bml_casp15/BML_CASP15/databases/uniprot2pdb/dimers_cm.list
 
 ###########################STRING database option####################################
 
-string_dir = /home/bml_casp15/BML_CASP15/databases/STRING
+string_dir = /bmlfast/bml_casp15/BML_CASP15/databases/STRING
 
-string_links_file = /home/bml_casp15/BML_CASP15/databases/string/protein.links.v11.5.txt
+string_links_file = /bmlfast/bml_casp15/BML_CASP15/databases/string/protein.links.v11.5.txt
 
-string_aliases_file = /home/bml_casp15/BML_CASP15/databases/string/protein.aliases.v11.5.txt
+string_aliases_file = /bmlfast/bml_casp15/BML_CASP15/databases/string/protein.aliases.v11.5.txt
 
-string2uniprot_map = /home/bml_casp15/BML_CASP15/databases/string/string2uniprot.map
+string2uniprot_map = /bmlfast/bml_casp15/BML_CASP15/databases/string/string2uniprot.map
 
 ###########################GENO DISTANCE database option############################
 
-geno_dir = /home/bml_casp15/BML_CASP15/databases/geno_distance
+geno_dir = /bmlfast/bml_casp15/BML_CASP15/databases/geno_distance
 
-uniprot_to_embl_table = /home/bml_casp15/BML_CASP15/databases/geno_distance/idmapping_uniprot_embl.txt
+uniprot_to_embl_table = /bmlfast/bml_casp15/BML_CASP15/databases/geno_distance/idmapping_uniprot_embl.txt
 
-con_pro_cds_dir = /home/bml_casp15/BML_CASP15/databases/geno_distance/con_pro
+con_pro_cds_dir = /bmlfast/bml_casp15/BML_CASP15/databases/geno_distance/con_pro
 
-ena_genome_location_table = /home/bml_casp15/BML_CASP15/databases/geno_distance/cds_pro.txt
+ena_genome_location_table = /bmlfast/bml_casp15/BML_CASP15/databases/geno_distance/cds_pro.txt
 
 genome_distance_threshold = 10000
 
@@ -179,17 +175,17 @@ genome_distance_threshold = 10000
 
 ###########################Complex template search option###########################
 
+template_atom_dir = /bmlfast/bml_casp15/BML_CASP15/databases/Complex/atom
+
+template_count = 20
+
 ###########################Structure based template search option###################
 
-template_atom_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/work/pdbs_in_complex
+template_heterodimer_list = /bmlfast/bml_casp15/BML_CASP15/databases/Complex/work/heterodimers_0.4.list
 
-template_count = 100
+template_homodimer_list = /bmlfast/bml_casp15/BML_CASP15/databases/Complex/work/homodimers_0.4.list
 
-template_heterodimer_list = /home/bml_casp15/update_complex_dbs/databases/Complex/work/original/heterodimers.list
-
-template_homodimer_list = /home/bml_casp15/update_complex_dbs/databases/Complex/work/original/homodimers.list
-
-tmalign_threshold = 0.5
+tmalign_threshold = 0.3
 
 ###########################Sequence based template search option####################
 

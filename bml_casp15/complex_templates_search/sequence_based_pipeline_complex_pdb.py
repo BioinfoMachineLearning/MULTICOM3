@@ -163,16 +163,17 @@ class Complex_sequence_based_template_search_pipeline:
 
         return pdb_templates_hits[0]
 
-    def concatenate_templates(self, monomer_inputs, monomer_template_results, outdir):
+    def concatenate_templates(self, monomer_inputs, monomer_template_results, outdir, check_hit=True):
 
         curr_template_hits = []
         for hit in monomer_template_results[0]:
-            try:
-                assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[0].seq)
-            except PrefilterError as e:
-                msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                print(msg)
-                continue
+            if check_hit:
+                try:
+                    assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[0].seq)
+                except PrefilterError as e:
+                    msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                    print(msg)
+                    continue
             curr_template_hits += [hit]
 
         prev_pd = create_df(curr_template_hits)
@@ -209,12 +210,13 @@ class Complex_sequence_based_template_search_pipeline:
                     if hit is None:
                         continue
 
-                    try:
-                        assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq)
-                    except PrefilterError as e:
-                        msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
-                        print(msg)
-                        continue
+                    if check_hit:
+                        try:
+                            assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq)
+                        except PrefilterError as e:
+                            msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                            print(msg)
+                            continue
 
                     if hit.name + hit.hit_sequence not in seen_templates:
                         template_count += 1
@@ -238,9 +240,21 @@ class Complex_sequence_based_template_search_pipeline:
                 sum_probs += [sum_prob]
             max_probs += [np.max(np.array(sum_probs))]
         prev_pd['max_probs'] = max_probs
+        prev_pd['tpdbcode'] = [prev_pd.loc[i, 'template1'][0:4] for i in range(len(prev_pd))]
         prev_pd = prev_pd.sort_values(by=['max_probs'], ascending=False)
 
         return prev_pd
+
+    def filter_same_pdbcodes(self, indf):
+        pdbcodes = []
+        keep_indices = []
+        for i in range(len(indf)):
+            pdbcode = indf.loc[i, 'tpdbcode']
+            if pdbcode in pdbcodes:
+                continue
+            keep_indices += [i]
+            pdbcodes += [pdbcode]
+        return indf.iloc[keep_indices]
 
     def search(self, monomer_inputs, outdir):
 
@@ -288,6 +302,8 @@ class Complex_sequence_based_template_search_pipeline:
 
         concatenated_pd = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir)
 
+        concatenated_pd = self.filter_same_pdbcodes(concatenated_pd)
+
         if len(concatenated_pd) < 50:
 
             print(f"template count is smaller than 50, add monomer templates")
@@ -329,3 +345,39 @@ class Complex_sequence_based_template_search_pipeline:
                 os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")
                 os.system(f"gunzip -f {template_pdb}.atom.gz")
         os.chdir(cwd)
+
+        concatenated_pd_nocheck = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir, False)
+
+        concatenated_pd_nocheck = self.filter_same_pdbcodes(concatenated_pd_nocheck)
+
+        if len(concatenated_pd_nocheck) < 50:
+
+            print(f"template count is smaller than 50, add monomer templates")
+            prev_pd = None
+            for i in range(len(monomer_template_results)):
+                seen_templates_sequences = [
+                    f"{concatenated_pd_nocheck.loc[j, f'template{j + 1}']}_{concatenated_pd_nocheck.loc[j, f'aln_temp{j + 1}']}"
+                    for j
+                    in range(len(concatenated_pd_nocheck))]
+                monomer_template_hits = []
+                for hit in monomer_template_results[i]:
+                    print(f"{hit.name}_{hit.hit_sequence}")
+                    if f"{hit.name}_{hit.hit_sequence}" in seen_templates_sequences:
+                        continue
+                    try:
+                        assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq)
+                    except PrefilterError as e:
+                        msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
+                        print(msg)
+                        continue
+                    monomer_template_hits += [hit]
+
+                curr_pd = create_df(monomer_template_hits)
+                if prev_pd is None:
+                    prev_pd = curr_pd
+                else:
+                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+
+            concatenated_pd_nocheck = concatenated_pd_nocheck.append(prev_pd, ignore_index=True)
+
+        concatenated_pd_nocheck.to_csv(outdir + '/sequence_templates_nocheck.csv')

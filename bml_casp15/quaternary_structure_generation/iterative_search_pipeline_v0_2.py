@@ -303,7 +303,7 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--output_dir {out_model_dir}"
 
             try:
-                os.chdir(self.params['alphafold_program_dir_v2'])
+                os.chdir(self.params['alphafold_program_dir'])
                 print(cmd)
                 os.system(cmd)
             except Exception as e:
@@ -425,7 +425,7 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--output_dir {out_model_dir}"
 
             try:
-                os.chdir(self.params['alphafold_program_dir_v2'])
+                os.chdir(self.params['alphafold_program_dir'])
                 print(cmd)
                 os.system(cmd)
             except Exception as e:
@@ -647,7 +647,7 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--output_dir {out_model_dir}"
 
             try:
-                os.chdir(self.params['alphafold_program_dir_v2'])
+                os.chdir(self.params['alphafold_program_dir'])
                 print(cmd)
                 os.system(cmd)
             except Exception as e:

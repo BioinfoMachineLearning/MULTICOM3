@@ -52,17 +52,17 @@ class Quaternary_structure_evaluation_pipeline:
             for i in range(0, 5):
                 if not complete_result(model_dir + '/' + method):
                     continue
-                # os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
+                os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
 
                 model_name = list(ranking_json["order"])[i]
-                # os.system(f"cp {model_dir}/{method}/result_{model_name}.pkl {pkldir}/{method}_{i}.pkl")
+                os.system(f"cp {model_dir}/{method}/result_{model_name}.pkl {pkldir}/{method}_{i}.pkl")
                 for chain_id in chain_id_map:
                     msa_chain_outdir = msadir + '/' + chain_id_map[chain_id].description
                     makedir_if_not_exists(msa_chain_outdir)
-                    # os.system(f"cp {model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
-                    #           f"{msa_chain_outdir}/{method}_{i}.monomer.a3m")
-                    # os.system(f"cp {model_dir}/{method}/msas/{chain_id_map[chain_id].description}.paired.a3m "
-                    #           f"{msa_chain_outdir}/{method}_{i}.paired.a3m")
+                    os.system(f"cp {model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
+                              f"{msa_chain_outdir}/{method}_{i}.monomer.a3m")
+                    os.system(f"cp {model_dir}/{method}/msas/{chain_id_map[chain_id].description}.paired.a3m "
+                              f"{msa_chain_outdir}/{method}_{i}.paired.a3m")
 
         result_dict = {}
 

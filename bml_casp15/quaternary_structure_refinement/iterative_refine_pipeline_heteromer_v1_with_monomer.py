@@ -74,6 +74,7 @@ class Multimer_iterative_refinement_pipeline:
             keep_indices = []
             seen_complex_seq = []
             seen_complex_seq += ["".join([chain_template_msas[chain_id]['seq'][0] for chain_id in chain_template_msas])]
+            seen_pdbcodes = []
             for i in range(len(complex_templates_df)):
                 if len(keep_indices) > self.max_template_count:
                     break
@@ -98,6 +99,9 @@ class Multimer_iterative_refinement_pipeline:
                                     qend=qend,
                                     evalue=evalue)
                     template_infos += [row_dict]
+
+                if complex_templates_df.loc[i, 'tpdbcode'] in seen_pdbcodes:
+                    continue
 
                 if not assess_complex_templates(chain_id_map, template_infos):
                     continue
@@ -124,6 +128,7 @@ class Multimer_iterative_refinement_pipeline:
                         chain_template_msas[chainid]['seq'] += [monomer_template_seqs[chainid]['seq']]
                     seen_complex_seq += [complex_template_seq]
                     keep_indices += [i]
+                    seen_pdbcodes += [complex_templates_df.loc[i, 'tpdbcode']]
 
             complex_templates_df_filtered = copy.deepcopy(complex_templates_df.iloc[keep_indices])
             complex_templates_df_filtered.drop(complex_templates_df_filtered.filter(regex="Unnamed"), axis=1,

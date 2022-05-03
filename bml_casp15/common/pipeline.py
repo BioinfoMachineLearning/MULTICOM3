@@ -118,31 +118,19 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
         print(e)
 
     if generate_egnn_models:
-        if "apollo" not in result:
+        if "pairwise_af_avg" not in result:
             raise Exception(
-                f"Cannot find pairwise ranking file for generating multicom-deep models: {result['apollo']}")
-        pairwise_ranking_df = read_qa_txt_as_df(result["apollo"])
-        if "alphafold" not in result:
-            raise Exception(
-                f"Cannot find alphafold ranking file for generating multicom-deep models: {result['alphafold']}")
-        alphafold_ranking_df = pd.read_csv(result['alphafold'])
-        avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
-        avg_scores = []
-        for i in range(len(avg_ranking_df)):
-            pairwise_score = float(avg_ranking_df.loc[i, 'score'])
-            alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg']) / 100
-            avg_score = (pairwise_score + alphafold_score) / 2
-            avg_scores += [avg_score]
-        avg_ranking_df['avg_score'] = avg_scores
-        avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
-        avg_ranking_df.reset_index(inplace=True, drop=True)
-        avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
-        avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
-        avg_ranking_df.to_csv(outputdir + '/pairwise_af_avg.ranking')
+                f"Cannot find pairwise ranking file for generating multicom-egnn models: {result['apollo']}")
 
+        pairwise_ranking_df = pd.read_csv(result["pairwise_af_avg"])
         for i in range(5):
-            model = avg_ranking_df.loc[i, 'model']
+            model = pairwise_ranking_df.loc[i, 'model']
             os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{i + 1}.pdb")
+
+        alphafold_ranking_df = pd.read_csv(result["alphafold"])
+        for i in range(5):
+            model = alphafold_ranking_df.loc[i, 'model']
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{i + 1}.pdb")
 
     return result
 
@@ -161,14 +149,14 @@ def rerun_monomer_evaluation_pipeline(params, targetname, fasta_file, outputdir)
     return result
 
 
-def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir, ranking_df):
+def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir):
     pipeline = iterative_refine_pipeline.Monomer_iterative_refinement_pipeline_server(params=params)
     pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir)
 
     makedir_if_not_exists(finaldir)
 
     pipeline = iterative_refine_pipeline.Monomer_refinement_model_selection()
-    pipeline.select_v1(indir=outdir, outdir=finaldir + '/v1')
+    pipeline.select_v1(indir=outdir, outdir=finaldir)
     # pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
 
 
@@ -354,9 +342,9 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
     return multimer_qa_result
 
 
-def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir, is_homomer=False):
+def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir, stoichiometry):
     pipeline = iterative_refine_pipeline_multimer.Multimer_iterative_refinement_pipeline_server(params=params)
-    pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir, is_homomer=is_homomer)
+    pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir, stoichiometry=stoichiometry)
 
     makedir_if_not_exists(finaldir)
 

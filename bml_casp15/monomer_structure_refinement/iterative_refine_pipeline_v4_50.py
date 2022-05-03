@@ -534,7 +534,7 @@ class Monomer_iterative_refinement_pipeline:
                                           outdir=out_template_dir)
 
                 makedir_if_not_exists(out_model_dir)
-                cmd = f"python run_alphafold_custom_sim.py " \
+                cmd = f"python run_alphafold_custom.py " \
                       f"--fasta_path {fasta_path} " \
                       f"--env_dir {self.params['alphafold_env_dir']} " \
                       f"--database_dir {self.params['alphafold_database_dir']} " \
@@ -559,8 +559,8 @@ class Monomer_iterative_refinement_pipeline:
             if max_lddt_score > ref_avg_lddt:
                 print("Continue to refine")
                 ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
-                model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                ref_start_pkl = f"{out_model_dir}/result_model_{model_num}.pkl"
+                model_name = list(new_ranking_json["order"])[0]
+                ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
                 ref_start_msa = f"{out_model_dir}/msas/monomer_final.a3m"
                 print('##################################################')
                 if num_iteration + 1 >= self.max_iteration:
@@ -570,8 +570,8 @@ class Monomer_iterative_refinement_pipeline:
                 # keep the models in iteration 1 even through the plddt score decreases
                 if num_iteration == 0:
                     ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
-                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                    ref_start_pkl = f"{out_model_dir}/result_model_{model_num}.pkl"
+                    model_name = list(new_ranking_json["order"])[0]
+                    ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
                     ref_start_msa = f"{out_model_dir}/msas/monomer_final.a3m"
                     model_iteration_scores += [max_lddt_score]
                 break

@@ -10,7 +10,7 @@ from absl import flags
 from absl import app
 
 flags.DEFINE_string('option_file', None, 'option file')
-flags.DEFINE_list('fasta_paths', None, 'Paths to FASTA files, paths should be separated by commas. '
+flags.DEFINE_string('fasta_path', None, 'Paths to FASTA files, paths should be separated by commas. '
                                        'All FASTA paths must have a unique basename as the basename is used to '
                                        'name the output directories for each prediction.')
 flags.DEFINE_string('output_dir', None, 'Output directory')
@@ -34,7 +34,7 @@ def generate_a3ms_for_single_seq(inparams):
 
     colabfold_search_binary = params['colabfold_search_program']
     colabfold_split_msas_binary = params['colabfold_split_msas_program']
-    colabfold_databases = "" #params['colabfold_databases']
+    colabfold_databases = params['colabfold_databases']
     mmseq_binary = params['mmseq_program']
 
     result = None
@@ -53,7 +53,7 @@ def generate_a3ms_for_single_seq(inparams):
                                                          uniclust30_database_path=uniclust30,
                                                          uniprot_database_path=uniprot_fasta,
                                                          colabfold_databases=colabfold_databases)
-        result = pipeline.process(fasta, outdir)
+        result = pipeline.process(fasta, outdir, False)
     except Exception as e:
         print(e)
         return result
@@ -74,25 +74,22 @@ def main(argv):
 
     process_list = []
     print("Start to generate alignments for monomers")
-    monomer_list = FLAGS.fasta_paths
-    for monomer in monomer_list:
-        if not os.path.exists(monomer):
-            print(f"Cannot find fasta file for {monomer}!")
-            continue
 
+    for monomer in os.listdir(FLAGS.fasta_path):
+        monomer = FLAGS.fasta_path + monomer
         monomer_name = os.path.basename(monomer)
         outdir = FLAGS.output_dir + f"/{monomer_name[0:monomer_name.index('.fasta')]}"
         makedir_if_not_exists(outdir)
 
         os.system(f"cp {monomer} {outdir}")
-        #process_list.append([f"{outdir}/{monomer_name}", outdir, params])
-        generate_a3ms_for_single_seq([f"{outdir}/{monomer_name}", outdir, params])
+        process_list.append([f"{outdir}/{monomer_name}", outdir, params])
+        # generate_a3ms_for_single_seq([f"{outdir}/{monomer_name}", outdir, params])
 
-    # print(f"Total {len(process_list)} monomers to be processed")
-    # pool = Pool(processes=5)
-    # results = pool.map(generate_a3ms_for_single_seq, process_list)
-    # pool.close()
-    # pool.join()
+    print(f"Total {len(process_list)} monomers to be processed")
+    pool = Pool(processes=8)
+    results = pool.map(generate_a3ms_for_single_seq, process_list)
+    pool.close()
+    pool.join()
 
     print("The alignment generation for monomers has finished!")
 
@@ -100,7 +97,7 @@ def main(argv):
 if __name__ == '__main__':
     flags.mark_flags_as_required([
         'option_file',
-        'fasta_paths',
+        'fasta_path',
         'output_dir'
     ])
     app.run(main)

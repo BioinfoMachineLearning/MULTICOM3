@@ -46,8 +46,8 @@ def split_pdb(complex_pdb, outpdbs):
 
 def complete_result(outputdir):
     complete = True
-    for i in range(1, 6):
-        model = f'{outputdir}/unrelaxed_model_{i}.pdb'
+    for i in range(5):
+        model = f'{outputdir}/ranked_{i}.pdb'
         if not os.path.exists(model):
             complete = False
             break
@@ -88,8 +88,8 @@ def evaluate_monomer(inparams):
 
     avg_tmscore = 0
     if complete_result(outputdir):
-        for i in range(1, 6):
-            model = f'{outputdir}/unrelaxed_model_{i}.pdb'
+        for i in range(5):
+            model = f'{outputdir}/ranked_{i}.pdb'
             cmd = tmscore_program + f' {model} {native_atom}' + " | grep TM-score | awk '{print $3}' "
             #print(cmd)
             tmscore_contents = os.popen(cmd).read().split('\n')
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     process_list = []
     for monomer in os.listdir(args.output_dir):
         if monomer in monomers_list:
-            process_list.append([monomer, args.atom_dir, args.output_dir + '/' + monomer, tmscore_program])
+            process_list.append([monomer, args.atom_dir, args.output_dir + '/' + monomer + '/default', tmscore_program])
 
     pool = Pool(processes=15)
     results = pool.map(evaluate_monomer, process_list)

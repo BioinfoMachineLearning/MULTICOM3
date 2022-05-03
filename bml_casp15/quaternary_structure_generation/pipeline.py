@@ -214,6 +214,12 @@ class Quaternary_structure_prediction_pipeline:
                     interact_dict[f'index_{i + 1}'] = [j for j in range(msa_len)]
                 interact_df = pd.DataFrame(interact_dict)
                 interact_df.to_csv(msa_pair_file)
+            elif concatenate_method == "species_colabfold_interact":
+                species_msa_pair_file = f"{complex_aln_dir}/species_interact_uniref_a3m/species_interact_uniref_a3m_interact.csv"
+                msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
+                if len(pd.read_csv(msa_pair_file)) == len(pd.read_csv(species_msa_pair_file)) + 1:
+                    continue
+                a3m_paths = [f"{complex_aln_dir}/{concatenate_method}/{monomer}_con.a3m" for monomer in monomers]
             else:
                 msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
                 if len(pd.read_csv(msa_pair_file)) <= 1:
@@ -270,7 +276,7 @@ class Quaternary_structure_prediction_pipeline:
                     continue
                 template_hits_files = []
                 for monomer in monomers:
-                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/pdb_hits.hhr"
+                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/output.hhr"
                     if not os.path.exists(template_hits_file):
                         raise Exception(f"Cannot find template hit file for {monomer}: {template_hits_file}")
                     template_hits_files += [template_hits_file]
