@@ -397,7 +397,7 @@ class Multimer_iterative_refinement_pipeline:
                     current_ref_dir = out_model_dir
                     ref_start_pdb = f"ranked_0.pdb"
                     model_name = list(new_ranking_json["order"])[0]
-                    ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
+                    ref_start_pkl = f"result_{model_name}.pkl"
                     print('##################################################')
                     if num_iteration + 1 >= self.max_iteration:
                         print("Reach maximum iteration")
@@ -417,7 +417,7 @@ class Multimer_iterative_refinement_pipeline:
                         current_ref_dir = out_model_dir
                         ref_start_pdb = f"ranked_0.pdb"
                         model_name = list(new_ranking_json["order"])[0]
-                        ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
+                        ref_start_pkl = f"result_{model_name}.pkl"
                         ref_tmscore = 0
                         if os.path.exists(native_pdb):
                             ref_tmscore = cal_tmscore(self.params['mmalign_program'],
