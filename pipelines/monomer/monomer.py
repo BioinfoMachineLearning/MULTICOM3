@@ -7,7 +7,7 @@ from bml_casp15.common.protein import read_qa_txt_as_df, complete_result
 from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_template_search_pipeline, \
     run_monomer_structure_generation_pipeline, run_monomer_evaluation_pipeline, \
     run_monomer_refinement_pipeline, run_monomer_msa_pipeline_img
-
+import pandas as pd
 from absl import flags
 from absl import app
 
@@ -118,17 +118,17 @@ def main(argv):
 
     print("5. Start to refine monomer models based on the qa rankings")
 
-    N5_outdir = outdir + '/N5_monomer_structure_refinement'
+    N5_outdir_avg = outdir + '/N5_monomer_structure_refinement_avg'
 
-    makedir_if_not_exists(N5_outdir)
+    makedir_if_not_exists(N5_outdir_avg)
 
-    os.system(f"cp {result['apollo']} {N5_outdir}")
+    os.system(f"cp {result['pairwise_af_avg']} {N5_outdir_avg}")
 
-    ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
+    ref_ranking_avg = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
     refine_inputs = []
     for i in range(5):
-        pdb_name = ref_ranking.loc[i, 'model']
+        pdb_name = ref_ranking_avg.loc[i, 'model']
         refine_input = iterative_refine_pipeline.refinement_input(fasta_path=FLAGS.fasta_path,
                                                                   pdb_path=N4_outdir + '/pdb/' + pdb_name,
                                                                   pkl_path=N4_outdir + '/pkl/' + pdb_name.replace(
@@ -137,9 +137,36 @@ def main(argv):
                                                                       '.pdb', '.a3m'))
         refine_inputs += [refine_input]
 
-    final_dir = N5_outdir + '_final'
+    final_dir = N5_outdir_avg + '_final'
     run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-                                    outdir=N5_outdir, finaldir=final_dir, ranking_df=ref_ranking)
+                                    outdir=N5_outdir_avg, finaldir=final_dir, prefix="refine")
+
+    N5_outdir_af = outdir + '/N5_monomer_structure_refinement_af'
+
+    makedir_if_not_exists(N5_outdir_af)
+
+    os.system(f"cp {result['alphafold']} {N5_outdir_af}")
+
+    # ref_ranking_af = pd.read_csv(result['alphafold'])  # apollo or average ranking or the three qas
+
+    refine_inputs = []
+    refined_models = [ref_ranking_avg.loc[i, 'model'] for i in range(5)]
+    for i in range(5):
+        pdb_name = f'default_{i}.pdb'
+        if pdb_name not in refined_models:
+            refine_input = iterative_refine_pipeline.refinement_input(fasta_path=FLAGS.fasta_path,
+                                                                      pdb_path=N4_outdir + '/pdb/' + pdb_name,
+                                                                      pkl_path=N4_outdir + '/pkl/' + pdb_name.replace(
+                                                                          '.pdb', '.pkl'),
+                                                                      msa_path=N4_outdir + '/msa/' + pdb_name.replace(
+                                                                          '.pdb', '.a3m'))
+            refine_inputs += [refine_input]
+        else:
+            os.system(f"cp -r {N5_outdir_avg}/{pdb_name.replace('.pdb', '')} {N5_outdir_af}")
+
+    final_dir = N5_outdir_af + '_final'
+    run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
+                                    outdir=N5_outdir_af, finaldir=final_dir, prefix="qa")
 
     print("The refinement for the top-ranked monomer models has been finished!")
 
@@ -151,13 +178,14 @@ def main(argv):
 
     default_alphafold_msa = N3_outdir + '/default/msas/monomer_final.a3m'
 
-    if len(open(default_alphafold_msa).readlines()) < 200 * 2:
+    if len(open(default_alphafold_msa).readlines()) < 10000 * 2:
         while not os.path.exists(img_msa):
             # sleep for 5 mins
             time.sleep(300)
 
         print("Found img alignment, start to run monomer model generation again")
 
+        os.system(f"cp {N1_outdir}/{targetname}_uniref90.sto {N1_outdir_img}")
         if not run_monomer_structure_generation_pipeline(params=params,
                                                          run_methods=['img', 'img+seq_template'],
                                                          fasta_path=FLAGS.fasta_path,
@@ -170,8 +198,9 @@ def main(argv):
 
         makedir_if_not_exists(N6_outdir)
 
-        result = run_monomer_evaluation_pipeline(targetname=targetname, fasta_file=FLAGS.fasta_path,
-                                                 inputdir=N3_outdir, outputdir=N6_outdir, generate_egnn_models=True)
+        result = run_monomer_evaluation_pipeline(params=params, targetname=targetname, fasta_file=FLAGS.fasta_path,
+                                                 input_monomer_dir=N3_outdir, outputdir=N6_outdir,
+                                                 generate_egnn_models=True)
 
         if result is None:
             raise RuntimeError("Program failed in step 6: monomer model evaluation")
@@ -184,18 +213,18 @@ def main(argv):
 
         print("7. Start to refine monomer models based on the qa rankings")
 
-        N7_outdir = outdir + '/N7_monomer_structure_refinement'
+        N7_outdir_avg = outdir + '/N7_monomer_structure_refinement_avg'
 
-        makedir_if_not_exists(N7_outdir)
+        makedir_if_not_exists(N7_outdir_avg)
 
-        old_ref_ranking = copy.deepcopy(ref_ranking)
-        refined_models = [old_ref_ranking.loc[i, 'model'] for i in range(5)]
-        ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
-        os.system(f"cp {result['apollo']} {N7_outdir}")
+        old_ref_ranking_avg = copy.deepcopy(ref_ranking_avg)
+        refined_models = [old_ref_ranking_avg.loc[i, 'model'] for i in range(5)]
+        ref_ranking_avg = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
+        os.system(f"cp {result['pairwise_af_avg']} {N7_outdir_avg}")
 
         refine_inputs = []
         for i in range(5):
-            pdb_name = ref_ranking.loc[i, 'model']
+            pdb_name = ref_ranking_avg.loc[i, 'model']
             if pdb_name not in refined_models:
                 refine_input = iterative_refine_pipeline.refinement_input(fasta_path=FLAGS.fasta_path,
                                                                           pdb_path=N6_outdir + '/pdb/' + pdb_name,
@@ -205,10 +234,11 @@ def main(argv):
                                                                               '.pdb', '.a3m'))
                 refine_inputs += [refine_input]
             else:
-                os.system(f"cp -r {N5_outdir}/{pdb_name} {N7_outdir}")
+                os.system(f"cp -r {N5_outdir_avg}/{pdb_name.replace('.pdb', '')} {N7_outdir_avg}")
 
-        final_dir = N7_outdir + '/final'
-        run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N7_outdir, finaldir=final_dir)
+        final_dir = N7_outdir_avg + '/final'
+        run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N7_outdir_avg,
+                                        finaldir=final_dir, prefix="refine")
 
         print("The refinement for the top-ranked monomer models has been finished!")
 

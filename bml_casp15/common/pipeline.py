@@ -19,7 +19,7 @@ from bml_casp15.quaternary_structure_evaluation.pipeline import *
 from bml_casp15.common.protein import *
 import pandas as pd
 import numpy as np
-
+from bml_casp15.monomer_structure_refinement.util import cal_tmscore
 
 def run_monomer_msa_pipeline(fasta, outdir, params):
     uniref30 = params['uniref_db_dir'] + '/' + params['uniref_db']
@@ -104,7 +104,7 @@ def run_monomer_structure_generation_pipeline(params, run_methods, fasta_path, a
 
 def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monomer_dir, outputdir,
                                     chainid="", unrelaxed_chainid="", input_multimer_dir="",
-                                    generate_egnn_models=False):
+                                    generate_egnn_models=False, tmscore_program=""):
     makedir_if_not_exists(outputdir)
     result = None
     pipeline = Monomer_structure_evaluation_pipeline(params=params,
@@ -123,14 +123,46 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
                 f"Cannot find pairwise ranking file for generating multicom-egnn models: {result['apollo']}")
 
         pairwise_ranking_df = pd.read_csv(result["pairwise_af_avg"])
-        for i in range(5):
+        for i in range(2):
             model = pairwise_ranking_df.loc[i, 'model']
             os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{i + 1}.pdb")
 
+        model_count = 2
+        top1_model = f"{outputdir}/pdb/{pairwise_ranking_df.loc[0, 'model']}"
+        for i in range(2, len(pairwise_ranking_df)):
+
+            tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
+                                            f"{outputdir}/pdb/{pairwise_ranking_df.loc[i, 'model']}",
+                                            top1_model,
+                                            outputdir + '/tmp')
+            if tmscore < 0.98:
+                os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{model_count}.pdb")
+                model_count += 1
+                if model_count > 5:
+                    break
+            else:
+                print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
+
         alphafold_ranking_df = pd.read_csv(result["alphafold"])
-        for i in range(5):
+        for i in range(2):
             model = alphafold_ranking_df.loc[i, 'model']
             os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{i + 1}.pdb")
+
+        model_count = 2
+        top1_model = f"{outputdir}/pdb/{alphafold_ranking_df.loc[0, 'model']}"
+        for i in range(2, len(alphafold_ranking_df)):
+
+            tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
+                                            f"{outputdir}/pdb/{alphafold_ranking_df.loc[i, 'model']}",
+                                            top1_model,
+                                            outputdir + '/tmp')
+            if tmscore < 0.98:
+                os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{model_count}.pdb")
+                model_count += 1
+                if model_count > 5:
+                    break
+            else:
+                print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
 
     return result
 
@@ -149,14 +181,14 @@ def rerun_monomer_evaluation_pipeline(params, targetname, fasta_file, outputdir)
     return result
 
 
-def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir):
+def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir, prefix):
     pipeline = iterative_refine_pipeline.Monomer_iterative_refinement_pipeline_server(params=params)
     pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir)
 
     makedir_if_not_exists(finaldir)
 
     pipeline = iterative_refine_pipeline.Monomer_refinement_model_selection()
-    pipeline.select_v1(indir=outdir, outdir=finaldir)
+    pipeline.select_v1(indir=outdir, outdir=finaldir, prefix=prefix)
     # pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
 
 

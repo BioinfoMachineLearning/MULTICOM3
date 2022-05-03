@@ -41,7 +41,7 @@ class Monomer_refinement_model_selection:
 
         self.methods = methods
 
-    def select_v1(self, indir, outdir):
+    def select_v1(self, indir, outdir, prefix):
         if os.path.exists(outdir):
             os.system(f"rm -rf {outdir}")
         makedir_if_not_exists(outdir)
@@ -75,8 +75,8 @@ class Monomer_refinement_model_selection:
 
         for i in range(5):
             pdb_name = df.loc[i, 'model']
-            os.system(f"cp {outdir}/{pdb_name} {outdir}/refine{i + 1}.pdb")
-            os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/refine{i + 1}.pkl")
+            os.system(f"cp {outdir}/{pdb_name} {outdir}/{prefix}{i + 1}.pdb")
+            os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/{prefix}{i + 1}.pkl")
 
         return outdir
 
