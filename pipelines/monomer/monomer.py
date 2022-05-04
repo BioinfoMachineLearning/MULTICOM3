@@ -138,8 +138,7 @@ def main(argv):
         refine_inputs += [refine_input]
 
     final_dir = N5_outdir_avg + '_final'
-    run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-                                    outdir=N5_outdir_avg, finaldir=final_dir, prefix="refine")
+    run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N5_outdir_avg, finaldir=final_dir, prefix="refine")
 
     N5_outdir_af = outdir + '/N5_monomer_structure_refinement_af'
 
@@ -236,7 +235,7 @@ def main(argv):
             else:
                 os.system(f"cp -r {N5_outdir_avg}/{pdb_name.replace('.pdb', '')} {N7_outdir_avg}")
 
-        final_dir = N7_outdir_avg + '/final'
+        final_dir = N7_outdir_avg + '_final'
         run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N7_outdir_avg,
                                         finaldir=final_dir, prefix="refine")
 
