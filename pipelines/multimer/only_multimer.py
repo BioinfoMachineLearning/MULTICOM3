@@ -143,15 +143,16 @@ def main(argv):
     N5_outdir = FLAGS.output_dir + '/N5_complex_alignments_concatenation'
     makedir_if_not_exists(N5_outdir)
 
-    # try:
-    #     concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch', 'string_interact', 'uniprot_distance']
-    #     run_concatenate_dimer_msas_pipeline(
-    #         multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
-    #         run_methods=concat_methods,
-    #         monomer_aln_dir=N1_outdir, outputdir=N5_outdir, params=params)
-    # except Exception as e:
-    #     print(e)
-    #     print("Program failed in step 5")
+    try:
+        concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch',
+                          'string_interact', 'uniprot_distance', 'species_colabfold_interact']
+        run_concatenate_dimer_msas_pipeline(
+            multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
+            run_methods=concat_methods,
+            monomer_aln_dir=N1_outdir, outputdir=N5_outdir, params=params)
+    except Exception as e:
+        print(e)
+        print("Program failed in step 5")
 
     print("#################################################################################################")
 

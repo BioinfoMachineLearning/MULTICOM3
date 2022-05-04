@@ -11,7 +11,6 @@ import pandas as pd
 from absl import flags
 from absl import app
 
-
 flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
 flags.DEFINE_string('model_path', None, 'Path to monomer models')
@@ -46,7 +45,7 @@ def main(argv):
         else:
             sequence = line
 
-    outdir = FLAGS.output_dir#  + '/' + targetname
+    outdir = FLAGS.output_dir  # + '/' + targetname
 
     makedir_if_not_exists(outdir)
 
@@ -54,12 +53,14 @@ def main(argv):
 
     N1_outdir = outdir + '/N1_monomer_structure_evaluation'
 
-    os.system(f"cp -r {FLAGS.model_path} {N1_outdir}")
+    # check model counts
+    if not os.path.exists(N1_outdir):
+        os.system(f"cp -r {FLAGS.model_path} {N1_outdir}")
 
     makedir_if_not_exists(N1_outdir)
 
     result = rerun_monomer_evaluation_pipeline(params=params, targetname=targetname, fasta_file=FLAGS.fasta_path,
-                                                outputdir=N1_outdir)
+                                               outputdir=N1_outdir)
 
     if result is None:
         raise RuntimeError("Program failed in step 4: monomer model evaluation")

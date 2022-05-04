@@ -207,46 +207,63 @@ class Monomer_structure_evaluation_pipeline:
         result_dict = {}
         cwd = os.getcwd()
 
+        pdb_count = len(os.listdir(pdbdir))
+
         if "apollo" in self.run_methods:
             if os.path.exists(output_dir + '/pairwise_ranking.tm'):
-                os.system(f"rm {output_dir}/pairwise_ranking.tm")
-            os.chdir(output_dir)
-            with open("model.list", 'w') as fw:
-                for pdb in os.listdir(pdbdir):
-                    fw.write(f"pdb/{pdb}\n")
-            print(f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
-            os.system(
-                f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
+                df = read_qa_txt_as_df(output_dir + '/pairwise_ranking.tm')
+                if len(df) != pdb_count:
+                    os.system(f"rm {output_dir}/pairwise_ranking.tm")
+
+            if not os.path.exists(output_dir + '/pairwise_ranking.tm'):
+                os.chdir(output_dir)
+                with open("model.list", 'w') as fw:
+                    for pdb in os.listdir(pdbdir):
+                        fw.write(f"pdb/{pdb}\n")
+                print(f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
+                os.system(
+                    f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
             result_dict["apollo"] = output_dir + '/pairwise_ranking.tm'
 
         if "alphafold" in self.run_methods:
             if os.path.exists(output_dir + '/alphafold_ranking.csv'):
-                os.system(f"rm {output_dir}/alphafold_ranking.csv")
+                df = pd.read_csv(output_dir + '/alphafold_ranking.csv')
+                if len(df) != pdb_count:
+                    os.system(f"rm {output_dir}/alphafold_ranking.csv")
 
-            alphafold_ranking = self.alphafold_qa.run(pkldir)
-            alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
+            if not os.path.exists(output_dir + '/alphafold_ranking.csv'):
+                alphafold_ranking = self.alphafold_qa.run(pkldir)
+                alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
+
             result_dict["alphafold"] = output_dir_abs + '/alphafold_ranking.csv'
 
         if "enQA" in self.run_methods:
             if os.path.exists(output_dir + '/enqa_ranking.csv'):
-                os.system(f"rm {output_dir}/enqa_ranking.csv")
+                df = pd.read_csv(output_dir + '/enqa_ranking.csv')
+                if len(df) != pdb_count:
+                    os.system(f"rm {output_dir}/enqa_ranking.csv")
 
-            # enqa_ranking = self.enqa.run(input_dir=pdbdir,
-            #                              alphafold_prediction_dir=f"{monomer_model_dir}/original",
-            #                              outputdir=output_dir_abs+'/enqa')
-            enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
-                                                               pkl_dir=pkldir,
-                                                               pairwise_ranking_file=output_dir + '/pairwise_ranking.tm',
-                                                               outputdir=output_dir_abs + '/enqa')
-            enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
+            if not os.path.exists(output_dir + '/enqa_ranking.csv'):
+                # enqa_ranking = self.enqa.run(input_dir=pdbdir,
+                #                              alphafold_prediction_dir=f"{monomer_model_dir}/original",
+                #                              outputdir=output_dir_abs+'/enqa')
+                enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
+                                                                   pkl_dir=pkldir,
+                                                                   pairwise_ranking_file=output_dir + '/pairwise_ranking.tm',
+                                                                   outputdir=output_dir_abs + '/enqa')
+                enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
             result_dict["enQA"] = output_dir_abs + '/enqa_ranking.csv'
 
         if "bfactor" in self.run_methods:
             if os.path.exists(output_dir + '/bfactor_ranking.csv'):
-                os.system(f"rm {output_dir}/bfactor_ranking.csv")
+                df = pd.read_csv(output_dir + '/bfactor_ranking.csv')
+                if len(df) != pdb_count:
+                    os.system(f"rm {output_dir}/bfactor_ranking.csv")
 
-            bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
-            bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
+            if not os.path.exists(output_dir + '/bfactor_ranking.csv'):
+                bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
+                bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
+                
             result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
 
         if "apollo" in self.run_methods and "alphafold" in self.run_methods:

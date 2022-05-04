@@ -18,7 +18,6 @@ from absl import app
 import copy
 import pandas as pd
 
-
 flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
 flags.DEFINE_string('output_dir', None, 'Output directory')
@@ -66,33 +65,34 @@ def main(argv):
         monomer_id = chain_id_map[chain_id].description
         monomer_sequence = chain_id_map[chain_id].sequence
 
-        if True:
-        # if monomer_sequence not in processed_seuqences:
-            with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
-                write_fasta({monomer_id: monomer_sequence}, fw)
-            N1_monomer_outdir = N1_outdir + '/' + monomer_id
-            makedir_if_not_exists(N1_monomer_outdir)
-            result = run_monomer_msa_pipeline(f"{FLAGS.output_dir}/{monomer_id}.fasta", N1_monomer_outdir, params)
-            if result is None:
-                raise RuntimeError(f"Program failed in step 1: monomer {monomer_id} alignment generation")
+        with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
+            write_fasta({monomer_id: monomer_sequence}, fw)
+        N1_monomer_outdir = N1_outdir + '/' + monomer_id
+        makedir_if_not_exists(N1_monomer_outdir)
+        result = run_monomer_msa_pipeline(f"{FLAGS.output_dir}/{monomer_id}.fasta", N1_monomer_outdir, params)
+        if result is None:
+            raise RuntimeError(f"Program failed in step 1: monomer {monomer_id} alignment generation")
 
-            N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
-            makedir_if_not_exists(N1_monomer_outdir_img)
-            img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path,
-                                                              outdir=N1_monomer_outdir_img)
+        N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
+        makedir_if_not_exists(N1_monomer_outdir_img)
+        img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params, fasta=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                          outdir=N1_monomer_outdir_img)
 
-            N2_monomer_outdir = N2_outdir + '/' + monomer_id
-            makedir_if_not_exists(N2_monomer_outdir)
-            template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
-                                                                 a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
-                                                                 outdir=N2_monomer_outdir, params=params)
-            if template_file is None:
-                raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
+        N2_monomer_outdir = N2_outdir + '/' + monomer_id
+        makedir_if_not_exists(N2_monomer_outdir)
+        template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
+                                                             a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
+                                                             outdir=N2_monomer_outdir, params=params)
+        if template_file is None:
+            raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
+
+        if monomer_sequence not in processed_seuqences:
 
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             makedir_if_not_exists(N3_monomer_outdir)
             if not run_monomer_structure_generation_pipeline(params=params,
                                                              run_methods=['default', 'default+seq_template',
+                                                                          'default_uniref30',
                                                                           'original', 'original+seq_template',
                                                                           'colabfold', 'colabfold+seq_template'],
                                                              fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
@@ -102,14 +102,9 @@ def main(argv):
                 print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
             processed_seuqences[monomer_sequence] = monomer_id
-        # else:
-        #     # make a copy
-        #     N1_monomer_outdir = N1_outdir + '/' + monomer_id
-        #     N2_monomer_outdir = N2_outdir + '/' + monomer_id
-        #     N3_monomer_outdir = N3_outdir + '/' + monomer_id
-        #     os.system(f"cp -r {N1_outdir}/{processed_seuqences[monomer_sequence]} {N1_monomer_outdir}")
-        #     os.system(f"cp -r {N2_outdir}/{processed_seuqences[monomer_sequence]} {N2_monomer_outdir}")
-        #     os.system(f"cp -r {N3_outdir}/{processed_seuqences[monomer_sequence]} {N3_monomer_outdir}")
+        else:
+            # make a copy
+            os.system(f"cp -r {N3_outdir}/{processed_seuqences[monomer_sequence]} {N3_monomer_outdir}")
 
     print("#################################################################################################")
 
@@ -119,13 +114,16 @@ def main(argv):
     N4_outdir = FLAGS.output_dir + '/N4_complex_alignments_concatenation'
     makedir_if_not_exists(N4_outdir)
 
-    #try:
-    #    run_concatenate_dimer_msas_pipeline(
-    #        multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
-    #        monomer_aln_dir=N1_outdir, outputdir=N4_outdir, params=params)
-    #except Exception as e:
-    #    print(e)
-    #    print("Program failed in step 4")
+    try:
+        concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch',
+                          'string_interact', 'uniprot_distance', 'species_colabfold_interact']
+        run_concatenate_dimer_msas_pipeline(
+            multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
+            run_methods=concat_methods,
+            monomer_aln_dir=N1_outdir, outputdir=N4_outdir, params=params)
+    except Exception as e:
+        print(e)
+        print("Program failed in step 5")
 
     print("#################################################################################################")
 
@@ -164,7 +162,6 @@ def main(argv):
 
     print("#################################################################################################")
 
-    os.exit(1)
     print("7. Start to evaluate monomer models")
 
     N7_outdir = FLAGS.output_dir + '/N7_monomer_structure_evaluation'
@@ -186,16 +183,17 @@ def main(argv):
             raise RuntimeError(f"Program failed in step 7: monomer {monomer_id} model evaluation")
         monomer_qas_res[monomer_id] = result
 
-    N8_outdir = FLAGS.output_dir + '/N8_monomer_structure_refinement'
+    N8_outdir_avg = FLAGS.output_dir + '/N8_monomer_structure_refinement_avg'
+    N8_outdir_af = FLAGS.output_dir + '/N8_monomer_structure_refinement_af'
     for chain_id in chain_id_map:
         monomer_id = chain_id_map[chain_id].description
-        N8_monomer_outdir = N8_outdir + '/' + monomer_id
-        makedir_if_not_exists(N8_monomer_outdir)
-        final_dir = N8_monomer_outdir + '/final'
+        N8_monomer_avg_outdir = N8_outdir_avg + '/' + monomer_id
+        makedir_if_not_exists(N8_monomer_avg_outdir)
+        final_dir = N8_monomer_avg_outdir + '_final'
 
-        os.system(f"cp {monomer_qas_res[monomer_id]['apollo']} {N8_monomer_outdir}")
-        ref_ranking = read_qa_txt_as_df(
-            monomer_qas_res[monomer_id]['apollo'])  # apollo or average ranking or the three qas
+        os.system(f"cp {monomer_qas_res[monomer_id]['pairwise_af_avg']} {N8_monomer_avg_outdir}")
+        ref_ranking = pd.read_csv(
+            monomer_qas_res[monomer_id]['pairwise_af_avg'])  # apollo or average ranking or the three qas
         refine_inputs = []
         for i in range(5):
             pdb_name = ref_ranking.loc[i, 'model']
@@ -207,7 +205,29 @@ def main(argv):
             refine_inputs += [refine_input]
 
         run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-                                        outdir=N8_monomer_outdir, finaldir=final_dir, ranking_df=ref_ranking)
+                                        outdir=N8_monomer_avg_outdir, finaldir=final_dir, prefix="refine")
+
+        N8_monomer_af_outdir = N8_outdir_af + '/' + monomer_id
+
+        makedir_if_not_exists(N8_monomer_af_outdir)
+
+        refine_inputs = []
+        refined_models = [ref_ranking_avg.loc[i, 'model'] for i in range(5)]
+        for i in range(5):
+            pdb_name = f'default_{i}.pdb'
+            if pdb_name not in refined_models:
+                refine_input = iterative_refine_pipeline.refinement_input(
+                    fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                    pdb_path=f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}",
+                    pkl_path=f"{N7_outdir}/{monomer_id}/pkl/{pdb_name.replace('.pdb', '.pkl')}",
+                    msa_path=f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}")
+                refine_inputs += [refine_input]
+            else:
+                os.system(f"cp -r {N8_monomer_avg_outdir}/{pdb_name.replace('.pdb', '')} {N8_monomer_af_outdir}")
+
+        final_dir = N8_monomer_af_outdir + '_final'
+        run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
+                                        outdir=N8_monomer_af_outdir, finaldir=final_dir, prefix="qa")
 
     print("The refinement for the top-ranked monomer models has been finished!")
 
@@ -218,11 +238,15 @@ def main(argv):
     print("Check the alignment depth")
 
     img_wait_list = []
+    run_img = False
     for chain_id in chain_id_map:
         monomer_id = chain_id_map[chain_id].description
         default_alphafold_msa = N3_outdir + '/' + monomer_id + '/default/msas/monomer_final.a3m'
         if len(open(default_alphafold_msa).readlines()) < 200:
-            img_wait_list += [chain_id]
+            run_img = True
+
+    if run_img:
+        img_wait_list = [chain_id for chain_id in chain_id_map]
 
     img_processed_list = []
     while len(img_processed_list) != len(img_wait_list):
@@ -275,13 +299,13 @@ def main(argv):
 
                 makedir_if_not_exists(N10_monomer_outdir)
 
-                old_ref_ranking = copy.deepcopy(read_qa_txt(monomer_qas_res[monomer_id]['apollo']))
+                old_ref_ranking = copy.deepcopy(pd.read_csv(monomer_qas_res[monomer_id]['pairwise_af_avg']))
                 monomer_qas_res[monomer_id] = result
 
                 refined_models = [old_ref_ranking.loc[i, 'model'] for i in range(5)]
-                ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
+                ref_ranking = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
-                os.system(f"cp {result['apollo']} {N9_monomer_outdir}")
+                os.system(f"cp {result['pairwise_af_avg']} {N9_monomer_outdir}")
 
                 refine_inputs = []
                 for i in range(5):
@@ -298,9 +322,9 @@ def main(argv):
 
                 print("The refinement for the top-ranked monomer models has been finished!")
 
-                final_dir = N10_monomer_outdir + '/final'
+                final_dir = N10_monomer_outdir + '_final'
                 run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-                                                outdir=N10_monomer_outdir, finaldir=final_dir, ranking_df=ref_ranking)
+                                                outdir=N10_monomer_outdir, finaldir=final_dir, prefix="refine")
 
                 img_processed_list += [chain_id]
 

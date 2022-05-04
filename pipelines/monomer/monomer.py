@@ -86,6 +86,7 @@ def main(argv):
     makedir_if_not_exists(N3_outdir)
     if not run_monomer_structure_generation_pipeline(params=params,
                                                      run_methods=['default', 'default+seq_template',
+                                                                  'default_uniref30',
                                                                   'original', 'original+seq_template',
                                                                   'colabfold', 'colabfold+seq_template'],
                                                      fasta_path=FLAGS.fasta_path,
@@ -144,7 +145,7 @@ def main(argv):
 
     makedir_if_not_exists(N5_outdir_af)
 
-    os.system(f"cp {result['alphafold']} {N5_outdir_af}")
+    # os.system(f"cp {result['alphafold']} {N5_outdir_af}")
 
     # ref_ranking_af = pd.read_csv(result['alphafold'])  # apollo or average ranking or the three qas
 
