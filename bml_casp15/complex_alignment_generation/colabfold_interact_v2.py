@@ -104,7 +104,7 @@ class colabfold_interact_v2:
 
         pair_ids = {}
         for monomer_idx, monomer_id in enumerate(monomer_ids):
-            with open(outdir + '/' + monomer_id + '.con.a3m', 'w') as fw:
+            with open(outdir + '/' + monomer_id + '_con.a3m', 'w') as fw:
                 for i in range(len(monomer_alignments[monomer_id]['headers'])):
                     fw.write(f"{monomer_alignments[monomer_id]['headers'][i]}\n"
                              f"{monomer_alignments[monomer_id]['seqs'][i]}\n")

@@ -173,11 +173,11 @@ genome_distance_threshold = 10000
 
 ###########################Sequence and structure based template search option####################
 
-pdb70_hhsuite_database = /home/bml_casp15/databases/alphafold_databases/pdb70/pdb70
+pdb70_hhsuite_database = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70
 
-pdb70_hhsuite_cluster_tsv = /home/bml_casp15/databases/alphafold_databases/pdb70/pdb70_clu.tsv
+pdb70_hhsuite_cluster_tsv = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70_clu.tsv
 
-pdb_seqs_dir = /home/bml_casp15/databases/alphafold_databases/pdb_seqres/pdb_seqs
+pdb_seqs_dir = /home/bml_casp15/tools/alphafold_databases/pdb_seqres/pdb_seqs
 
 pdb_sort90_hhsuite_database = /home/bml_casp15/update_complex_dbs_newest/databases/hhsuite_pdb/hhsuitedb3
 
