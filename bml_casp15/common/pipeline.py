@@ -123,12 +123,14 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
             raise Exception(
                 f"Cannot find pairwise ranking file for generating multicom-egnn models: {result['apollo']}")
 
+        selected_models = []
         pairwise_ranking_df = pd.read_csv(result["pairwise_af_avg"])
         for i in range(2):
             model = pairwise_ranking_df.loc[i, 'model']
             os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{i + 1}.pdb")
+            selected_models += [model]
 
-        egnn_model_count = 2
+        egnn_model_count = 3
         egnn_added_models = []
         top1_model = f"{outputdir}/pdb/{pairwise_ranking_df.loc[0, 'model']}"
         for i in range(2, len(pairwise_ranking_df)):
@@ -140,6 +142,7 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
             if tmscore < 0.98:
                 os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{egnn_model_count}.pdb")
                 egnn_added_models += [model]
+                selected_models += [model]
                 egnn_model_count += 1
                 if egnn_model_count > 5:
                     break
@@ -154,15 +157,20 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
                 os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{egnn_model_count}.pdb")
                 egnn_added_models += [model]
                 egnn_model_count += 1
+                selected_models += [model]
                 if egnn_model_count > 5:
                     break
+        selected_df = pd.DataFrame({'selected_models': selected_models})
+        selected_df.to_csv(outputdir + '/egnn_selected.csv')
 
+        selected_models = []
         alphafold_ranking_df = pd.read_csv(result["alphafold"])
         for i in range(2):
             model = alphafold_ranking_df.loc[i, 'model']
             os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{i + 1}.pdb")
+            selected_models += [model]
 
-        deep_model_count = 2
+        deep_model_count = 3
         deep_added_models = []
         top1_model = f"{outputdir}/pdb/{alphafold_ranking_df.loc[0, 'model']}"
         for i in range(2, len(alphafold_ranking_df)):
@@ -175,6 +183,7 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
                 os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{deep_model_count}.pdb")
                 deep_model_count += 1
                 deep_added_models += [model]
+                selected_models += [model]
                 if deep_model_count > 5:
                     break
             else:
@@ -188,8 +197,11 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
                 os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{deep_model_count}.pdb")
                 egnn_added_models += [model]
                 deep_model_count += 1
+                selected_models += [model]
                 if deep_model_count > 5:
                     break
+        selected_df = pd.DataFrame({'selected_models': selected_models})
+        selected_df.to_csv(outputdir + '/deep_selected.csv')
 
     return result
 
