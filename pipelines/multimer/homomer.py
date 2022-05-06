@@ -390,7 +390,7 @@ def main(argv):
 
     final_dir = N12_outdir + '_final'
     run_multimer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N12_outdir,
-                                     finaldir=final_dir, is_homomer=True)
+                                     finaldir=final_dir, stoichiometry="homomer")
 
     print("The refinement for the top-ranked multimer models has been finished!")
 

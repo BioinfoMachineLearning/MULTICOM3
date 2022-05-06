@@ -32,6 +32,7 @@ class Multimer_iterative_refinement_pipeline_server:
         result_dirs = []
         for refine_param in refinement_inputs:
             if stoichiometry == "homomer":
+                print("refining homomers")
                 pipeline_v1 = iterative_refine_pipeline_homo_v1.Multimer_iterative_refinement_pipeline(self.params)
                 result_dir = pipeline_v1.search_single_homo(chain_id_map=refine_param.chain_id_map,
                                                             fasta_path=refine_param.fasta_path,
@@ -41,6 +42,7 @@ class Multimer_iterative_refinement_pipeline_server:
                                                             outdir=outdir + '/' + pathlib.Path(
                                                                 refine_param.pdb_path).stem)
             elif stoichiometry == "heterodimer":
+                print("refining heterodimer")
                 use_v1 = True
                 for chain_id in refine_param.chain_id_map:
                     if len(open(refine_param.msa_paths[chain_id]['paired_msa']).readlines()) < 600 * 2:
@@ -67,6 +69,7 @@ class Multimer_iterative_refinement_pipeline_server:
                                                                         outdir=outdir + '/' + pathlib.Path(
                                                                             refine_param.pdb_path).stem)
             elif stoichiometry == "heteromer":
+                print("refining heteromer")
                 use_v1 = True
                 for chain_id in refine_param.chain_id_map:
                     if len(open(refine_param.msa_paths[chain_id]['paired_msa']).readlines()) < 600 * 2:

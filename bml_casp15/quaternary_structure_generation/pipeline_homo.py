@@ -271,7 +271,7 @@ class Quaternary_structure_prediction_homo_pipeline:
                     continue
                 template_hits_files = []
                 for monomer in monomers:
-                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/pdb_hits.hhr"
+                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/output.hhr"
                     if not os.path.exists(template_hits_file):
                         raise Exception(f"Cannot find template hit file for {monomer}: {template_hits_file}")
                     template_hits_files += [template_hits_file]

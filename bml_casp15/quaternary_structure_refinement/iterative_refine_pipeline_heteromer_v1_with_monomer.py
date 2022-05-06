@@ -364,7 +364,7 @@ class Multimer_iterative_refinement_pipeline:
                     makedir_if_not_exists(out_model_dir)
 
                     if len(template_files) == 1:
-                        cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                        cmd = f"python {self.params['alphafold_multimer_program']}  " \
                               f"--fasta_path {fasta_file} " \
                               f"--env_dir {self.params['alphafold_env_dir']} " \
                               f"--database_dir {self.params['alphafold_database_dir']} " \
@@ -375,7 +375,7 @@ class Multimer_iterative_refinement_pipeline:
                               f"--struct_atom_dir {out_template_dir} " \
                               f"--output_dir {out_model_dir}"
                     else:
-                        cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                        cmd = f"python {self.params['alphafold_multimer_program']}  " \
                               f"--fasta_path {fasta_file} " \
                               f"--env_dir {self.params['alphafold_env_dir']} " \
                               f"--database_dir {self.params['alphafold_database_dir']} " \
@@ -608,7 +608,7 @@ class Multimer_iterative_refinement_pipeline:
                 makedir_if_not_exists(out_model_dir)
 
                 if len(template_files) == 1:
-                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                    cmd = f"python {self.params['alphafold_multimer_program']}  " \
                           f"--fasta_path {fasta_path} " \
                           f"--env_dir {self.params['alphafold_env_dir']} " \
                           f"--database_dir {self.params['alphafold_database_dir']} " \
@@ -619,7 +619,7 @@ class Multimer_iterative_refinement_pipeline:
                           f"--struct_atom_dir {out_template_dir} " \
                           f"--output_dir {out_model_dir}"
                 else:
-                    cmd = f"python run_alphafold_multimer_custom_sim.py " \
+                    cmd = f"python {self.params['alphafold_multimer_program']}  " \
                           f"--fasta_path {fasta_path} " \
                           f"--env_dir {self.params['alphafold_env_dir']} " \
                           f"--database_dir {self.params['alphafold_database_dir']} " \
