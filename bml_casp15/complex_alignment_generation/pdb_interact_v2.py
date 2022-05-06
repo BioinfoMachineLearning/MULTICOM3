@@ -32,7 +32,7 @@ class PDB_interact_v2:
             curr_df = pd.DataFrame({'pdbcode': [pdbcode[0:4] for pdbcode in pdbcodes]})
             prev_df = prev_df.merge(curr_df, on="pdbcode")
 
-        if not is_homomers:
+        if is_homomers:
             keep_indices = []
             for i in range(len(prev_df)):
                 cmd = f"grep {prev_df.loc[i, 'pdbcode']} {self.complexes_cm_file}"
@@ -49,7 +49,7 @@ class PDB_interact_v2:
         id_2 = []
         for id1 in alignment1.ids:
             for id2 in alignment2.ids:
-                if id1 == id2:
+                if id1 == id2 and not is_homomers:
                     id_1 += [id1]
                     id_2 += [id2]
                 elif id1 in self.uniprot2pdb_map and id2 in self.uniprot2pdb_map:

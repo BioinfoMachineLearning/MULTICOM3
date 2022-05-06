@@ -16,7 +16,7 @@ from bml_casp15.common.protein import complete_result
 class Quaternary_structure_evaluation_pipeline:
     """Runs the alignment tools and assembles the input features."""
 
-    def __init__(self, params, run_methods=["alphafold", "pairwise", "enqa", "dproq", "bfactor", 'multieva']):
+    def __init__(self, params, run_methods=["alphafold", "pairwise", "dproq", "bfactor", 'multieva']):
         """Initializes the data pipeline."""
 
         self.params = params
