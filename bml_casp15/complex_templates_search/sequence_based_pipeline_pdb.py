@@ -188,7 +188,7 @@ class Complex_sequence_based_template_search_pipeline:
                 else:
                     hit1_name = prev_pd.loc[j, f'template{i}'].split()[0]
                 print(f"finding hits for {hit1_name}")
-                if template_count > 50:
+                if template_count > 100:
                     break
                 for k in range(len(monomer_template_results[i])):
                     hit2_name = monomer_template_results[i][k].name.split()[0]
@@ -255,7 +255,8 @@ class Complex_sequence_based_template_search_pipeline:
                 continue
             keep_indices += [i]
             pdbcodes += [pdbcode]
-        return indf.iloc[keep_indices]
+        outdf = indf.iloc[keep_indices]
+        return outdf.reset_index(drop=True)
 
     def search(self, monomer_inputs, outdir):
 
@@ -310,7 +311,7 @@ class Complex_sequence_based_template_search_pipeline:
             prev_pd = None
             for i in range(len(monomer_template_results)):
                 seen_templates_sequences = [
-                    f"{concatenated_pd.loc[j, f'template{j + 1}']}_{concatenated_pd.loc[j, f'aln_temp{j + 1}']}" for j
+                    f"{concatenated_pd.loc[j, f'template{i + 1}']}_{concatenated_pd.loc[j, f'aln_temp{i + 1}']}" for j
                     in range(len(concatenated_pd))]
                 monomer_template_hits = []
                 for hit in monomer_template_results[i]:
@@ -354,7 +355,7 @@ class Complex_sequence_based_template_search_pipeline:
             prev_pd = None
             for i in range(len(monomer_template_results)):
                 seen_templates_sequences = [
-                    f"{concatenated_pd_nocheck.loc[j, f'template{j + 1}']}_{concatenated_pd_nocheck.loc[j, f'aln_temp{j + 1}']}"
+                    f"{concatenated_pd_nocheck.loc[j, f'template{i + 1}']}_{concatenated_pd_nocheck.loc[j, f'aln_temp{i + 1}']}"
                     for j
                     in range(len(concatenated_pd_nocheck))]
                 monomer_template_hits = []

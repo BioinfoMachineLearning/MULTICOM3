@@ -169,7 +169,7 @@ class Complex_sequence_based_template_search_pipeline:
                     hit1_name = prev_pd.loc[j, 'name'].split()[0]
                 else:
                     hit1_name = prev_pd.loc[j, f'name{i}'].split()[0]
-                if template_count > 50:
+                if template_count > 100:
                     break
                 for k in range(len(monomer_template_results[i])):
                     hit2_name = monomer_template_results[i][k].name.split()[0]
@@ -222,7 +222,8 @@ class Complex_sequence_based_template_search_pipeline:
                 continue
             keep_indices += [i]
             pdbcodes += [pdbcode]
-        return indf.iloc[keep_indices]
+        outdf = indf.iloc[keep_indices]
+        return outdf.reset_index(drop=True)
 
     def search(self, monomer_inputs, outdir):
 
@@ -274,7 +275,7 @@ class Complex_sequence_based_template_search_pipeline:
             print(f"template count is smaller than 50, add monomer templates")
             prev_pd = None
             for i in range(len(monomer_template_results)):
-                seen_templates_sequences = [f"{concatenated_pd.loc[j, f'name{j+1}']}_{concatenated_pd.loc[j, f'hit_sequence{j+1}']}" for j in range(len(concatenated_pd))]
+                seen_templates_sequences = [f"{concatenated_pd.loc[j, f'name{i+1}']}_{concatenated_pd.loc[j, f'hit_sequence{i+1}']}" for j in range(len(concatenated_pd))]
                 monomer_template_hits = []
                 for hit in monomer_template_results[i]:
                     if f"{hit.name.split()[0]}_{hit.hit_sequence}" in seen_templates_sequences:
@@ -307,7 +308,7 @@ class Complex_sequence_based_template_search_pipeline:
             prev_pd = None
             for i in range(len(monomer_template_results)):
                 seen_templates_sequences = [
-                    f"{concatenated_pd_nocheck.loc[j, f'name{j + 1}']}_{concatenated_pd_nocheck.loc[j, f'hit_sequence{j + 1}']}" for j
+                    f"{concatenated_pd_nocheck.loc[j, f'name{i + 1}']}_{concatenated_pd_nocheck.loc[j, f'hit_sequence{i + 1}']}" for j
                     in range(len(concatenated_pd_nocheck))]
                 monomer_template_hits = []
                 for hit in monomer_template_results[i]:

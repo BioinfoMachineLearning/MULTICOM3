@@ -155,21 +155,21 @@ class Complex_structure_based_template_search_pipeline:
                 row_index = 0
                 for j in range(len(prev_df_sorted_filtered)):
                     row_dict = dict(index=row_index,
-                                    template=prev_df_sorted_filtered.loc[j, f'template{j + 1}'],
-                                    aln_query=prev_df_sorted_filtered.loc[j, f'aln_query{j + 1}'],
-                                    qstart=prev_df_sorted_filtered.loc[j, f'qstart{j + 1}'],
-                                    qend=prev_df_sorted_filtered.loc[j, f'qend{j + 1}'],
-                                    aln_temp=prev_df_sorted_filtered.loc[j, f'aln_temp{j + 1}'],
-                                    tstart=prev_df_sorted_filtered.loc[j, f'tstart{j + 1}'],
-                                    tend=prev_df_sorted_filtered.loc[j, f'tend{j + 1}'],
-                                    tmscore=prev_df_sorted_filtered.loc[j, f'tmscore{j + 1}'],
-                                    aligned_length=prev_df_sorted_filtered.loc[j, f'aligned_length{j + 1}'])
+                                    template=prev_df_sorted_filtered.loc[j, f'template{i + 1}'],
+                                    aln_query=prev_df_sorted_filtered.loc[j, f'aln_query{i + 1}'],
+                                    qstart=prev_df_sorted_filtered.loc[j, f'qstart{i + 1}'],
+                                    qend=prev_df_sorted_filtered.loc[j, f'qend{i + 1}'],
+                                    aln_temp=prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}'],
+                                    tstart=prev_df_sorted_filtered.loc[j, f'tstart{i + 1}'],
+                                    tend=prev_df_sorted_filtered.loc[j, f'tend{i + 1}'],
+                                    tmscore=prev_df_sorted_filtered.loc[j, f'tmscore{i + 1}'],
+                                    aligned_length=prev_df_sorted_filtered.loc[j, f'aligned_length{i + 1}'])
                     row_list += [row_dict]
                     row_index += 1
 
                 seen_templates_sequences = [
-                    f"{prev_df_sorted_filtered.loc[j, f'template{j + 1}']}_" \
-                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{j + 1}']}" for j in keep_indices]
+                    f"{prev_df_sorted_filtered.loc[j, f'template{i + 1}']}_" \
+                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}']}" for j in keep_indices]
 
                 for j in range(len(monomer_template_results[i])):
                     if row_index > 50:
@@ -316,21 +316,21 @@ class Complex_structure_based_template_search_pipeline:
                 row_index = 0
                 for j in range(len(prev_df_sorted_filtered)):
                     row_dict = dict(index=row_index,
-                                    template=prev_df_sorted_filtered.loc[j, f'template{j + 1}'],
-                                    aln_query=prev_df_sorted_filtered.loc[j, f'aln_query{j + 1}'],
-                                    qstart=prev_df_sorted_filtered.loc[j, f'qstart{j + 1}'],
-                                    qend=prev_df_sorted_filtered.loc[j, f'qend{j + 1}'],
-                                    aln_temp=prev_df_sorted_filtered.loc[j, f'aln_temp{j + 1}'],
-                                    tstart=prev_df_sorted_filtered.loc[j, f'tstart{j + 1}'],
-                                    tend=prev_df_sorted_filtered.loc[j, f'tend{j + 1}'],
-                                    tmscore=prev_df_sorted_filtered.loc[j, f'tmscore{j + 1}'],
-                                    aligned_length=prev_df_sorted_filtered.loc[j, f'aligned_length{j + 1}'])
+                                    template=prev_df_sorted_filtered.loc[j, f'template{i + 1}'],
+                                    aln_query=prev_df_sorted_filtered.loc[j, f'aln_query{i + 1}'],
+                                    qstart=prev_df_sorted_filtered.loc[j, f'qstart{i + 1}'],
+                                    qend=prev_df_sorted_filtered.loc[j, f'qend{i + 1}'],
+                                    aln_temp=prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}'],
+                                    tstart=prev_df_sorted_filtered.loc[j, f'tstart{i + 1}'],
+                                    tend=prev_df_sorted_filtered.loc[j, f'tend{i + 1}'],
+                                    tmscore=prev_df_sorted_filtered.loc[j, f'tmscore{i + 1}'],
+                                    aligned_length=prev_df_sorted_filtered.loc[j, f'aligned_length{i + 1}'])
                     row_list += [row_dict]
                     row_index += 1
 
                 seen_templates_sequences = [
-                    f"{prev_df_sorted_filtered.loc[j, f'template{j + 1}']}_" \
-                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{j + 1}']}" for j in keep_indices]
+                    f"{prev_df_sorted_filtered.loc[j, f'template{i + 1}']}_" \
+                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}']}" for j in keep_indices]
 
                 for j in range(len(monomer_template_results[i])):
                     if row_index > 50:
