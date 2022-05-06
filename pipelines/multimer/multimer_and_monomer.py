@@ -22,6 +22,7 @@ flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
 flags.DEFINE_string('output_dir', None, 'Output directory')
 flags.DEFINE_string('stoichiometry', None, 'stoichiometry')
+flags.DEFINE_string('stoichiometry2', None, 'stoichiometry')
 FLAGS = flags.FLAGS
 
 
@@ -192,11 +193,11 @@ def main(argv):
         final_dir = N8_monomer_avg_outdir + '_final'
 
         os.system(f"cp {monomer_qas_res[monomer_id]['pairwise_af_avg']} {N8_monomer_avg_outdir}")
-        ref_ranking = pd.read_csv(
+        ref_ranking_avg = pd.read_csv(
             monomer_qas_res[monomer_id]['pairwise_af_avg'])  # apollo or average ranking or the three qas
         refine_inputs = []
         for i in range(5):
-            pdb_name = ref_ranking.loc[i, 'model']
+            pdb_name = ref_ranking_avg.loc[i, 'model']
             refine_input = iterative_refine_pipeline.refinement_input(
                 fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                 pdb_path=f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}",
@@ -410,7 +411,7 @@ def main(argv):
 
     final_dir = N12_outdir + '_final'
     run_multimer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N12_outdir,
-                                     finaldir=final_dir)
+                                     finaldir=final_dir, stoichiometry=FLAGS.stoichiometry2)
 
     print("The refinement for the top-ranked multimer models has been finished!")
 

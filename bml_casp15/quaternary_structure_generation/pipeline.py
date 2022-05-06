@@ -234,7 +234,7 @@ class Quaternary_structure_prediction_pipeline:
             default_alphafold_multimer_a3ms += [default_alphafold_multimer_a3m]
 
         for method in self.run_methods:
-            if method == "default":
+            if method == "default" or method == "default_uniref30":
                 continue
             concatenate_method = ""
             template_method = ""
