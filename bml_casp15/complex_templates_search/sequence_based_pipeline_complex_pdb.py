@@ -245,18 +245,45 @@ class Complex_sequence_based_template_search_pipeline:
 
         return prev_pd
 
-    def filter_same_pdbcodes(self, indf):
-        # print(indf)
-        pdbcodes = []
+    def filter_same_pdbcodes(self, indf, monomer_count):
+
+        indf_sorted = indf.sort_values(by=['tpdbcode','max_probs'], ascending=False)
+        indf_sorted.reset_index(inplace=True, drop=True)
+
         keep_indices = []
-        for i in range(len(indf)):
-            pdbcode = indf.loc[i, 'tpdbcode']
-            if pdbcode in pdbcodes:
-                continue
-            keep_indices += [i]
-            pdbcodes += [pdbcode]
-        outdf = indf.iloc[keep_indices]
-        return outdf.reset_index(drop=True)
+        pdbcodes = []
+        cover_chains_in_pdb = {}
+        for i in range(len(indf_sorted)):
+            chain_count = len(set([indf_sorted.loc[i, f'template{j + 1}'] for j in range(monomer_count)]))
+            if indf_sorted.loc[i, 'tpdbcode'] not in pdbcodes:
+                if len(pdbcodes) > 0:
+                    max_index = -1
+                    max_count = 0
+                    for index in cover_chains_in_pdb:
+                        if cover_chains_in_pdb[index] > max_count:
+                            max_index = index
+                            max_count = cover_chains_in_pdb[index]
+                    keep_indices += [max_index]
+
+                pdbcodes += [indf_sorted.loc[i, 'tpdbcode']]
+                cover_chains_in_pdb = {i: chain_count}
+            else:
+                cover_chains_in_pdb[i] = chain_count
+
+        if len(cover_chains_in_pdb) > 0:
+            max_index = -1
+            max_count = 0
+            for index in cover_chains_in_pdb:
+                if cover_chains_in_pdb[index] > max_count:
+                    max_index = index
+                    max_count = cover_chains_in_pdb[index]
+            keep_indices += [max_index]
+
+        indf_sorted_filtered = indf_sorted.iloc[keep_indices]
+        indf_sorted_filtered = indf_sorted_filtered.sort_values(by='max_probs', ascending=False)
+        indf_sorted_filtered.reset_index(inplace=True, drop=True)
+
+        return indf_sorted_filtered
 
     def search(self, monomer_inputs, outdir):
 
@@ -304,7 +331,7 @@ class Complex_sequence_based_template_search_pipeline:
 
         concatenated_pd = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir)
 
-        concatenated_pd = self.filter_same_pdbcodes(concatenated_pd)
+        concatenated_pd = self.filter_same_pdbcodes(concatenated_pd, len(monomer_template_results))
 
         if len(concatenated_pd) < 50:
 
@@ -350,7 +377,7 @@ class Complex_sequence_based_template_search_pipeline:
 
         concatenated_pd_nocheck = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir, False)
 
-        concatenated_pd_nocheck = self.filter_same_pdbcodes(concatenated_pd_nocheck)
+        concatenated_pd_nocheck = self.filter_same_pdbcodes(concatenated_pd_nocheck, len(monomer_template_results))
 
         if len(concatenated_pd_nocheck) < 50:
 

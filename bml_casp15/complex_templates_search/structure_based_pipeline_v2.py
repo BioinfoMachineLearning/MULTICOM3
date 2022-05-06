@@ -111,7 +111,7 @@ class Complex_structure_based_template_search_pipeline:
 
         prev_df['avg_tmscore'] = avg_tmscores
 
-        prev_df_sorted = prev_df.sort_values(by='tpdbcode', ascending=False)
+        prev_df_sorted = prev_df.sort_values(by=['tpdbcode','avg_tmscore'], ascending=False)
         prev_df_sorted.reset_index(inplace=True, drop=True)
 
         keep_indices = []
