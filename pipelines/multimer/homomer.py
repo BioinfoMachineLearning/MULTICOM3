@@ -311,7 +311,7 @@ def main(argv):
         qa_result_dir = N6_outdir
 
     pipeline_inputs = []
-    for i in range(5):
+    for i in range(2):
         monomer_pdb_dirs = {}
         monomer_alphafold_a3ms = {}
         pdb_name = None
@@ -369,7 +369,7 @@ def main(argv):
     N12_outdir = FLAGS.output_dir + '/N12_multimer_structure_refinement'
 
     makedir_if_not_exists(N12_outdir)
-    ref_ranking = pd.read_csv(multimer_qa_result['alphafold'])  # apollo or average ranking or the three qas
+    ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
     refine_inputs = []
     for i in range(5):

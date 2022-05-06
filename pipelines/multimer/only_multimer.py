@@ -186,7 +186,7 @@ def main(argv):
         print("Program failed in step 7")
 
     pipeline_inputs = []
-    for i in range(5):
+    for i in range(2):
         monomer_pdb_dirs = {}
         monomer_alphafold_a3ms = {}
         for chain_id in chain_id_map:
@@ -227,7 +227,7 @@ def main(argv):
 
     makedir_if_not_exists(N9_outdir)
 
-    ref_ranking = pd.read_csv(multimer_qa_result['alphafold'])  # apollo or average ranking or the three qas
+    ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
     refine_inputs = []
     for i in range(5):

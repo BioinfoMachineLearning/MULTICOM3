@@ -127,5 +127,34 @@ class Quaternary_structure_evaluation_pipeline:
                                                       outputdir=output_dir + '/foldseek')
                 foldseek_qa_df.to_csv(f"{output_dir}/foldseek_qa.csv")
             result_dict["foldseek"] = output_dir + '/foldseek_qa.csv'
-            
+
+        if "multieva" in self.run_methods and "alphafold" in self.run_methods:
+            pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
+            ranks = [i+1 for i in range(len(pairwise_ranking_df))]
+            print(ranks)
+            pairwise_ranking_df['pairwise_rank'] = ranks
+            print(pairwise_ranking_df)
+            alphafold_ranking_df = pd.read_csv(result_dict['alphafold'])
+            ranks = [i + 1 for i in range(len(alphafold_ranking_df))]
+            alphafold_ranking_df['alphafold_rank'] = ranks
+            avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
+            avg_scores = []
+            avg_rankings = []
+            print(avg_ranking_df)
+            for i in range(len(avg_ranking_df)):
+                pairwise_score = float(avg_ranking_df.loc[i, 'score'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
+                avg_score = (pairwise_score + alphafold_score) / 2
+                avg_scores += [avg_score]
+                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank'])+int(avg_ranking_df.loc[i, 'alphafold_rank']))/2
+                avg_rankings += [avg_rank]
+            avg_ranking_df['avg_score'] = avg_scores
+            avg_ranking_df['avg_rank'] = avg_rankings
+            avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
+            avg_ranking_df.reset_index(inplace=True, drop=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
+            avg_ranking_df.to_csv(output_dir + '/pairwise_af_avg.ranking')
+            result_dict["pairwise_af_avg"] = output_dir + '/pairwise_af_avg.ranking'
+
         return result_dict
