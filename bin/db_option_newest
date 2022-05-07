@@ -84,7 +84,7 @@ enqa_program = /home/bml_casp15/BML_CASP15/bml_casp15/monomer_structure_evaluati
 dproq_program = /home/bml_casp15/BML_CASP15/bml_casp15/quaternary_structure_evaluation/dproq.sh
 
 #multieva_program
-multieva_program = /bml/bml_casp15/casp15_qa_multimer_eva/MultimerEva/multi_eva_lite_cdpred.py
+multieva_program = /bml/bml_casp15/casp15_qa_multimer_eva/MultimerEva/multi_eva_mmalign.py
 
 ######################Monomer template search option#################################
 
@@ -101,6 +101,10 @@ foldseek_af_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_
 foldseek_complex_comb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/complex_comb
 
 foldseek_complex_comb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/complex_atom_comb
+
+foldseek_rcsb_pdb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/pdb
+
+foldseek_rcsb_pdb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/pdb_database
 
 ################################databases option#####################################
 

@@ -13,6 +13,7 @@ from bml_casp15.complex_alignment_generation.pipeline_v2 import *
 from bml_casp15.complex_templates_search import sequence_based_pipeline_complex_pdb, \
     sequence_based_pipeline_pdb, sequence_based_pipeline, structure_based_pipeline_v2
 from bml_casp15.quaternary_structure_generation.pipeline import *
+from bml_casp15.quaternary_structure_generation.pipeline_default import *
 from bml_casp15.quaternary_structure_generation.pipeline_homo import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
 from bml_casp15.quaternary_structure_evaluation.pipeline import *
@@ -464,6 +465,19 @@ def run_quaternary_structure_generation_pipeline(params, fasta_path, chain_id_ma
                                   complex_aln_dir=complex_aln_dir,
                                   template_dir=template_dir,
                                   monomer_model_dir=monomer_model_dir,
+                                  output_dir=output_dir)
+    except Exception as e:
+        print(e)
+        return False
+    return True
+
+
+def run_quaternary_structure_generation_pipeline_default(params, fasta_path, chain_id_map, aln_dir, output_dir):
+    try:
+        pipeline = Quaternary_structure_prediction_pipeline_default(params)
+        result = pipeline.process(fasta_path=fasta_path,
+                                  chain_id_map=chain_id_map,
+                                  aln_dir=aln_dir,
                                   output_dir=output_dir)
     except Exception as e:
         print(e)

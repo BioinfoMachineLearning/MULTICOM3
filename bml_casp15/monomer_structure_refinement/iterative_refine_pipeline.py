@@ -78,11 +78,13 @@ class Monomer_refinement_model_selection:
         df.to_csv(outdir + '/final_ranking.csv')
 
         if prefix == "refine":
+            selected_models = []
             for i in range(4):
                 pdb_name = df.loc[i, 'model']
                 os.system(f"cp {outdir}/{pdb_name} {outdir}/{prefix}{i + 1}.pdb")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/{prefix}{i + 1}.pkl")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.a3m')} {outdir}/{prefix}{i + 1}.a3m")
+                selected_models += [pdb_name]
 
             top1_model = df.loc[0, 'model']
             added = False
@@ -97,6 +99,7 @@ class Monomer_refinement_model_selection:
                     os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/{prefix}5.pkl")
                     os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.a3m')} {outdir}/{prefix}5.a3m")
                     added = True
+                    selected_models += [pdb_name]
                     break
                 else:
                     print(f"The tmscore between {pdb_name} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
@@ -105,12 +108,21 @@ class Monomer_refinement_model_selection:
                 os.system(f"cp {outdir}/{pdb_name} {outdir}/{prefix}5.pdb")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/{prefix}5.pkl")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.a3m')} {outdir}/{prefix}5.a3m")
+                selected_models += [pdb_name]
+
+            selected_df = pd.DataFrame({'selected_models': selected_models})
+            selected_df.to_csv(outputdir + f'/{prefix}_selected.csv')
+
         else:
+            select_models = []
             for i in range(5):
                 pdb_name = df.loc[i, 'model']
                 os.system(f"cp {outdir}/{pdb_name} {outdir}/{prefix}{i + 1}.pdb")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/{prefix}{i + 1}.pkl")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.a3m')} {outdir}/{prefix}{i + 1}.a3m")
+                select_models += [pdb_name]
+            selected_df = pd.DataFrame({'selected_models': selected_models})
+            selected_df.to_csv(outputdir + f'/{prefix}_selected.csv')
 
         return outdir
 
