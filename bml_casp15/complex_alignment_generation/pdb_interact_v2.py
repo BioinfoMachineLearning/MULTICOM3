@@ -4,6 +4,7 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 from bml_casp15.monomer_alignment_generation.alignment import *
+import os
 
 
 class PDB_interact_v2:
@@ -61,14 +62,14 @@ class PDB_interact_v2:
     def get_interactions(self, alignments, is_homomers=False):
         prev_df = None
         for i in range(0, len(alignments) - 1):
-            curr_df = self.get_interactions_from_two_alignments(alignments[i], alignments[i + 1], i+1, is_homomers)
+            curr_df = self.get_interactions_from_two_alignments(alignments[i], alignments[i + 1], i + 1, is_homomers)
             if prev_df is None:
                 prev_df = curr_df
             else:
                 prev_df = prev_df.merge(curr_df, on=f"id_{i + 1}")
         return prev_df
 
-    def get_interactions_large(self, alignments, is_homomers = False):
+    def get_interactions_large(self, alignments, is_homomers=False):
         def create_df(alignment):
             ids = []
             pdbcodes = []

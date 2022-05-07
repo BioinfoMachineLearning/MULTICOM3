@@ -1,16 +1,20 @@
-import os, sys, argparse, time
+import argparse
+import os
+import sys
+import time
 from multiprocessing import Pool
-from tqdm import tqdm
+
 from bml_casp15.common.util import is_dir, is_file, read_option_file, makedir_if_not_exists
+from bml_casp15.common.util import makedir_if_not_exists
+from bml_casp15.complex_alignment_generation.colabfold_interact_v2 import colabfold_interact_v2
 from bml_casp15.complex_alignment_generation.geno_dist import Geno_interact
 from bml_casp15.complex_alignment_generation.pdb_interact_v2 import PDB_interact_v2
 from bml_casp15.complex_alignment_generation.species_interact_v2 import Species_interact_v2
 from bml_casp15.complex_alignment_generation.string_interact_v2 import STRING_interact_v2
 from bml_casp15.complex_alignment_generation.uniclust_oxmatch_v2 import UNICLUST_oxmatch_v2
 from bml_casp15.complex_alignment_generation.uniprot_distance_v2 import UNIPROT_distance_v2
-from bml_casp15.complex_alignment_generation.colabfold_interact_v2 import colabfold_interact_v2
 from bml_casp15.monomer_alignment_generation.alignment import *
-from bml_casp15.common.util import makedir_if_not_exists
+from tqdm import tqdm
 
 mapping = {'-': 21, 'A': 1, 'B': 21, 'C': 2, 'D': 3, 'E': 4, 'F': 5,
            'G': 6, 'H': 7, 'I': 8, 'K': 9, 'L': 10, 'M': 11, 'N': 12,

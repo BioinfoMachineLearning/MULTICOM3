@@ -142,7 +142,7 @@ class Quaternary_structure_evaluation_pipeline:
             avg_rankings = []
             print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
-                pairwise_score = float(avg_ranking_df.loc[i, 'score'])
+                pairwise_score = float(avg_ranking_df.loc[i, 'Final_score'])
                 alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
