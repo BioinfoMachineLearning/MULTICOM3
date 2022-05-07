@@ -641,7 +641,7 @@ class Multimer_iterative_refinement_pipeline:
                 ref_avg_lddt = float(pickle.load(f)['ranking_confidence'])
 
             for chain_id in chain_id_map:
-                os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
+                os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
                           f"{start_msa_path}/{chain_id_map[chain_id].description}.start.a3m")
 
             os.system(f"cp {ref_start_pdb} {start_pdb}")

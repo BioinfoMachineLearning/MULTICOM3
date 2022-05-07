@@ -63,6 +63,31 @@ def run_monomer_msa_pipeline(fasta, outdir, params):
     return result
 
 
+def copy_same_sequence_msas(srcdir, trgdir, srcname, trgname):
+    for msa in srcdir:
+        if msa.find('.a3m') > 0:
+            os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
+            contents = open(f"{trgdir}/{msa}")
+            contents[0] = f">{trgname}"
+            fw = open(f"{trgdir}/{msa}")
+            fw.writelines(contents)
+        elif msa.find('.sto') > 0:
+            os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
+            contents = []
+            for line in open(f"{trgdir}/{msa}"):
+                if line[:7] == "#=GF ID":
+                    line = line.replace(srcname, trgname)
+                if line.split()[0] == srcname:
+                    line = line.replace(srcname, trgname)
+                contents += [line]
+            fw = open(f"{trgdir}/{msa}")
+            fw.writelines(contents)
+    cwd = os.getcwd()
+    os.chdir(trgdir)
+    os.system(f"rename {srcname} {trgname}")
+    os.chdir(cwd)
+
+
 def run_monomer_msa_pipeline_img(fasta, outdir, params):
     monomer_msa_pipeline_img = Monomer_alignment_generation_pipeline_img(
         deepmsa_binary_path=params['deepmsa2_program'],

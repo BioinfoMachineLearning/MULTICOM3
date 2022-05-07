@@ -34,7 +34,7 @@ class Multimer_iterative_refinement_pipeline_server:
             if stoichiometry == "homomer":
                 print("refining homomers")
                 pipeline_v1 = iterative_refine_pipeline_homo_v1.Multimer_iterative_refinement_pipeline(self.params)
-                result_dir = pipeline_v1.search_single_homo(chain_id_map=refine_param.chain_id_map,
+                result_dir = pipeline_v1.search_single(chain_id_map=refine_param.chain_id_map,
                                                             fasta_path=refine_param.fasta_path,
                                                             pdb_path=refine_param.pdb_path,
                                                             pkl_path=refine_param.pkl_path,

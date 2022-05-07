@@ -11,7 +11,7 @@ from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_tem
     run_concatenate_dimer_msas_pipeline, run_complex_template_search_pipeline, \
     run_quaternary_structure_generation_homo_pipeline, \
     run_quaternary_structure_generation_pipeline_foldseek, run_multimer_refinement_pipeline, \
-    run_multimer_evaluation_pipeline, run_monomer_msa_pipeline_img, foldseek_iterative_monomer_input
+    run_multimer_evaluation_pipeline, run_monomer_msa_pipeline_img, foldseek_iterative_monomer_input, copy_same_sequence_msas
 
 from absl import flags
 from absl import app
@@ -70,28 +70,29 @@ def main(argv):
         monomer_id = chain_id_map[chain_id].description
         monomer_sequence = chain_id_map[chain_id].sequence
 
-        with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
-            write_fasta({monomer_id: monomer_sequence}, fw)
-        N1_monomer_outdir = N1_outdir + '/' + monomer_id
-        makedir_if_not_exists(N1_monomer_outdir)
-        result = run_monomer_msa_pipeline(f"{FLAGS.output_dir}/{monomer_id}.fasta", N1_monomer_outdir, params)
-        if result is None:
-            raise RuntimeError(f"Program failed in step 1: monomer {monomer_id} alignment generation")
-
-        N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
-        makedir_if_not_exists(N1_monomer_outdir_img)
-        img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path,
-                                                          outdir=N1_monomer_outdir_img)
-
-        N2_monomer_outdir = N2_outdir + '/' + monomer_id
-        makedir_if_not_exists(N2_monomer_outdir)
-        template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
-                                                             a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
-                                                             outdir=N2_monomer_outdir, params=params)
-        if template_file is None:
-            raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
-
         if monomer_sequence not in processed_seuqences:
+
+            with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
+                write_fasta({monomer_id: monomer_sequence}, fw)
+            N1_monomer_outdir = N1_outdir + '/' + monomer_id
+            makedir_if_not_exists(N1_monomer_outdir)
+            result = run_monomer_msa_pipeline(f"{FLAGS.output_dir}/{monomer_id}.fasta", N1_monomer_outdir, params)
+            if result is None:
+                raise RuntimeError(f"Program failed in step 1: monomer {monomer_id} alignment generation")
+
+            N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
+            makedir_if_not_exists(N1_monomer_outdir_img)
+            img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path,
+                                                              outdir=N1_monomer_outdir_img)
+
+            N2_monomer_outdir = N2_outdir + '/' + monomer_id
+            makedir_if_not_exists(N2_monomer_outdir)
+            template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
+                                                                 a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
+                                                                 outdir=N2_monomer_outdir, params=params)
+            if template_file is None:
+                raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
+
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             makedir_if_not_exists(N3_monomer_outdir)
             if not run_monomer_structure_generation_pipeline(params=params,
@@ -118,7 +119,7 @@ def main(argv):
 
             N5_monomer_outdir = N5_outdir + '/' + monomer_id
             makedir_if_not_exists(N5_monomer_outdir)
-            final_dir = N5_monomer_outdir + '/final'
+            final_dir = N5_monomer_outdir + '_final'
 
             os.system(f"cp {result['apollo']} {N5_monomer_outdir}")
             ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
@@ -204,7 +205,7 @@ def main(argv):
                     else:
                         os.system(f"cp -r {N5_monomer_outdir}/{pdb_name} {N7_monomer_outdir}")
 
-                final_dir = N7_monomer_outdir + '/final'
+                final_dir = N7_monomer_outdir + '_final'
                 run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
                                                 outdir=N7_monomer_outdir,
                                                 finaldir=final_dir)
@@ -217,6 +218,24 @@ def main(argv):
             processed_seuqences[monomer_sequence] = monomer_id
 
         else:
+            with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
+                write_fasta({monomer_id: monomer_sequence}, fw)
+            N1_monomer_outdir = N1_outdir + '/' + monomer_id
+            makedir_if_not_exists(N1_monomer_outdir)
+
+            copy_same_sequence_msas(srcdir=f"{N1_outdir}/{processed_seuqences[monomer_sequence]}",
+                                    trgdir=N1_monomer_outdir,
+                                    srcname=processed_seuqences[monomer_sequence],
+                                    trgname=monomer_id)
+
+            N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
+            makedir_if_not_exists(N1_monomer_outdir_img)
+            img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path,
+                                                              outdir=N1_monomer_outdir_img)
+
+            N2_monomer_outdir = N2_outdir + '/' + monomer_id
+            makedir_if_not_exists(N2_monomer_outdir)
+
             # make a copy
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             N4_monomer_outdir = N4_outdir + '/' + monomer_id

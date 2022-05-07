@@ -131,6 +131,7 @@ class Quaternary_structure_evaluation_pipeline:
         if "multieva" in self.run_methods and "alphafold" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
             ranks = [i+1 for i in range(len(pairwise_ranking_df))]
+            pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
             print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
             print(pairwise_ranking_df)
