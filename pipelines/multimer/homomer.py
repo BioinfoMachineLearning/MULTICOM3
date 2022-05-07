@@ -121,8 +121,8 @@ def main(argv):
             makedir_if_not_exists(N5_monomer_outdir)
             final_dir = N5_monomer_outdir + '_final'
 
-            os.system(f"cp {result['apollo']} {N5_monomer_outdir}")
-            ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
+            os.system(f"cp {result['pairwise_af_avg']} {N5_monomer_outdir}")
+            ref_ranking = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
             refine_inputs = []
             for i in range(5):
                 pdb_name = ref_ranking.loc[i, 'model']
@@ -134,7 +134,7 @@ def main(argv):
                 refine_inputs += [refine_input]
 
             # run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-            #                                 outdir=N5_monomer_outdir, finaldir=final_dir, ranking_df=ref_ranking)
+            #                                 outdir=N5_monomer_outdir, finaldir=final_dir, prefix="refine")
 
             print("The refinement for the top-ranked monomer models has been finished!")
 
@@ -187,8 +187,8 @@ def main(argv):
 
                 old_ref_ranking = copy.deepcopy(ref_ranking)
                 refined_models = [old_ref_ranking.loc[i, 'model'] for i in range(5)]
-                ref_ranking = read_qa_txt_as_df(result['apollo'])  # apollo or average ranking or the three qas
-                os.system(f"cp {result['apollo']} {N7_monomer_outdir}")
+                ref_ranking = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
+                os.system(f"cp {result['pairwise_af_avg']} {N7_monomer_outdir}")
 
                 refine_inputs = []
                 for i in range(5):

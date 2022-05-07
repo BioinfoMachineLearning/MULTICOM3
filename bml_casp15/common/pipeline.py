@@ -64,27 +64,36 @@ def run_monomer_msa_pipeline(fasta, outdir, params):
 
 
 def copy_same_sequence_msas(srcdir, trgdir, srcname, trgname):
-    for msa in srcdir:
-        if msa.find('.a3m') > 0:
+    for msa in os.listdir(srcdir):
+        if msa.find('.a3m') > 0 or msa.find('.fasta') > 0:
+            print(f"cp {srcdir}/{msa} {trgdir}/{msa}")
             os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
             contents = open(f"{trgdir}/{msa}")
-            contents[0] = f">{trgname}"
-            fw = open(f"{trgdir}/{msa}")
-            fw.writelines(contents)
+            new_contents = []
+            for i, line in enumerate(contents):
+                if i == 0:
+                    new_contents += [f">{trgname}\n"]
+                else:
+                    new_contents += [line]
+            fw = open(f"{trgdir}/{msa}", 'w')
+            fw.writelines(new_contents)
         elif msa.find('.sto') > 0:
             os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
             contents = []
             for line in open(f"{trgdir}/{msa}"):
                 if line[:7] == "#=GF ID":
                     line = line.replace(srcname, trgname)
-                if line.split()[0] == srcname:
+
+                tmp = line.split()
+                if len(tmp) > 0 and tmp[0] == srcname:
                     line = line.replace(srcname, trgname)
                 contents += [line]
-            fw = open(f"{trgdir}/{msa}")
+            fw = open(f"{trgdir}/{msa}", 'w')
             fw.writelines(contents)
     cwd = os.getcwd()
     os.chdir(trgdir)
-    os.system(f"rename {srcname} {trgname}")
+    print(f"rename {srcname} {trgname} *")
+    os.system(f"rename {srcname} {trgname} *")
     os.chdir(cwd)
 
 
