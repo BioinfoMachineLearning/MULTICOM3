@@ -106,6 +106,8 @@ foldseek_rcsb_pdb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/database
 
 foldseek_rcsb_pdb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/pdb_database
 
+foldseek_rcsb_pdb_raw_database_dir = /home/bml_casp15/update_complex_dbs_newest/databases/RCSB_PDB/all_pdb_files
+
 ################################databases option#####################################
 
 smallbfd_database = /home/bml_casp15/BML_CASP15/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
