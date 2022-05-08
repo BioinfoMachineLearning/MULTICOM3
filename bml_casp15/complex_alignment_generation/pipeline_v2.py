@@ -176,6 +176,9 @@ def write_multimer_a3ms(pair_ids, alignments, outdir, method, is_homomers=False)
         monomer_alignment_files += [mon_alignment_file]
 
     if is_homomers:
+        max_seq_num = 50000
+        per_max_seq_num = int(max_seq_num - len(pair_ids)) / len(sequences_monomers)
+
         unpaired_sequences = {}
         homomers_sequences = {}
         for alignment, monomer_id in zip(alignments, sequences_monomers):
@@ -187,6 +190,8 @@ def write_multimer_a3ms(pair_ids, alignments, outdir, method, is_homomers=False)
             for seqindx, seq in enumerate(alignment.seqs):
                 if seq not in paired_sequences and alignment.ids[seqindx] not in paired_headers:
                     unpaired_sequences[monomer_id][alignment.ids[seqindx]] = seq
+                    if len(unpaired_sequences[monomer_id]) >= per_max_seq_num:
+                        break
 
         seqlen = len(alignments[0].main_seq)
         for monomer_id in unpaired_sequences:

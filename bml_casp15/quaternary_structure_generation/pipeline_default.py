@@ -9,33 +9,7 @@ from multiprocessing import Pool
 import pathlib
 
 
-def get_complex_alignments_by_method(monomers, concatenate_method, aln_dir):
-    a3ms_path = []
-    for monomer in monomers:
-        if concatenate_method == 'uniclust_oxmatch_a3m':
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniclust30.a3m"
-            if not os.path.exists(monomer_a3m):
-                raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
-            a3ms_path += [monomer_a3m]
-        elif concatenate_method.find('_uniref_a3m') > 0:
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref30.a3m"
-            if not os.path.exists(monomer_a3m):
-                raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
-            a3ms_path += [monomer_a3m]
-        elif concatenate_method.find('_uniref_sto') > 0:
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"
-            if not os.path.exists(monomer_a3m):
-                raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
-            a3ms_path += [monomer_a3m]
-        elif concatenate_method.find('_uniprot_sto') > 0:
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniprot.sto"
-            if not os.path.exists(monomer_a3m):
-                raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
-            a3ms_path += [monomer_a3m]
-    return a3ms_path
-
-
-class Quaternary_structure_prediction_pipeline:
+class Quaternary_structure_prediction_pipeline_default:
 
     def __init__(self, params):  # , run_methods):
 
