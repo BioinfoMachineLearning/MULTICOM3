@@ -398,7 +398,7 @@ def main(argv):
             msa_paths[chain_id] = dict(
                 paired_msa=f"{N11_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.paired.a3m",
                 monomer_msa=f"{N11_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
-
+        print(msa_paths)
         refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
                                                                                     fasta_path=FLAGS.fasta_path,
                                                                                     pdb_path=N11_outdir + '/pdb/' + pdb_name,
