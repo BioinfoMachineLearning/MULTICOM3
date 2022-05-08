@@ -63,33 +63,15 @@ if __name__ == '__main__':
     all_models = []
     all_alignments = []
 
-    egnn_ranking = qa_dir + '/pairwise_af_avg.ranking'
+    egnn_ranking = qa_dir + '/egnn_selected.csv'
     alignment_depth = []
     pairwise_ranking_df = pd.read_csv(egnn_ranking)
     ranked_modeles = []
-    for i in range(2):
-        model = pairwise_ranking_df.loc[i, 'model']
+    for i in range(len(pairwise_ranking_df)):
+        model = pairwise_ranking_df.loc[i, 'selected_models']
         msa = qa_dir + '/msa/' + pairwise_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines())/2]
         ranked_modeles += [model]
-
-    model_count = 3
-    top1_model = f"{qa_dir}/pdb/{pairwise_ranking_df.loc[0, 'model']}"
-    for i in range(2, len(pairwise_ranking_df)):
-        model = pairwise_ranking_df.loc[i, 'model']
-        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
-                                        f"{qa_dir}/pdb/{model}",
-                                        top1_model,
-                                        args.tmpdir)
-        if tmscore < 0.98:
-            ranked_modeles += [model]
-            msa = qa_dir + '/msa/' + pairwise_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
-            alignment_depth += [len(open(msa).readlines())/2]
-            model_count += 1
-            if model_count > 5:
-                break
-        else:
-            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
 
     print(f"\negnn models: {ranked_modeles}, {alignment_depth}\n")
     all_models += ranked_modeles
@@ -103,13 +85,12 @@ if __name__ == '__main__':
         print("Rerunning the evaluation pipeline")
         refine_dir = args.workdir + '/N2_monomer_structure_refinement_avg_final/'
 
-    refine_ranking = refine_dir + 'final_ranking.csv'
-
+    refine_ranking = refine_dir + 'refine_selected.csv'
     refine_ranking_df = pd.read_csv(refine_ranking)
     ranked_modeles = []
     alignment_depth = []
     for i in range(5):
-        ranked_modeles += [refine_ranking_df.loc[i, 'model']]
+        ranked_modeles += [refine_ranking_df.loc[i, 'selected_models']]
         msa = refine_dir + '/' + refine_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines()) / 2]
 
@@ -117,47 +98,44 @@ if __name__ == '__main__':
     all_models += ranked_modeles
     all_alignments += alignment_depth
 
-    deep_ranking = qa_dir + '/alphafold_ranking.csv'
-    alphafold_ranking_df = pd.read_csv(deep_ranking)
+    refine_dir = args.workdir + '/N5_monomer_structure_refinement_avg_final/'
+    if os.path.exists(args.workdir + '/N7_monomer_structure_refinement_avg_final/'):
+        refine_dir = args.workdir + '/N7_monomer_structure_refinement_avg_final/'
 
+    if not os.path.exists(refine_dir):
+        print("Rerunning the evaluation pipeline")
+        refine_dir = args.workdir + '/N2_monomer_structure_refinement_avg_final/'
+
+    refine_ranking = refine_dir + 'refine_selected.csv'
+    refine_ranking_df = pd.read_csv(refine_ranking)
     ranked_modeles = []
     alignment_depth = []
-    for i in range(2):
-        model = alphafold_ranking_df.loc[i, 'model']
-        msa = qa_dir + '/msa/' + alphafold_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
-        alignment_depth += [len(open(msa).readlines())/2]
+    for i in range(5):
+        ranked_modeles += [refine_ranking_df.loc[i, 'selected_models']]
+        msa = refine_dir + '/' + refine_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
+        alignment_depth += [len(open(msa).readlines()) / 2]
+
+    deep_ranking = qa_dir + '/deep_selected.csv'
+    alignment_depth = []
+    pairwise_ranking_df = pd.read_csv(deep_ranking)
+    ranked_modeles = []
+    for i in range(len(pairwise_ranking_df)):
+        model = pairwise_ranking_df.loc[i, 'selected_models']
+        msa = qa_dir + '/msa/' + pairwise_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
+        alignment_depth += [len(open(msa).readlines()) / 2]
         ranked_modeles += [model]
-
-    model_count = 3
-    top1_model = f"{qa_dir}/pdb/{alphafold_ranking_df.loc[0, 'model']}"
-    for i in range(2, len(alphafold_ranking_df)):
-        model = alphafold_ranking_df.loc[i, 'model']
-        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
-                                        f"{qa_dir}/pdb/{model}",
-                                        top1_model,
-                                        args.tmpdir)
-
-        if tmscore < 0.98:
-            ranked_modeles += [model]
-            msa = qa_dir + '/msa/' + alphafold_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
-            alignment_depth += [len(open(msa).readlines())/2]
-            model_count += 1
-            if model_count > 5:
-                break
-        else:
-            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
 
     print(f"\ndeep models: {ranked_modeles}, {alignment_depth}\n")
     all_models += ranked_modeles
     all_alignments += alignment_depth
 
     refine_qa_dir = args.workdir + '/N5_monomer_structure_refinement_af_final/'
-    qa_ranking = refine_qa_dir + 'final_ranking.csv'
+    qa_ranking = refine_qa_dir + 'qa_selected.csv'
     qa_ranking_df = pd.read_csv(qa_ranking)
     ranked_modeles = []
     alignment_depth = []
     for i in range(5):
-        ranked_modeles += [qa_ranking_df.loc[i, 'model']]
+        ranked_modeles += [qa_ranking_df.loc[i, 'selected_models']]
         msa = refine_qa_dir + '/' + qa_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines()) / 2]
     print(f"\nqa models: {ranked_modeles}\n")
