@@ -106,6 +106,20 @@ def main(argv):
                                                              outdir=N3_monomer_outdir):
                 print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
+            while not os.path.exists(img_msa):
+                # sleep for 5 mins
+                time.sleep(300)
+
+            print("Found img alignment, start to run monomer model generation again")
+
+            if not run_monomer_structure_generation_pipeline(params=params,
+                                                             run_methods=['img', 'img+seq_template'],
+                                                             fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                             alndir=N1_monomer_outdir_img,
+                                                             templatedir=N2_monomer_outdir,
+                                                             outdir=N3_monomer_outdir):
+                print("Program failed in step 3: monomer structure generation")
+
             N4_monomer_outdir = N4_outdir + '/' + monomer_id
             makedir_if_not_exists(N4_monomer_outdir)
             result = run_monomer_evaluation_pipeline(params=params,
@@ -137,83 +151,6 @@ def main(argv):
                                             outdir=N5_monomer_outdir, finaldir=final_dir, prefix="refine")
 
             print("The refinement for the top-ranked monomer models has been finished!")
-
-            default_alphafold_msa = N3_monomer_outdir + '/default/msas/monomer_final.a3m'
-
-            if len(open(default_alphafold_msa).readlines()) < 200 * 2:
-                while not os.path.exists(img_msa):
-                    # sleep for 5 mins
-                    time.sleep(300)
-
-                print("Found img alignment, start to run monomer model generation again")
-
-                if not run_monomer_structure_generation_pipeline(params=params,
-                                                                 run_methods=['img', 'img+seq_template'],
-                                                                 fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                                 alndir=N1_monomer_outdir_img,
-                                                                 templatedir=N2_monomer_outdir,
-                                                                 outdir=N3_monomer_outdir):
-                    print("Program failed in step 3: monomer structure generation")
-
-                print("6. Start to evaluate monomer models")
-
-                N6_monomer_outdir = N6_outdir + '/' + monomer_id
-
-                makedir_if_not_exists(N6_monomer_outdir)
-
-                result = run_monomer_evaluation_pipeline(params=params,
-                                                         targetname=monomer_id,
-                                                         fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                         input_monomer_dir=N3_monomer_outdir,
-                                                         outputdir=N6_monomer_outdir, generate_egnn_models=True)
-
-                if result is None:
-                    raise RuntimeError("Program failed in step 6: monomer model evaluation")
-                monomer_qas_res[monomer_id] = result
-
-                print("The evaluation for monomer models has been finished!")
-
-                print(
-                    "#################################################################################################")
-
-                print(
-                    "#################################################################################################")
-
-                print("7. Start to refine monomer models based on the qa rankings")
-
-                N7_monomer_outdir = N7_outdir + '/' + monomer_id
-
-                makedir_if_not_exists(N7_monomer_outdir)
-
-                old_ref_ranking = copy.deepcopy(ref_ranking)
-                refined_models = [old_ref_ranking.loc[i, 'model'] for i in range(5)]
-                ref_ranking = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
-                os.system(f"cp {result['pairwise_af_avg']} {N7_monomer_outdir}")
-
-                refine_inputs = []
-                for i in range(5):
-                    pdb_name = ref_ranking.loc[i, 'model']
-                    if pdb_name not in refined_models:
-                        refine_input = iterative_refine_pipeline.refinement_input(
-                            fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                            pdb_path=N6_monomer_outdir + '/pdb/' + pdb_name,
-                            pkl_path=N6_monomer_outdir + '/pkl/' + pdb_name.replace(
-                                '.pdb', '.pkl'),
-                            msa_path=N6_monomer_outdir + '/msa/' + pdb_name.replace(
-                                '.pdb', '.a3m'))
-                        refine_inputs += [refine_input]
-                    else:
-                        os.system(f"cp -r {N5_monomer_outdir}/{pdb_name} {N7_monomer_outdir}")
-
-                final_dir = N7_monomer_outdir + '_final'
-                run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-                                                outdir=N7_monomer_outdir,
-                                                finaldir=final_dir)
-
-                print("The refinement for the top-ranked monomer models has been finished!")
-
-            else:
-                print("The alphafold monomer alignment has more than 200 sequences, stop waiting for img alignment")
 
             processed_seuqences[monomer_sequence] = monomer_id
 
@@ -252,18 +189,6 @@ def main(argv):
 
             if not os.path.exists(N5_monomer_outdir):
                 os.system(f"cp -r {N5_outdir}/{processed_seuqences[monomer_sequence]} {N5_monomer_outdir}")
-
-            N6_monomer_outdir = N6_outdir + '/' + monomer_id
-            if not os.path.exists(N6_monomer_outdir):
-                if os.path.exists(N6_outdir + '/' + processed_seuqences[monomer_sequence]):
-                    os.system(f"cp -r {N6_outdir}/{processed_seuqences[monomer_sequence]} {N6_monomer_outdir}")
-                    for msa in os.listdir(N6_monomer_outdir + '/msa'):
-                        os.system(f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' {N6_monomer_outdir}/msa/{msa}")
-
-            N7_monomer_outdir = N7_outdir + '/' + monomer_id
-            if not os.path.exists(N7_monomer_outdir):
-                if os.path.exists(N7_outdir + '/' + processed_seuqences[monomer_sequence]):
-                    os.system(f"cp -r {N7_outdir}/{processed_seuqences[monomer_sequence]} {N7_monomer_outdir}")
 
     print("#################################################################################################")
 

@@ -25,7 +25,7 @@ def search_templates(params, inpdb, outdir):
     foldseek_pdb_database = params['foldseek_rcsb_pdb_database']
     foldseek_runner = Foldseek(binary_path=foldseek_program,
                                databases=[foldseek_pdb_database])
-    return foldseek_runner.query(pdb=inpdb, outdir=outdir, tmscore_threshold=0.5)
+    return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000, tmscore_threshold=0.5)
 
 
 def main(argv):

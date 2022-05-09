@@ -94,6 +94,8 @@ foldseek_pdb_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new
 
 foldseek_pdb_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/complex_pdb
 
+foldseek_pdb_raw_database_dir = /home/bml_casp15/update_complex_dbs_newest/databases/Complex/all_pdb_files
+
 foldseek_af_database = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/af_db
 
 foldseek_af_database_dir = /home/bml_casp15/BML_CASP15/tools/foldseek/databases_new/af_pdbs
