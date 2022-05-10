@@ -69,7 +69,7 @@ if __name__ == '__main__':
     ranked_modeles = []
     for i in range(len(pairwise_ranking_df)):
         model = pairwise_ranking_df.loc[i, 'selected_models']
-        msa = qa_dir + '/msa/' + pairwise_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
+        msa = qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines())/2]
         ranked_modeles += [model]
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     alignment_depth = []
     for i in range(5):
         ranked_modeles += [refine_ranking_df.loc[i, 'selected_models']]
-        msa = refine_dir + '/' + refine_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
+        msa = refine_dir + '/' + refine_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines()) / 2]
 
     print(f"\nrefine models: {ranked_modeles}\n")
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     alignment_depth = []
     for i in range(5):
         ranked_modeles += [refine_ranking_df.loc[i, 'selected_models']]
-        msa = refine_dir + '/' + refine_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
+        msa = refine_dir + '/' + refine_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines()) / 2]
 
     deep_ranking = qa_dir + '/deep_selected.csv'
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     ranked_modeles = []
     for i in range(len(pairwise_ranking_df)):
         model = pairwise_ranking_df.loc[i, 'selected_models']
-        msa = qa_dir + '/msa/' + pairwise_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
+        msa = qa_dir + '/msa/' + pairwise_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines()) / 2]
         ranked_modeles += [model]
 
@@ -131,16 +131,17 @@ if __name__ == '__main__':
 
     refine_qa_dir = args.workdir + '/N5_monomer_structure_refinement_af_final/'
     qa_ranking = refine_qa_dir + 'qa_selected.csv'
-    qa_ranking_df = pd.read_csv(qa_ranking)
-    ranked_modeles = []
-    alignment_depth = []
-    for i in range(5):
-        ranked_modeles += [qa_ranking_df.loc[i, 'selected_models']]
-        msa = refine_qa_dir + '/' + qa_ranking_df.loc[i, 'model'].replace('.pdb', '.a3m')
-        alignment_depth += [len(open(msa).readlines()) / 2]
-    print(f"\nqa models: {ranked_modeles}\n")
-    all_models += ranked_modeles
-    all_alignments += alignment_depth
+    if os.path.exists(qa_ranking):
+        qa_ranking_df = pd.read_csv(qa_ranking)
+        ranked_modeles = []
+        alignment_depth = []
+        for i in range(5):
+            ranked_modeles += [qa_ranking_df.loc[i, 'selected_models']]
+            msa = refine_qa_dir + '/' + qa_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
+            alignment_depth += [len(open(msa).readlines()) / 2]
+        print(f"\nqa models: {ranked_modeles}\n")
+        all_models += ranked_modeles
+        all_alignments += alignment_depth
 
     df = pd.DataFrame({'model': all_models, 'alignment_depth': all_alignments})
     print(df)
