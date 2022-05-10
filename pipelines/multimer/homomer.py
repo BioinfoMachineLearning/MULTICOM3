@@ -82,7 +82,7 @@ def main(argv):
 
             N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
             makedir_if_not_exists(N1_monomer_outdir_img)
-            img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path,
+            img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params, fasta=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                                                               outdir=N1_monomer_outdir_img)
 
             N2_monomer_outdir = N2_outdir + '/' + monomer_id
