@@ -5,6 +5,7 @@ from bml_casp15.common.util import check_file, check_dir, check_dirs, makedir_if
 from bml_casp15.monomer_alignment_generation.alignment import read_fasta, write_fasta
 from bml_casp15.monomer_alignment_generation.pipeline import *
 from bml_casp15.monomer_structure_generation.pipeline import *
+from bml_casp15.monomer_structure_generation.pipeline_v2 import *
 from bml_casp15.monomer_structure_evaluation.pipeline import *
 from bml_casp15.monomer_templates_search.sequence_based_pipeline_pdb import *
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
@@ -13,8 +14,10 @@ from bml_casp15.complex_alignment_generation.pipeline_v2 import *
 from bml_casp15.complex_templates_search import sequence_based_pipeline_complex_pdb, \
     sequence_based_pipeline_pdb, sequence_based_pipeline, structure_based_pipeline_v2
 from bml_casp15.quaternary_structure_generation.pipeline import *
+from bml_casp15.quaternary_structure_generation.pipeline_v2 import *
 from bml_casp15.quaternary_structure_generation.pipeline_default import *
 from bml_casp15.quaternary_structure_generation.pipeline_homo import *
+from bml_casp15.quaternary_structure_generation.pipeline_homo_v2 import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
 from bml_casp15.quaternary_structure_evaluation.pipeline import *
 from bml_casp15.common.protein import *
@@ -128,6 +131,19 @@ def run_monomer_template_search_pipeline(params, targetname, sequence, a3m, outd
 def run_monomer_structure_generation_pipeline(params, run_methods, fasta_path, alndir, templatedir, outdir):
     try:
         pipeline = Monomer_structure_prediction_pipeline(params, run_methods=run_methods)
+        pipeline.process_single(fasta_path=fasta_path,
+                                alndir=alndir,
+                                template_dir=templatedir,
+                                outdir=outdir)
+    except Exception as e:
+        print(e)
+        return False
+    return True
+
+
+def run_monomer_structure_generation_pipeline_v2(params, run_methods, fasta_path, alndir, templatedir, outdir):
+    try:
+        pipeline = Monomer_structure_prediction_pipeline_v2(params, run_methods=run_methods)
         pipeline.process_single(fasta_path=fasta_path,
                                 alndir=alndir,
                                 template_dir=templatedir,
@@ -472,6 +488,24 @@ def run_quaternary_structure_generation_pipeline(params, fasta_path, chain_id_ma
     return True
 
 
+def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
+                                                    template_dir,
+                                                    monomer_model_dir, output_dir):
+    try:
+        pipeline = Quaternary_structure_prediction_pipeline_v2(params)
+        result = pipeline.process(fasta_path=fasta_path,
+                                  chain_id_map=chain_id_map,
+                                  aln_dir=aln_dir,
+                                  complex_aln_dir=complex_aln_dir,
+                                  template_dir=template_dir,
+                                  monomer_model_dir=monomer_model_dir,
+                                  output_dir=output_dir)
+    except Exception as e:
+        print(e)
+        return False
+    return True
+
+
 def run_quaternary_structure_generation_pipeline_default(params, fasta_path, chain_id_map, aln_dir, output_dir):
     try:
         pipeline = Quaternary_structure_prediction_pipeline_default(params)
@@ -490,6 +524,24 @@ def run_quaternary_structure_generation_homo_pipeline(params, fasta_path, chain_
                                                       monomer_model_dir, output_dir):
     try:
         pipeline = Quaternary_structure_prediction_homo_pipeline(params)
+        result = pipeline.process(fasta_path=fasta_path,
+                                  chain_id_map=chain_id_map,
+                                  aln_dir=aln_dir,
+                                  complex_aln_dir=complex_aln_dir,
+                                  template_dir=template_dir,
+                                  monomer_model_dir=monomer_model_dir,
+                                  output_dir=output_dir)
+    except Exception as e:
+        print(e)
+        return False
+    return True
+
+
+def run_quaternary_structure_generation_homo_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
+                                                         template_dir,
+                                                         monomer_model_dir, output_dir):
+    try:
+        pipeline = Quaternary_structure_prediction_homo_pipeline_v2(params)
         result = pipeline.process(fasta_path=fasta_path,
                                   chain_id_map=chain_id_map,
                                   aln_dir=aln_dir,
