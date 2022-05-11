@@ -232,7 +232,7 @@ def main(argv):
 
     print("#################################################################################################")
 
-    processed_seuqences = []
+    processed_seuqences = {}
 
     for chain_id in chain_id_map:
         monomer_id = chain_id_map[chain_id].description
@@ -245,16 +245,20 @@ def main(argv):
             if len(open(default_alphafold_msa).readlines()) < 500 * 2:
                 while not os.path.exists(img_msas[chain_id]):
                     # sleep for 5 mins
+                    print("waiting for img alignment")
                     time.sleep(300)
 
                 print("Found img alignment, start to run monomer model generation again")
 
+                os.system(f"cp {N1_outdir}/{monomer_id}/{monomer_id}_uniref90.sto "
+                          f"{N1_outdir}_img/{monomer_id}")
+
                 if not run_monomer_structure_generation_pipeline(params=params,
                                                                  run_methods=['img', 'img+seq_template'],
                                                                  fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                                 alndir=N1_monomer_outdir_img,
-                                                                 templatedir=N2_monomer_outdir,
-                                                                 outdir=N3_monomer_outdir):
+                                                                 alndir=N1_outdir + '_img/' + monomer_id,
+                                                                 templatedir=N2_outdir + '/' + monomer_id,
+                                                                 outdir=N3_outdir + '/' + monomer_id):
                     print("Program failed in step 3: monomer structure generation")
 
                 print("6. Start to evaluate monomer models")
@@ -266,7 +270,7 @@ def main(argv):
                 result = run_monomer_evaluation_pipeline(params=params,
                                                          targetname=monomer_id,
                                                          fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                         input_monomer_dir=N3_monomer_outdir,
+                                                         input_monomer_dir=N3_outdir + '/' + monomer_id,
                                                          outputdir=N6_monomer_outdir, generate_egnn_models=True)
 
                 if result is None:
@@ -305,12 +309,12 @@ def main(argv):
                                 '.pdb', '.a3m'))
                         refine_inputs += [refine_input]
                     else:
-                        os.system(f"cp -r {N5_monomer_outdir}/{pdb_name} {N7_monomer_outdir}")
+                        os.system(f"cp -r {N5_outdir}/{monomer_id}/{pdb_name.replace('.pdb', '')} {N7_monomer_outdir}")
 
                 final_dir = N7_monomer_outdir + '_final'
                 run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
                                                 outdir=N7_monomer_outdir,
-                                                finaldir=final_dir)
+                                                finaldir=final_dir, prefix="refine")
 
                 print("The refinement for the top-ranked monomer models has been finished!")
 
