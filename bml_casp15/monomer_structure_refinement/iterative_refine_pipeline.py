@@ -114,13 +114,13 @@ class Monomer_refinement_model_selection:
             selected_df.to_csv(outdir + f'/{prefix}_selected.csv')
 
         else:
-            select_models = []
+            selected_models = []
             for i in range(5):
                 pdb_name = df.loc[i, 'model']
                 os.system(f"cp {outdir}/{pdb_name} {outdir}/{prefix}{i + 1}.pdb")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/{prefix}{i + 1}.pkl")
                 os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.a3m')} {outdir}/{prefix}{i + 1}.a3m")
-                select_models += [pdb_name]
+                selected_models += [pdb_name]
             selected_df = pd.DataFrame({'selected_models': selected_models})
             selected_df.to_csv(outdir + f'/{prefix}_selected.csv')
 
