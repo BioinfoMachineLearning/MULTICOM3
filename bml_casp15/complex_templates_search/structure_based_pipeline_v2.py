@@ -169,7 +169,7 @@ class Complex_structure_based_template_search_pipeline:
 
                 seen_templates_sequences = [
                     f"{prev_df_sorted_filtered.loc[j, f'template{i + 1}']}_" \
-                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}']}" for j in keep_indices]
+                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}']}" for j in range(len(prev_df_sorted_filtered))]
 
                 for j in range(len(monomer_template_results[i])):
                     if row_index > 50:
@@ -330,7 +330,7 @@ class Complex_structure_based_template_search_pipeline:
 
                 seen_templates_sequences = [
                     f"{prev_df_sorted_filtered.loc[j, f'template{i + 1}']}_" \
-                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}']}" for j in keep_indices]
+                    f"{prev_df_sorted_filtered.loc[j, f'aln_temp{i + 1}']}" for j in range(len(prev_df_sorted_filtered))]
 
                 for j in range(len(monomer_template_results[i])):
                     if row_index > 50:
