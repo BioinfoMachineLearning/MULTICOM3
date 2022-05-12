@@ -7,7 +7,7 @@ from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_r
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
 from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_template_search_pipeline, \
-    run_monomer_structure_generation_pipeline, run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
+    run_monomer_structure_generation_pipeline_v2, run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
     run_concatenate_dimer_msas_pipeline, run_complex_template_search_pipeline, \
     run_quaternary_structure_generation_homo_pipeline, \
     run_quaternary_structure_generation_pipeline_foldseek, run_multimer_refinement_pipeline, \
@@ -93,15 +93,15 @@ def main(argv):
 
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             makedir_if_not_exists(N3_monomer_outdir)
-            if not run_monomer_structure_generation_pipeline(params=params,
-                                                             run_methods=['default', 'default+seq_template',
-                                                                          'default_uniref30',
-                                                                          'original', 'original+seq_template',
-                                                                          'colabfold', 'colabfold+seq_template'],
-                                                             fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                             alndir=N1_monomer_outdir,
-                                                             templatedir=N2_monomer_outdir,
-                                                             outdir=N3_monomer_outdir):
+            if not run_monomer_structure_generation_pipeline_v2(params=params,
+                                                                run_methods=['default', 'default+seq_template',
+                                                                             'default_uniref30',
+                                                                             'original', 'original+seq_template',
+                                                                             'colabfold', 'colabfold+seq_template'],
+                                                                fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                alndir=N1_monomer_outdir,
+                                                                templatedir=N2_monomer_outdir,
+                                                                outdir=N3_monomer_outdir):
                 print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
             processed_seuqences[monomer_sequence] = monomer_id
@@ -204,12 +204,12 @@ def main(argv):
                 print("Found img alignment, start to run monomer model generation again")
                 os.system(f"cp {N1_outdir}/{monomer_id}/{monomer_id}_uniref90.sto "
                           f"{N1_outdir}_img/{monomer_id}")
-                if not run_monomer_structure_generation_pipeline(params=params,
-                                                                 run_methods=['img', 'img+seq_template'],
-                                                                 fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                                 alndir=N1_outdir + '_img/' + monomer_id,
-                                                                 templatedir=N2_outdir + '/' + monomer_id,
-                                                                 outdir=N3_outdir + '/' + monomer_id):
+                if not run_monomer_structure_generation_pipeline_v2(params=params,
+                                                                    run_methods=['img', 'img+seq_template'],
+                                                                    fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                    alndir=N1_outdir + '_img/' + monomer_id,
+                                                                    templatedir=N2_outdir + '/' + monomer_id,
+                                                                    outdir=N3_outdir + '/' + monomer_id):
                     print("Program failed in step 3: monomer structure generation")
                 run_img = True
                 processed_seuqences[monomer_sequence] = monomer_id
@@ -284,19 +284,19 @@ def main(argv):
             processed_seuqences[monomer_sequence] = monomer_id
 
         # else:
-            # make a copy
-            # N7_monomer_outdir = N7_outdir + '/' + monomer_id
-            # if not os.path.exists(N7_monomer_outdir):
-            #     if os.path.exists(N7_outdir + '/' + processed_seuqences[monomer_sequence]):
-            #         os.system(f"cp -r {N7_outdir}/{processed_seuqences[monomer_sequence]} {N7_monomer_outdir}")
-            #         for msa in os.listdir(N7_monomer_outdir + '/msa'):
-            #             os.system(
-            #                 f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' {N7_monomer_outdir}/msa/{msa}")
+        # make a copy
+        # N7_monomer_outdir = N7_outdir + '/' + monomer_id
+        # if not os.path.exists(N7_monomer_outdir):
+        #     if os.path.exists(N7_outdir + '/' + processed_seuqences[monomer_sequence]):
+        #         os.system(f"cp -r {N7_outdir}/{processed_seuqences[monomer_sequence]} {N7_monomer_outdir}")
+        #         for msa in os.listdir(N7_monomer_outdir + '/msa'):
+        #             os.system(
+        #                 f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' {N7_monomer_outdir}/msa/{msa}")
 
-            # N7_monomer_outdir = N7_outdir + '/' + monomer_id
-            # if not os.path.exists(N7_monomer_outdir):
-            #     if os.path.exists(N7_outdir + '/' + processed_seuqences[monomer_sequence]):
-            #         os.system(f"cp -r {N7_outdir}/{processed_seuqences[monomer_sequence]} {N7_monomer_outdir}")
+        # N7_monomer_outdir = N7_outdir + '/' + monomer_id
+        # if not os.path.exists(N7_monomer_outdir):
+        #     if os.path.exists(N7_outdir + '/' + processed_seuqences[monomer_sequence]):
+        #         os.system(f"cp -r {N7_outdir}/{processed_seuqences[monomer_sequence]} {N7_monomer_outdir}")
 
     print("#################################################################################################")
 
@@ -328,7 +328,8 @@ def main(argv):
             os.system(f"cp {qa_result_dir}/{monomer_id}/pdb/{pdb_name} {monomer_pdb_dir}/{pdb_name}")
 
             new_contents = []
-            for idx, line in enumerate(open(f"{qa_result_dir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}").readlines()):
+            for idx, line in enumerate(
+                    open(f"{qa_result_dir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}").readlines()):
                 if idx == 0:
                     new_contents += [f">{monomer_id}\n"]
                 else:

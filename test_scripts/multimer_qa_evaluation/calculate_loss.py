@@ -65,7 +65,7 @@ if __name__ == '__main__':
     gdt_loss_and_corr = {}
     lddt_loss_and_corr = {}
 
-    for method in ['af', 'bfactor', 'foldseek', 'multieva']:#, 'enqa', 'dproq_dockq', 'dproq_evalue']:
+    for method in ['af', 'bfactor', 'multieva', 'af_pairwise_avg', 'bfactor_pairwise_avg']:#, 'foldseek', 'enqa', 'dproq_dockq', 'dproq_evalue']:
         gdt_loss_and_corr[method] = dict(corr=[],
                                          loss=[])
         lddt_loss_and_corr[method] = dict(corr=[],
@@ -83,8 +83,10 @@ if __name__ == '__main__':
                         'bfactor': f"{args.inputdir}/{target}/bfactor_ranking.csv",
                         #'dproq_dockq': f"{args.inputdir}/{target}/dproq_ranking_dockq.csv",
                         #'dproq_evalue': f"{args.inputdir}/{target}/dproq_ranking_evalue.csv",
-                        'foldseek': f"{args.inputdir}/{target}/foldseek_qa.csv",
-                        'multieva': f"{args.inputdir}/{target}/multieva.csv"}
+                        #'foldseek': f"{args.inputdir}/{target}/foldseek_qa.csv",
+                        'multieva': f"{args.inputdir}/{target}/multieva.csv",
+                        "af_pairwise_avg": f"{args.inputdir}/{target}/pairwise_af_avg.ranking",
+                        "bfactor_pairwise_avg": f"{args.inputdir}/{target}/pairwise_bfactor_avg.ranking"}
                         #'enqa': f"{args.inputdir}/{target}/enqa_ranking.csv"}
 
         find_all_res = True
@@ -130,6 +132,10 @@ if __name__ == '__main__':
             elif method == 'enqa':
                 global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
                                                       ranked_field='score',
+                                                      is_csv=True)
+            elif method == "af_pairwise_avg" or method == "bfactor_pairwise_avg":
+                global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
+                                                      ranked_field='avg_score',
                                                       is_csv=True)
             else:
                 global_scores = convert_ranking_to_df(infile=ranking_csvs[method],
