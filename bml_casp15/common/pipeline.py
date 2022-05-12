@@ -6,7 +6,7 @@ from bml_casp15.monomer_alignment_generation.alignment import read_fasta, write_
 from bml_casp15.monomer_alignment_generation.pipeline import *
 from bml_casp15.monomer_structure_generation.pipeline import *
 from bml_casp15.monomer_structure_generation.pipeline_v2 import *
-from bml_casp15.monomer_structure_evaluation.pipeline import *
+from bml_casp15.monomer_structure_evaluation.pipeline_sep import *
 from bml_casp15.monomer_templates_search.sequence_based_pipeline_pdb import *
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
@@ -16,7 +16,7 @@ from bml_casp15.complex_templates_search import sequence_based_pipeline_complex_
 from bml_casp15.quaternary_structure_generation.pipeline import *
 from bml_casp15.quaternary_structure_generation.pipeline_v2 import *
 from bml_casp15.quaternary_structure_generation.pipeline_default import *
-from bml_casp15.quaternary_structure_generation.pipeline_homo import *
+# from bml_casp15.quaternary_structure_generation.pipeline_homo import *
 from bml_casp15.quaternary_structure_generation.pipeline_homo_v2 import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
 from bml_casp15.quaternary_structure_evaluation.pipeline import *
@@ -24,6 +24,7 @@ from bml_casp15.common.protein import *
 import pandas as pd
 import numpy as np
 from bml_casp15.monomer_structure_refinement.util import cal_tmscore
+from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
 
 
 def run_monomer_msa_pipeline(fasta, outdir, params):
@@ -154,107 +155,157 @@ def run_monomer_structure_generation_pipeline_v2(params, run_methods, fasta_path
     return True
 
 
-def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monomer_dir, outputdir,
-                                    chainid="", unrelaxed_chainid="", input_multimer_dir="",
-                                    generate_egnn_models=False, tmscore_program=""):
+def select_models_monomer_only(qa_result, outputdir, params):
+    if "pairwise_af_avg" not in qa_result:
+        raise Exception(
+            f"Cannot find pairwise ranking file for generating multicom-egnn models: {qa_result['pairwise_af_avg']}")
+
+    selected_models = []
+    pairwise_ranking_df = pd.read_csv(qa_result["pairwise_af_avg"])
+    for i in range(2):
+        model = pairwise_ranking_df.loc[i, 'model']
+        os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{i + 1}.pdb")
+        selected_models += [model]
+
+    egnn_model_count = 3
+    egnn_added_models = []
+    top1_model = f"{outputdir}/pdb/{pairwise_ranking_df.loc[0, 'model']}"
+    for i in range(2, len(pairwise_ranking_df)):
+        model = pairwise_ranking_df.loc[i, 'model']
+        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
+                                        f"{outputdir}/pdb/{model}",
+                                        top1_model,
+                                        outputdir + '/tmp')
+        if tmscore < 0.98:
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{egnn_model_count}.pdb")
+            egnn_added_models += [model]
+            selected_models += [model]
+            egnn_model_count += 1
+            if egnn_model_count > 5:
+                break
+        else:
+            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
+
+    if egnn_model_count <= 5:
+        for i in range(2, len(pairwise_ranking_df)):
+            model = pairwise_ranking_df.loc[i, 'model']
+            if model in egnn_added_models:
+                continue
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{egnn_model_count}.pdb")
+            egnn_added_models += [model]
+            egnn_model_count += 1
+            selected_models += [model]
+            if egnn_model_count > 5:
+                break
+    selected_df = pd.DataFrame({'selected_models': selected_models})
+    selected_df.to_csv(outputdir + '/egnn_selected.csv')
+
+    selected_models = []
+    alphafold_ranking_df = pd.read_csv(qa_result["alphafold"])
+    for i in range(2):
+        model = alphafold_ranking_df.loc[i, 'model']
+        os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{i + 1}.pdb")
+        selected_models += [model]
+
+    deep_model_count = 3
+    deep_added_models = []
+    top1_model = f"{outputdir}/pdb/{alphafold_ranking_df.loc[0, 'model']}"
+    for i in range(2, len(alphafold_ranking_df)):
+        model = alphafold_ranking_df.loc[i, 'model']
+        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
+                                        f"{outputdir}/pdb/{model}",
+                                        top1_model,
+                                        outputdir + '/tmp')
+        if tmscore < 0.98:
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{deep_model_count}.pdb")
+            deep_model_count += 1
+            deep_added_models += [model]
+            selected_models += [model]
+            if deep_model_count > 5:
+                break
+        else:
+            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
+
+    if deep_model_count <= 5:
+        for i in range(2, len(alphafold_ranking_df)):
+            model = alphafold_ranking_df.loc[i, 'model']
+            if model in deep_added_models:
+                continue
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{deep_model_count}.pdb")
+            egnn_added_models += [model]
+            deep_model_count += 1
+            selected_models += [model]
+            if deep_model_count > 5:
+                break
+    selected_df = pd.DataFrame({'selected_models': selected_models})
+    selected_df.to_csv(outputdir + '/deep_selected.csv')
+
+
+def select_models_with_multimer(qa_result, outputdir):
+    if "pairwise_af_avg" not in qa_result:
+        raise Exception(
+            f"Cannot find pairwise ranking file for generating multicom-egnn models: {qa_result['pairwise_af_avg']}")
+
+    # pdbs_from_monomer = [qa_result['pairwise_af_avg_monomer'].loc[i, 'model']
+    #                      for i in range(len(qa_result['pairwise_af_avg_monomer']))]
+    #
+    # pdbs_from_multimer = [qa_result['pairwise_af_avg_multimer'].loc[i, 'model']
+    #                       for i in range(len(qa_result['pairwise_af_avg_multimer']))]
+    pairwise_af_avg_multimer_ranking = pd.read_csv(qa_result['pairwise_af_avg_multimer'])
+    pairwise_af_avg_ranking = pd.read_csv(qa_result['pairwise_af_avg'])
+    selected_multimer_models = [pairwise_af_avg_multimer_ranking.loc[i, 'model'] for i in range(3)]
+    for i in range(len(pairwise_af_avg_ranking)):
+        if pairwise_af_avg_ranking.loc[i, 'model'] in selected_multimer_models:
+            continue
+        else:
+            selected_multimer_models += [pairwise_af_avg_ranking.loc[i, 'model']]
+            if len(selected_multimer_models) >= 5:
+                break
+
+    for i in range(len(selected_multimer_models)):
+        os.system(f"cp {outputdir}/pdb/{selected_multimer_models[i]} {outputdir}/egnn{i + 1}.pdb")
+
+    selected_df = pd.DataFrame({'selected_models': selected_multimer_models})
+    selected_df.to_csv(outputdir + '/egnn_selected.csv')
+
+    alphafold_multimer_ranking = pd.read_csv(qa_result['alphafold_multimer'])
+    alphafold_ranking = pd.read_csv(qa_result['alphafold'])
+    selected_multimer_models = [alphafold_multimer_ranking.loc[i, 'model'] for i in range(3)]
+    for i in range(len(alphafold_ranking)):
+        if alphafold_ranking.loc[i, 'model'] in selected_multimer_models:
+            continue
+        else:
+            selected_multimer_models += [alphafold_ranking.loc[i, 'model']]
+            if len(selected_multimer_models) >= 5:
+                break
+
+    for i in range(len(selected_multimer_models)):
+        os.system(f"cp {outputdir}/pdb/{selected_multimer_models[i]} {outputdir}/refine{i + 1}.pdb")
+
+    selected_df = pd.DataFrame({'selected_models': selected_multimer_models})
+    selected_df.to_csv(outputdir + '/refine_selected.csv')
+
+
+def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monomer_dir, outputdir, input_multimer_dir="",
+                                    generate_egnn_models=False):
     makedir_if_not_exists(outputdir)
-    result = None
+    qa_result = None
     pipeline = Monomer_structure_evaluation_pipeline(params=params,
                                                      use_gpu=True)
     try:
-        result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
-                                  monomer_model_dir=input_monomer_dir, multimer_model_dir=input_multimer_dir,
-                                  output_dir=outputdir, chainid_in_multimer=chainid,
-                                  unrelaxed_chainid_in_multimer=unrelaxed_chainid)
+        qa_result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
+                                     monomer_model_dir=input_monomer_dir, multimer_model_dir=input_multimer_dir,
+                                     output_dir=outputdir)
     except Exception as e:
         print(e)
 
     if generate_egnn_models:
-        if "pairwise_af_avg" not in result:
-            raise Exception(
-                f"Cannot find pairwise ranking file for generating multicom-egnn models: {result['apollo']}")
+        if input_multimer_dir == "":
+            select_models_monomer_only(qa_result=qa_result, outputdir=outputdir, params=params)
+        else:
+            select_models_with_multimer(qa_result=qa_result, outputdir=outputdir)
 
-        selected_models = []
-        pairwise_ranking_df = pd.read_csv(result["pairwise_af_avg"])
-        for i in range(2):
-            model = pairwise_ranking_df.loc[i, 'model']
-            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{i + 1}.pdb")
-            selected_models += [model]
-
-        egnn_model_count = 3
-        egnn_added_models = []
-        top1_model = f"{outputdir}/pdb/{pairwise_ranking_df.loc[0, 'model']}"
-        for i in range(2, len(pairwise_ranking_df)):
-            model = pairwise_ranking_df.loc[i, 'model']
-            tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
-                                            f"{outputdir}/pdb/{model}",
-                                            top1_model,
-                                            outputdir + '/tmp')
-            if tmscore < 0.98:
-                os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{egnn_model_count}.pdb")
-                egnn_added_models += [model]
-                selected_models += [model]
-                egnn_model_count += 1
-                if egnn_model_count > 5:
-                    break
-            else:
-                print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
-
-        if egnn_model_count <= 5:
-            for i in range(2, len(pairwise_ranking_df)):
-                model = pairwise_ranking_df.loc[i, 'model']
-                if model in egnn_added_models:
-                    continue
-                os.system(f"cp {outputdir}/pdb/{model} {outputdir}/egnn{egnn_model_count}.pdb")
-                egnn_added_models += [model]
-                egnn_model_count += 1
-                selected_models += [model]
-                if egnn_model_count > 5:
-                    break
-        selected_df = pd.DataFrame({'selected_models': selected_models})
-        selected_df.to_csv(outputdir + '/egnn_selected.csv')
-
-        selected_models = []
-        alphafold_ranking_df = pd.read_csv(result["alphafold"])
-        for i in range(2):
-            model = alphafold_ranking_df.loc[i, 'model']
-            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{i + 1}.pdb")
-            selected_models += [model]
-
-        deep_model_count = 3
-        deep_added_models = []
-        top1_model = f"{outputdir}/pdb/{alphafold_ranking_df.loc[0, 'model']}"
-        for i in range(2, len(alphafold_ranking_df)):
-            model = alphafold_ranking_df.loc[i, 'model']
-            tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
-                                            f"{outputdir}/pdb/{model}",
-                                            top1_model,
-                                            outputdir + '/tmp')
-            if tmscore < 0.98:
-                os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{deep_model_count}.pdb")
-                deep_model_count += 1
-                deep_added_models += [model]
-                selected_models += [model]
-                if deep_model_count > 5:
-                    break
-            else:
-                print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
-
-        if deep_model_count <= 5:
-            for i in range(2, len(alphafold_ranking_df)):
-                model = alphafold_ranking_df.loc[i, 'model']
-                if model in deep_added_models:
-                    continue
-                os.system(f"cp {outputdir}/pdb/{model} {outputdir}/deep{deep_model_count}.pdb")
-                egnn_added_models += [model]
-                deep_model_count += 1
-                selected_models += [model]
-                if deep_model_count > 5:
-                    break
-        selected_df = pd.DataFrame({'selected_models': selected_models})
-        selected_df.to_csv(outputdir + '/deep_selected.csv')
-
-    return result
+    return qa_result
 
 
 def rerun_monomer_evaluation_pipeline(params, targetname, fasta_file, outputdir, generate_egnn_models=True):
@@ -537,6 +588,19 @@ def run_quaternary_structure_generation_homo_pipeline(params, fasta_path, chain_
     return True
 
 
+def run_quaternary_structure_generation_homo_pipeline_img(params, fasta_path, chain_id_map, aln_dir, output_dir):
+    try:
+        pipeline = Quaternary_structure_prediction_homo_pipeline(params)
+        result = pipeline.process_img(fasta_path=fasta_path,
+                                      chain_id_map=chain_id_map,
+                                      aln_dir=aln_dir,
+                                      output_dir=output_dir)
+    except Exception as e:
+        print(e)
+        return False
+    return True
+
+
 def run_quaternary_structure_generation_homo_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
                                                          template_dir,
                                                          monomer_model_dir, output_dir):
@@ -584,7 +648,48 @@ def run_quaternary_structure_generation_pipeline_foldseek(params, fasta_path, ch
     return True
 
 
-def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir, indir, outdir, stoichiometry):
+def extract_monomer_models_from_complex(complex_pdb, complex_pkl, chain_id_map, workdir):
+    makedir_if_not_exists(workdir)
+
+    chain_group = {}
+    for chain_id in chain_id_map:
+        find = False
+        for chain_id_seq in chain_group:
+            if chain_id_map[chain_id_seq].sequence == chain_id_map[chain_id].sequence:
+                chain_group[chain_id_seq] += [chain_id]
+                find = True
+        if not find:
+            chain_group[chain_id] = [chain_id]
+
+    pkldir = workdir + '/pkl'
+    makedir_if_not_exists(pkldir)
+
+    alphafold_qa = Alphafold_pkl_qa(ranking_methods=['plddt_avg'])
+    for chain_id in chain_group:
+
+        chain_pdb_dict = extract_monomer_pdbs(complex_pdb=complex_pdb,
+                                              sequence=chain_id_map[chain_id].sequence,
+                                              output_prefix=workdir + '/chain')
+        print(chain_pdb_dict)
+
+        same_seq_chains = chain_group[chain_id]
+        same_seq_pkldir = pkldir + '/' + chain_id
+        makedir_if_not_exists(same_seq_pkldir)
+        for same_seq_chain in same_seq_chains:
+            pdbname = chain_pdb_dict[same_seq_chain]['pdbname']
+            extract_pkl(src_pkl=complex_pkl,
+                        residue_start=chain_pdb_dict[same_seq_chain]['chain_start'],
+                        residue_end=chain_pdb_dict[same_seq_chain]['chain_end'],
+                        output_pkl=same_seq_pkldir + '/' + pdbname.replace('.pdb', '.pkl'))
+        alphafold_ranking = alphafold_qa.run(same_seq_pkldir)
+        alphafold_ranking.to_csv(same_seq_pkldir + '_alphafold_ranking.csv')
+        os.system(f"cp {workdir}/{alphafold_ranking.loc[0, 'model']} {workdir}/{chain_id}_top1.pdb")
+
+    return chain_group
+
+
+def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir,
+                                     indir, outdir, stoichiometry, is_homomer=False):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
@@ -595,6 +700,33 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
                                               output_dir=outdir, stoichiometry=stoichiometry)
     except Exception as e:
         print(e)
+
+    alphafold_confidence_ranking = pd.read_csv(multimer_qa_result['alphafold'])
+    for i in range(5):
+        model_name = alphafold_confidence_ranking.loc[i, 'model']
+        os.system(f"cp {outdir}/pdb/{model_name} {outdir}/qa{i + 1}.pdb")
+        if not is_homomer:
+            chain_group = extract_monomer_models_from_complex(complex_pdb=f"{outdir}/qa{i + 1}.pdb",
+                                                              complex_pkl=f"{outdir}/pkl/{model_name.replace('.pdb', '.pkl')}",
+                                                              chain_id_map=chain_id_map, workdir=f"{outdir}/qa{i + 1}")
+            for chain_id in chain_group:
+                chain_outdir = f"{outdir}/qa_{chain_id}"
+                makedir_if_not_exists(chain_outdir)
+                os.system(f"cp {outdir}/qa{i + 1}/{chain_id}_top1.pdb {chain_outdir}/qa{i + 1}.pdb")
+
+    af_pairwise_avg_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])
+    for i in range(5):
+        model_name = af_pairwise_avg_ranking.loc[i, 'model']
+        os.system(f"cp {outdir}/pdb/{model_name} {outdir}/deep{i + 1}.pdb")
+        if not is_homomer:
+            chain_group = extract_monomer_models_from_complex(complex_pdb=f"{outdir}/deep{i + 1}.pdb",
+                                                              complex_pkl=f"{outdir}/pkl/{model_name.replace('.pdb', '.pkl')}",
+                                                              chain_id_map=chain_id_map, workdir=f"{outdir}/deep{i + 1}")
+            for chain_id in chain_group:
+                chain_outdir = f"{outdir}/deep_{chain_id}"
+                makedir_if_not_exists(chain_outdir)
+                os.system(f"cp {outdir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
+
     return multimer_qa_result
 
 
@@ -606,3 +738,13 @@ def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir
 
     pipeline = iterative_refine_pipeline_multimer.Multimer_refinement_model_selection()
     pipeline.select_v1(indir=outdir, outdir=finaldir)
+
+    chain_group = extract_monomer_models_from_complex(complex_pdb=f"{finaldir}/deep{i + 1}.pdb",
+                                                      complex_pkl=f"{finaldir}/pkl/{model_name.replace('.pdb', '.pkl')}",
+                                                      chain_id_map=chain_id_map, workdir=f"{finaldir}/deep{i + 1}")
+    for chain_id in chain_group:
+        chain_outdir = f"{finaldir}/deep_{chain_id}"
+        makedir_if_not_exists(chain_outdir)
+        os.system(f"cp {finaldir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
+
+

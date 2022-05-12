@@ -134,8 +134,8 @@ class Multimer_refinement_model_selection:
 
         for i in range(5):
             pdb_name = df.loc[i, 'model']
-            os.system(f"cp {outdir}/{pdb_name} {outdir}/casp{i + 1}.pdb")
-            os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/casp{i + 1}.pkl")
+            os.system(f"cp {outdir}/{pdb_name} {outdir}/deep{i + 1}.pdb")
+            os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/deep{i + 1}.pkl")
 
         return outdir
 

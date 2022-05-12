@@ -91,6 +91,33 @@ class Quaternary_structure_prediction_homo_pipeline:
                            'uniprot_distance_uniprot_sto': 'unidist_uniprot_sto',
                            'string_interact_uniprot_sto': 'str_iter_uniprot_sto'}
 
+    def process_img(self,
+                    fasta_path,
+                    chain_id_map,
+                    aln_dir,
+                    output_dir):
+
+        outdir = f"{output_dir}/img_multimer"
+        if complete_result(outdir):
+            return
+
+        monomers = [chain_id_map[chain_id].description for chain_id in chain_id_map]
+        img_a3ms = [f"{aln_dir}/{monomer}/{monomer}.a3m" for monomer in monomers]
+        template_stos = [f"{aln_dir}/{monomer}/{monomer}_uniref90.sto" for monomer in monomers]
+        makedir_if_not_exists(outdir)
+
+        base_cmd = f"python {self.params['alphafold_multimer_program']} " \
+                   f"--fasta_path {fasta_path} " \
+                   f"--monomer_a3ms {','.join(img_a3ms)} " \
+                   f"--multimer_a3ms {','.join(img_a3ms)} " \
+                   f"--template_stos {','.join(template_stos)} " \
+                   f"--env_dir {self.params['alphafold_env_dir']} " \
+                   f"--database_dir {self.params['alphafold_database_dir']} " \
+                   f"--output_dir {outdir} "
+
+        print(base_cmd)
+        os.system(base_cmd)
+
     def process(self,
                 fasta_path,
                 chain_id_map,
@@ -189,7 +216,6 @@ class Quaternary_structure_prediction_homo_pipeline:
 
             print(cmd)
             os.system(cmd)
-
 
         os.chdir(self.params['alphafold_program_dir'])
 
