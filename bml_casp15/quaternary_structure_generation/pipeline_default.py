@@ -34,7 +34,7 @@ class Quaternary_structure_prediction_pipeline_default:
             uniprot_stos = []
             for chain_id in chain_id_map:
                 monomer = chain_id_map[chain_id].description
-                monomer_bfd_uniclust_a3m = f"{aln_dir}/{monomer}/{monomer}_uniclust30_bfd.a3m"
+                monomer_bfd_uniclust_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref30_bfd.a3m"
                 if not os.path.exists(monomer_bfd_uniclust_a3m):
                     raise Exception(f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
                 bfd_uniclust_a3ms += [monomer_bfd_uniclust_a3m]

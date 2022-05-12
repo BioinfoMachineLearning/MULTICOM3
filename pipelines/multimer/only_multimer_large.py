@@ -101,8 +101,8 @@ def main(argv):
 
     print("#################################################################################################")
 
-    print("2. Start to generate complex quaternary structures")
-    N2_outdir = FLAGS.output_dir + '/N2_quaternary_structure_generation'
+    print("3. Start to generate complex quaternary structures")
+    N2_outdir = FLAGS.output_dir + '/N3_quaternary_structure_generation'
     makedir_if_not_exists(N2_outdir)
 
     if not run_quaternary_structure_generation_pipeline_default(params=params,
