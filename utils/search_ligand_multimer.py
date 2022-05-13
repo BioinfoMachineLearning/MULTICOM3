@@ -24,7 +24,7 @@ FLAGS = flags.FLAGS
 def search_templates(params, inpdb, outdir):
     makedir_if_not_exists(outdir)
     foldseek_program = params['foldseek_program']
-    foldseek_pdb_database = params['foldseek_pdb_database_dir']
+    foldseek_pdb_database = params['foldseek_pdb_database']
     foldseek_runner = Foldseek(binary_path=foldseek_program,
                                databases=[foldseek_pdb_database])
     return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000, tmscore_threshold=0.5)
@@ -52,7 +52,8 @@ def main(argv):
         current_work_dir = f"{FLAGS.outdir}/qa{i+1}.pdb"
         makedir_if_not_exists(current_work_dir)
 
-        chain_pdbs = split_pdb(start_pdb, current_work_dir)
+        chain_pdbs = split_pdb(pdb, current_work_dir)
+        print(chain_pdbs)
 
         template_results = []
 
@@ -65,27 +66,53 @@ def main(argv):
             monomer_work_dir = current_work_dir + '/' + chain_id_map[chain_id].description
             makedir_if_not_exists(monomer_work_dir)
             os.system(f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
-            foldseek_res = search_templates(params, pdb, monomer_work_dir + '/foldseek')
-            template_results[chain_id] = foldseek_res
+            foldseek_res = search_templates(params, f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb", monomer_work_dir + '/foldseek')
+            template_results += [foldseek_res]
 
         for restype in ['local_alignment', 'global_alignment']:
             prev_df = None
-            for chain_idx, (chain_id, template_result) in enumerate(zip(chain_id_map, template_results)):
-                chain_template_res = template_result[restype]
+            for chain_idx in range(len(template_results)):
+                curr_df = template_results[chain_idx][restype]
+                target_field = 'target'
+                if chain_idx == len(template_results) - 1:
+                    curr_df = curr_df.add_suffix(str(chain_idx+1))
+                    target_field = f'target{chain_idx+1}'
+
+                print(curr_df)
 
                 pdbcodes = []
-                for i in range(chain_template_res):
-                    pdbcodes += [chain_template_res.loc[i, 'target'][0:4]]
-                chain_template_res['pdbcode'] = pdbcodes
+                for j in range(len(curr_df)):
+                    pdbcodes += [curr_df.loc[j, target_field][0:4]]
+                curr_df['pdbcode'] = pdbcodes
 
                 if prev_df is None:
-                    prev_df = chain_template_res
+                    prev_df = curr_df
                 else:
-                    prev_df = prev_df.merge(chain_template_res, how="inner", on='pdbcode',
-                                            suffixes=(str(chain_idx), str(chain_idx + 1)))
-            prev_df.to_csv(f'{current_work_dir}/complex_templates_evalue.csv')
-            for i in range(len(prev_df)):
-                template = prev_df.loc[i, 'pdbcode']
+                    prev_df = prev_df.merge(curr_df, how="inner", on='pdbcode',
+                                            suffixes=(str(chain_idx), ''))
+                print(prev_df)
+
+            if restype == 'local_alignment':
+                min_evalues = []
+                for j in range(len(prev_df)):
+                    min_evalue = np.min(np.array([prev_df.loc[j, f"evalue{k+1}"] for k in range(len(chain_id_map))]))
+                    min_evalues += [min_evalue]
+                prev_df['min_evalue'] = min_evalues
+                prev_df = prev_df.sort_values(by='min_evalue')
+                prev_df.reset_index(inplace=True, drop=True)
+                prev_df.head(1000).to_csv(f'{current_work_dir}/complex_templates_evalue.csv')
+            else:
+                max_tmscores = []
+                for j in range(len(prev_df)):
+                    max_tmscore = np.max(np.array([prev_df.loc[j, f"evalue{j+1}"] for k in range(len(chain_id_map))]))
+                    max_tmscores += [max_tmscore]
+                prev_df['max_tmscore'] = max_tmscores
+                prev_df = prev_df.sort_values(by=['max_tmscore'], ascending=False)
+                prev_df.reset_index(inplace=True, drop=True)
+                prev_df.head(1000).to_csv(f'{current_work_dir}/complex_templates_tmscore.csv')
+
+            for j in range(len(prev_df)):
+                template = prev_df.loc[j, 'pdbcode']
                 raw_pdb = f"{params['foldseek_pdb_raw_database_dir']}/{template[0:4].lower()}.pdb1.gz"
                 if not os.path.exists(raw_pdb):
                     print(f"Cannot find {raw_pdb}")

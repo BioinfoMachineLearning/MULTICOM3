@@ -177,6 +177,9 @@ class Complex_sequence_based_template_search_pipeline:
             curr_template_hits += [hit]
 
         prev_pd = create_df(curr_template_hits)
+        prev_pd = prev_pd.add_suffix("1")
+        prev_pd['index'] = prev_pd['index1']
+        prev_pd = prev_pd.drop(['index1'], axis=1)
         for i in range(1, len(monomer_template_results)):
             template_count = 0
             seen_templates = []
@@ -230,7 +233,10 @@ class Complex_sequence_based_template_search_pipeline:
 
             curr_pd = create_df(curr_template_hits, prev_template_hit_indices)
             # print(curr_pd)
-            prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+            curr_pd = curr_pd.add_suffix(f"{i + 1}")
+            curr_pd['index'] = curr_pd[f'index{i + 1}']
+            curr_pd = curr_pd.drop([f'index{i + 1}'], axis=1)
+            prev_pd = prev_pd.merge(curr_pd, how="inner", on='index')
 
         max_probs = []
         for i in range(len(prev_pd)):
@@ -355,10 +361,13 @@ class Complex_sequence_based_template_search_pipeline:
                     monomer_template_hits += [hit]
 
                 curr_pd = create_df(monomer_template_hits)
+                curr_pd = curr_pd.add_suffix(f"{i + 1}")
+                curr_pd['index'] = curr_pd[f'index{i + 1}']
+                curr_pd = curr_pd.drop([f'index{i + 1}'], axis=1)
                 if prev_pd is None:
                     prev_pd = curr_pd
                 else:
-                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index')
 
             concatenated_pd = concatenated_pd.append(prev_pd, ignore_index=True)
 
@@ -402,10 +411,13 @@ class Complex_sequence_based_template_search_pipeline:
                     monomer_template_hits += [hit]
 
                 curr_pd = create_df(monomer_template_hits)
+                curr_pd = curr_pd.add_suffix(f"{i + 1}")
+                curr_pd['index'] = curr_pd[f'index{i + 1}']
+                curr_pd = curr_pd.drop([f'index{i + 1}'], axis=1)
                 if prev_pd is None:
                     prev_pd = curr_pd
                 else:
-                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index')
 
             concatenated_pd_nocheck = concatenated_pd_nocheck.append(prev_pd, ignore_index=True)
 

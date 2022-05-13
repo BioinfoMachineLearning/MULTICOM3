@@ -96,10 +96,15 @@ class Complex_structure_based_template_search_pipeline:
                 outdir=monomer_work_dir + '/foldseek')
             curr_df = create_template_df(foldseek_df, monomer_sequences[i])
             monomer_template_results += [curr_df]
+
+            curr_df = curr_df.add_suffix(f"{i + 1}")
+            curr_df['tpdbcode'] = curr_df[f'tpdbcode{i + 1}']
+            curr_df = curr_df.drop([f'tpdbcode{i + 1}'], axis=1)
+
             if prev_df is None:
                 prev_df = curr_df
             else:
-                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode', suffixes=(str(i), str(i + 1)))
+                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode')
 
         avg_tmscores = []
         for i in range(len(prev_df)):
@@ -212,11 +217,13 @@ class Complex_structure_based_template_search_pipeline:
                         row_index += 1
 
                 curr_pd = pd.DataFrame(row_list)
-
+                curr_pd = curr_pd.add_suffix(f"{i + 1}")
+                curr_pd['index'] = curr_pd[f'index{i + 1}']
+                curr_pd = curr_pd.drop([f'index{i + 1}'], axis=1)
                 if prev_pd is None:
                     prev_pd = curr_pd
                 else:
-                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index')
             prev_pd.to_csv(outdir + "/structure_templates.csv", index=False)
         else:
             prev_df_sorted_filtered.head(100).to_csv(outdir + "/structure_templates.csv", index=False)
@@ -257,10 +264,14 @@ class Complex_structure_based_template_search_pipeline:
                 outdir=monomer_work_dir + '/foldseek')
             curr_df = create_template_df(foldseek_df, monomer_sequences[i], False)
             monomer_template_results += [curr_df]
+
+            curr_df = curr_df.add_suffix(f"{i + 1}")
+            curr_df['tpdbcode'] = curr_df[f'tpdbcode{i + 1}']
+            curr_df = curr_df.drop([f'tpdbcode{i + 1}'], axis=1)
             if prev_df is None:
                 prev_df = curr_df
             else:
-                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode', suffixes=(str(i), str(i + 1)))
+                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode')
 
         avg_tmscores = []
         for i in range(len(prev_df)):
@@ -373,11 +384,13 @@ class Complex_structure_based_template_search_pipeline:
                         row_index += 1
 
                 curr_pd = pd.DataFrame(row_list)
-
+                curr_pd = curr_pd.add_suffix(f"{i + 1}")
+                curr_pd['index'] = curr_pd[f'index{i + 1}']
+                curr_pd = curr_pd.drop([f'index{i + 1}'], axis=1)
                 if prev_pd is None:
                     prev_pd = curr_pd
                 else:
-                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+                    prev_pd = prev_pd.merge(curr_pd, how="inner", on='index')
             prev_pd.to_csv(outdir + "/structure_templates_nocheck.csv", index=False)
         else:
             prev_df_sorted_filtered.head(100).to_csv(outdir + "/structure_templates_nocheck.csv", index=False)

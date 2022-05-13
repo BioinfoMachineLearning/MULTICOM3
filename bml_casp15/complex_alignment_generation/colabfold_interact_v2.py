@@ -56,10 +56,15 @@ class colabfold_interact_v2:
             curr_df, monomer_id = read_colabfold_a3m(alignment_file)
             curr_df.to_csv(outdir + '/' + monomer_id + '_colab.csv')
             monomer_ids += [monomer_id]
+
+            curr_df = curr_df.add_suffix(f"_{i + 1}")
+            curr_df['header'] = curr_df[f'header_{i + 1}']
+            curr_df = curr_df.drop([f'header_{i + 1}'], axis=1)
+
             if prev_df is None:
                 prev_df = curr_df
             else:
-                prev_df = prev_df.merge(curr_df, on=f"header", suffixes=(f"_{i}", f"_{i + 1}"))
+                prev_df = prev_df.merge(curr_df, on="header")
 
         print(prev_df)
         prev_df.to_csv(outdir + '/colabfold_interact.csv')

@@ -65,11 +65,13 @@ class Multimer_iterative_refinement_pipeline:
 
                 curr_df = create_template_df(templates_filtered)
                 # print(curr_df)
+                curr_df = curr_df.add_suffix(f"{chain_idx + 1}")
+                curr_df['tpdbcode'] = curr_df[f'tpdbcode{chain_idx + 1}']
+                curr_df = curr_df.drop([f'tpdbcode{chain_idx + 1}'], axis=1)
                 if complex_templates_df is None:
                     complex_templates_df = curr_df
                 else:
-                    complex_templates_df = complex_templates_df.merge(curr_df, how="inner", on='tpdbcode',
-                                                                      suffixes=(str(chain_idx), str(chain_idx + 1)))
+                    complex_templates_df = complex_templates_df.merge(curr_df, how="inner", on='tpdbcode')
 
             keep_indices = []
             seen_complex_seq = []
