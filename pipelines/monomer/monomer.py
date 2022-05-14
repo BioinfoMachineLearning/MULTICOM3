@@ -43,7 +43,7 @@ def main(argv):
         else:
             sequence = line
 
-    outdir = FLAGS.output_dir#  + '/' + targetname
+    outdir = FLAGS.output_dir  # + '/' + targetname
 
     makedir_if_not_exists(outdir)
 
@@ -85,12 +85,12 @@ def main(argv):
     N3_outdir = outdir + '/N3_monomer_structure_generation'
     makedir_if_not_exists(N3_outdir)
     if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                     run_methods=['default', 'default+seq_template',
-                                                                  'default_uniref30',
-                                                                  'original', 'original+seq_template',
-                                                                  'colabfold', 'colabfold+seq_template'],
-                                                     fasta_path=FLAGS.fasta_path,
-                                                     alndir=N1_outdir, templatedir=N2_outdir, outdir=N3_outdir):
+                                                        run_methods=['default', 'default+seq_template',
+                                                                     'default_uniclust30',
+                                                                     'original', 'original+seq_template',
+                                                                     'colabfold', 'colabfold+seq_template'],
+                                                        fasta_path=FLAGS.fasta_path,
+                                                        alndir=N1_outdir, templatedir=N2_outdir, outdir=N3_outdir):
         print("Program failed in step 3: monomer structure generation")
 
     print("The prediction for monomers has finished!")
@@ -106,7 +106,8 @@ def main(argv):
     makedir_if_not_exists(N4_outdir)
 
     result = run_monomer_evaluation_pipeline(params=params, targetname=targetname, fasta_file=FLAGS.fasta_path,
-                                             input_monomer_dir=N3_outdir, outputdir=N4_outdir, generate_egnn_models=True)
+                                             input_monomer_dir=N3_outdir, outputdir=N4_outdir,
+                                             generate_egnn_models=True)
 
     if result is None:
         raise RuntimeError("Program failed in step 4: monomer model evaluation")
@@ -139,7 +140,8 @@ def main(argv):
         refine_inputs += [refine_input]
 
     final_dir = N5_outdir_avg + '_final'
-    run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N5_outdir_avg, finaldir=final_dir, prefix="refine")
+    run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N5_outdir_avg,
+                                    finaldir=final_dir, prefix="refine")
 
     N5_outdir_af = outdir + '/N5_monomer_structure_refinement_af'
 
@@ -187,9 +189,10 @@ def main(argv):
 
         os.system(f"cp {N1_outdir}/{targetname}_uniref90.sto {N1_outdir_img}")
         if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                         run_methods=['img', 'img+seq_template'],
-                                                         fasta_path=FLAGS.fasta_path,
-                                                         alndir=N1_outdir_img, templatedir=N2_outdir, outdir=N3_outdir):
+                                                            run_methods=['img', 'img+seq_template'],
+                                                            fasta_path=FLAGS.fasta_path,
+                                                            alndir=N1_outdir_img, templatedir=N2_outdir,
+                                                            outdir=N3_outdir):
             print("Program failed in step 3: monomer structure generation")
 
         print("6. Start to evaluate monomer models")
