@@ -11,11 +11,14 @@ from bml_casp15.tool import jackhmmer
 
 
 def run_msa_tool(inparams):
-    msa_runner, input_fasta_path, msa_out_path, msa_key = inparams
+    msa_runner, input_fasta_path, msa_out_path, msa_out_name, msa_key = inparams
     """Runs an MSA tool, checking if output already exists first."""
-    if not os.path.exists(msa_out_path) or len(open(msa_out_path).readlines()) == 0:
-        result = msa_runner.query(input_fasta_path, msa_out_path)
-    return msa_key, msa_out_path
+    if not os.path.exists(msa_out_path + '/' + msa_out_name) or len(open(msa_out_path + '/' + msa_out_name).readlines()) == 0:
+        workdir = msa_out_path + '/' + msa_key
+        makedir_if_not_exists(workdir)
+        result = msa_runner.query(input_fasta_path, workdir + '/' + msa_out_name)
+        os.system(f"cp {workdir}/{msa_out_name} {msa_out_path}/{msa_out_name}")
+    return msa_key, msa_out_path + '/' + msa_out_name
 
 
 class Monomer_alignment_generation_pipeline:
@@ -131,64 +134,59 @@ class Monomer_alignment_generation_pipeline:
         msa_process_list = []
 
         if self.jackhmmer_uniref90_runner is not None:
-            uniref90_out_path = os.path.join(msa_output_dir, f'{input_id}_uniref90.sto')
             msa_process_list.append(
-                [self.jackhmmer_uniref90_runner, input_fasta_path, uniref90_out_path, 'uniref90_sto'])
+                [self.jackhmmer_uniref90_runner, input_fasta_path,
+                 msa_output_dir, f'{input_id}_uniref90.sto', 'uniref90_sto'])
 
         if self.jackhmmer_mgnify_runner is not None:
-            mgnify_out_path = os.path.join(msa_output_dir, f'{input_id}_mgnify.sto')
-            msa_process_list.append([self.jackhmmer_mgnify_runner, input_fasta_path, mgnify_out_path, 'mgnify_sto'])
+            msa_process_list.append([self.jackhmmer_mgnify_runner, input_fasta_path,
+                                     msa_output_dir, f'{input_id}_mgnify.sto', 'mgnify_sto'])
 
         if self.jackhmmer_small_bfd_runner is not None:
-            small_bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_smallbfd.sto')
             msa_process_list.append(
-                [self.jackhmmer_small_bfd_runner, input_fasta_path, small_bfd_out_path, 'smallbfd_sto'])
+                [self.jackhmmer_small_bfd_runner, input_fasta_path, msa_output_dir,
+                 f'{input_id}_smallbfd.sto', 'smallbfd_sto'])
 
         if self.hhblits_bfd_runner is not None:
-            bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_bfd.a3m')
-            msa_process_list.append([self.hhblits_bfd_runner, input_fasta_path, bfd_out_path, 'bfd_a3m'])
+            msa_process_list.append([self.hhblits_bfd_runner, input_fasta_path,
+                                     msa_output_dir, f'{input_id}_bfd.a3m', 'bfd_a3m'])
 
         if self.hhblits_uniref_runner is not None:
-            uniref30_out_path = os.path.join(msa_output_dir, f'{input_id}_uniref30.a3m')
-            msa_process_list.append([self.hhblits_uniref_runner, input_fasta_path, uniref30_out_path, 'uniref30_a3m'])
+            msa_process_list.append([self.hhblits_uniref_runner, input_fasta_path,
+                                     msa_output_dir, f'{input_id}_uniref30.a3m', 'uniref30_a3m'])
 
         if self.hhblits_uniclust_runner is not None:
-            uniclust30_out_path = os.path.join(msa_output_dir, f'{input_id}_uniclust30.a3m')
             msa_process_list.append(
-                [self.hhblits_uniclust_runner, input_fasta_path, uniclust30_out_path, 'uniclust30_a3m'])
+                [self.hhblits_uniclust_runner, input_fasta_path,
+                 msa_output_dir, f'{input_id}_uniclust30.a3m', 'uniclust30_a3m'])
 
         if self.hhblits_uniclust_folddock_runner is not None:
-            uniclust30_all_out_path = os.path.join(msa_output_dir, f'{input_id}_uniclust30_all.a3m')
-            msa_process_list.append([self.hhblits_uniclust_folddock_runner, input_fasta_path, uniclust30_all_out_path,
-                                     'uniclust30_all_a3m'])
+            msa_process_list.append([self.hhblits_uniclust_folddock_runner, input_fasta_path,
+                                    msa_output_dir, f'{input_id}_uniclust30_all.a3m', 'uniclust30_all_a3m'])
 
         if self.jackhmmer_uniprot_runner is not None:
-            uniprot_out_path = os.path.join(msa_output_dir, f'{input_id}_uniprot.sto')
-            msa_process_list.append([self.jackhmmer_uniprot_runner, input_fasta_path, uniprot_out_path, 'uniprot_sto'])
+            msa_process_list.append([self.jackhmmer_uniprot_runner, input_fasta_path,
+                                    msa_output_dir, f'{input_id}_uniprot.sto', 'uniprot_sto'])
 
         if self.rosettafold_msa_runner is not None:
-            rosettafold_out_path = os.path.join(msa_output_dir, f'{input_id}_rosettafold.a3m')
-            print(rosettafold_out_path)
             msa_process_list.append(
-                [self.rosettafold_msa_runner, input_fasta_path, rosettafold_out_path, 'rosettafold_sto'])
+                [self.rosettafold_msa_runner, input_fasta_path,
+                msa_output_dir, f'{input_id}_rosettafold.a3m', 'rosettafold_sto'])
 
         if self.colabfold_msa_runner is not None:
-            colabfold_out_path = os.path.join(msa_output_dir, f'{input_id}_colabfold.a3m')
-            print(colabfold_out_path)
             msa_process_list.append(
-                [self.colabfold_msa_runner, input_fasta_path, colabfold_out_path, 'colabfold_a3m'])
+                [self.colabfold_msa_runner, input_fasta_path, msa_output_dir,
+                 f'{input_id}_colabfold.a3m', 'colabfold_a3m'])
 
         if self.unclust30_bfd_msa_runner is not None:
-            uniclust30_bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_uniclust30_bfd.a3m')
-            print(uniclust30_bfd_out_path)
             msa_process_list.append(
-                [self.unclust30_bfd_msa_runner, input_fasta_path, uniclust30_bfd_out_path, 'uniclust30_bfd_a3m'])
+                [self.unclust30_bfd_msa_runner, input_fasta_path, msa_output_dir,
+                 f'{input_id}_uniclust30_bfd.a3m', 'uniclust30_bfd_a3m'])
 
         if self.uniref30_bfd_msa_runner is not None:
-            uniref30_bfd_out_path = os.path.join(msa_output_dir, f'{input_id}_uniref30_bfd.a3m')
-            print(uniref30_bfd_out_path)
             msa_process_list.append(
-                [self.uniref30_bfd_msa_runner, input_fasta_path, uniref30_bfd_out_path, 'uniref30_bfd_a3m'])
+                [self.uniref30_bfd_msa_runner, input_fasta_path,
+                 msa_output_dir, f'{input_id}_uniref30_bfd.a3m', 'uniref30_bfd_a3m'])
 
         if multiprocess:
             pool = Pool(processes=len(msa_process_list))
