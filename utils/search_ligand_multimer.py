@@ -21,6 +21,7 @@ flags.DEFINE_string('indir', None, 'Path to multimer fastas')
 flags.DEFINE_string('outdir', None, 'Output directory')
 FLAGS = flags.FLAGS
 
+
 def search_templates(params, inpdb, outdir):
     makedir_if_not_exists(outdir)
     foldseek_program = params['foldseek_program']
@@ -45,11 +46,11 @@ def main(argv):
                                                        descriptions=input_descs)
 
     for i in range(5):
-        pdb = f'{FLAGS.indir}/qa{i+1}.pdb'
+        pdb = f'{FLAGS.indir}/qa{i + 1}.pdb'
         if not os.path.exists(pdb):
             raise Exception(f"Cannot find {pdb}")
 
-        current_work_dir = f"{FLAGS.outdir}/qa{i+1}.pdb"
+        current_work_dir = f"{FLAGS.outdir}/qa{i + 1}.pdb"
         makedir_if_not_exists(current_work_dir)
 
         chain_pdbs = split_pdb(pdb, current_work_dir)
@@ -66,36 +67,45 @@ def main(argv):
             monomer_work_dir = current_work_dir + '/' + chain_id_map[chain_id].description
             makedir_if_not_exists(monomer_work_dir)
             os.system(f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
-            foldseek_res = search_templates(params, f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb", monomer_work_dir + '/foldseek')
+            foldseek_res = search_templates(params, f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
+                                            monomer_work_dir + '/foldseek')
             template_results += [foldseek_res]
+
+            monomer_template_dir = monomer_work_dir + '/templates'
+            makedir_if_not_exists(monomer_template_dir)
+            for j in range(len(foldseek_res['all_alignment'])):
+                template = foldseek_res['all_alignment'].loc[j, 'target']
+                raw_pdb = f"{params['foldseek_pdb_raw_database_dir']}/{template[0:4].lower()}.pdb1.gz"
+                # print(os.path.exists(raw_pdb))
+                # if not os.path.exists(raw_pdb):
+                #     print(f"Cannot find {raw_pdb}")
+                #     continue
+                os.system(f"cp {raw_pdb} {monomer_template_dir}")
 
         for restype in ['local_alignment', 'global_alignment']:
             prev_df = None
             for chain_idx in range(len(template_results)):
                 curr_df = template_results[chain_idx][restype]
-                target_field = 'target'
-                if chain_idx == len(template_results) - 1:
-                    curr_df = curr_df.add_suffix(str(chain_idx+1))
-                    target_field = f'target{chain_idx+1}'
-
                 print(curr_df)
 
                 pdbcodes = []
                 for j in range(len(curr_df)):
-                    pdbcodes += [curr_df.loc[j, target_field][0:4]]
+                    pdbcodes += [curr_df.loc[j, 'target'][0:4]]
+
+                curr_df = curr_df.add_suffix(str(chain_idx + 1))
                 curr_df['pdbcode'] = pdbcodes
 
                 if prev_df is None:
                     prev_df = curr_df
                 else:
-                    prev_df = prev_df.merge(curr_df, how="inner", on='pdbcode',
-                                            suffixes=(str(chain_idx), ''))
+                    prev_df = prev_df.merge(curr_df, how="inner", on='pdbcode')
+
                 print(prev_df)
 
             if restype == 'local_alignment':
                 min_evalues = []
                 for j in range(len(prev_df)):
-                    min_evalue = np.min(np.array([prev_df.loc[j, f"evalue{k+1}"] for k in range(len(chain_id_map))]))
+                    min_evalue = np.min(np.array([prev_df.loc[j, f"evalue{k + 1}"] for k in range(len(chain_id_map))]))
                     min_evalues += [min_evalue]
                 prev_df['min_evalue'] = min_evalues
                 prev_df = prev_df.sort_values(by='min_evalue')
@@ -104,7 +114,7 @@ def main(argv):
             else:
                 max_tmscores = []
                 for j in range(len(prev_df)):
-                    max_tmscore = np.max(np.array([prev_df.loc[j, f"evalue{j+1}"] for k in range(len(chain_id_map))]))
+                    max_tmscore = np.max(np.array([prev_df.loc[j, f"evalue{j + 1}"] for k in range(len(chain_id_map))]))
                     max_tmscores += [max_tmscore]
                 prev_df['max_tmscore'] = max_tmscores
                 prev_df = prev_df.sort_values(by=['max_tmscore'], ascending=False)

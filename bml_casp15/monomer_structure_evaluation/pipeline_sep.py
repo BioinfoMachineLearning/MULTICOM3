@@ -250,7 +250,7 @@ class Monomer_structure_evaluation_pipeline:
 
         return result_dict
 
-    def process(self, targetname, fasta_file, monomer_model_dir, output_dir, multimer_model_dir=""):
+    def process(self, targetname, fasta_file, monomer_model_dir, output_dir, multimer_model_dir="", model_count=5):
 
         query_sequence = open(fasta_file).readlines()[1].rstrip('\n').strip()
 
@@ -286,21 +286,22 @@ class Monomer_structure_evaluation_pipeline:
         makedir_if_not_exists(msadir_multimer)
 
         pdbs_from_monomer = []
-        for method in os.listdir(monomer_model_dir):
-            ranking_json_file = f"{monomer_model_dir}/{method}/ranking_debug.json"
-            ranking_json = json.loads(open(ranking_json_file).read())
-            for i in range(0, 5):
-                os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir_monomer}/{method}_{i}.pdb")
+        if os.path.exists(monomer_model_dir):
+            for method in os.listdir(monomer_model_dir):
+                ranking_json_file = f"{monomer_model_dir}/{method}/ranking_debug.json"
+                ranking_json = json.loads(open(ranking_json_file).read())
+                for i in range(model_count):
+                    os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir_monomer}/{method}_{i}.pdb")
 
-                model_name = list(ranking_json["order"])[i]
-                extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_{model_name}.pkl",
-                            output_pkl=f"{pkldir_monomer}/{method}_{i}.pkl")
-                os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir_monomer}/{method}_{i}.a3m")
-                pdbs_from_monomer += [f"{method}_{i}.pdb"]
+                    model_name = list(ranking_json["order"])[i]
+                    extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_{model_name}.pkl",
+                                output_pkl=f"{pkldir_monomer}/{method}_{i}.pkl")
+                    os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir_monomer}/{method}_{i}.a3m")
+                    pdbs_from_monomer += [f"{method}_{i}.pdb"]
 
-                os.system(f"ln -s {pdbdir_monomer}/{method}_{i}.pdb {pdbdir}/{method}_{i}.pdb")
-                os.system(f"ln -s {pkldir_monomer}/{method}_{i}.pkl {pkldir}/{method}_{i}.pkl")
-                os.system(f"ln -s {msadir_monomer}/{method}_{i}.a3m {msadir}/{method}_{i}.a3m")
+                    os.system(f"ln -s {pdbdir_monomer}/{method}_{i}.pdb {pdbdir}/{method}_{i}.pdb")
+                    os.system(f"ln -s {pkldir_monomer}/{method}_{i}.pkl {pkldir}/{method}_{i}.pkl")
+                    os.system(f"ln -s {msadir_monomer}/{method}_{i}.a3m {msadir}/{method}_{i}.a3m")
 
         pdbs_from_multimer = []
         if os.path.exists(multimer_model_dir):
@@ -309,7 +310,7 @@ class Monomer_structure_evaluation_pipeline:
                 if not os.path.exists(ranking_json_file):
                     continue
                 ranking_json = json.loads(open(ranking_json_file).read())
-                for i in range(0, 5):
+                for i in range(model_count):
                     complex_pdb = f"{multimer_model_dir}/{method}/ranked_{i}.pdb"
                     if os.path.exists(complex_pdb):
                         chain_pdb_dict = extract_monomer_pdbs(complex_pdb=complex_pdb,

@@ -287,7 +287,7 @@ def select_models_with_multimer(qa_result, outputdir):
 
 
 def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monomer_dir, outputdir, input_multimer_dir="",
-                                    generate_egnn_models=False):
+                                    generate_egnn_models=False, model_count=5):
     makedir_if_not_exists(outputdir)
     qa_result = None
     pipeline = Monomer_structure_evaluation_pipeline(params=params,
@@ -295,7 +295,7 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
     try:
         qa_result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
                                      monomer_model_dir=input_monomer_dir, multimer_model_dir=input_multimer_dir,
-                                     output_dir=outputdir)
+                                     output_dir=outputdir, model_count=model_count)
     except Exception as e:
         print(e)
 
@@ -689,7 +689,7 @@ def extract_monomer_models_from_complex(complex_pdb, complex_pkl, chain_id_map, 
 
 
 def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir,
-                                     indir, outdir, stoichiometry, is_homomer=False):
+                                     indir, outdir, stoichiometry, is_homomer=False, model_count=5):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
@@ -697,7 +697,7 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
         multimer_qa_result = pipeline.process(fasta_path=fasta_path,
                                               chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
                                               model_dir=indir,
-                                              output_dir=outdir, stoichiometry=stoichiometry)
+                                              output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
     except Exception as e:
         print(e)
 

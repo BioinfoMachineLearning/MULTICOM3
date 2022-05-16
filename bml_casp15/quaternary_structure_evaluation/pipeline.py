@@ -16,7 +16,7 @@ from bml_casp15.common.protein import complete_result
 class Quaternary_structure_evaluation_pipeline:
     """Runs the alignment tools and assembles the input features."""
 
-    def __init__(self, params, run_methods=["alphafold", "pairwise", "dproq", "bfactor", 'multieva']):
+    def __init__(self, params, run_methods=["alphafold", "pairwise", "bfactor", 'multieva']):
         """Initializes the data pipeline."""
 
         self.params = params
@@ -30,7 +30,7 @@ class Quaternary_structure_evaluation_pipeline:
         self.multieva = MultiEva_qa(multieva_program=params['multieva_program'])
         self.foldseek_qa = FoldSeek_qa(params=params)
 
-    def process(self, fasta_path, chain_id_map, model_dir, output_dir, monomer_model_dir = "", stoichiometry = ""):
+    def process(self, fasta_path, chain_id_map, model_dir, output_dir, monomer_model_dir="", stoichiometry="", model_count=5):
 
         makedir_if_not_exists(output_dir)
 
@@ -49,7 +49,7 @@ class Quaternary_structure_evaluation_pipeline:
                 continue
             ranking_json = json.loads(open(ranking_json_file).read())
 
-            for i in range(0, 5):
+            for i in range(model_count):
                 if not complete_result(model_dir + '/' + method):
                     continue
                 os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
@@ -80,7 +80,7 @@ class Quaternary_structure_evaluation_pipeline:
 
         if "dproq" in self.run_methods:
             if not os.path.exists(output_dir + '/DOCKQ_ranking.csv'):
-                dproq_ranking_dockq, dproq_ranking_evalue = self.dproq.run(indir=pdbdir, outdir=output_dir+'/dproq')
+                dproq_ranking_dockq, dproq_ranking_evalue = self.dproq.run(indir=pdbdir, outdir=output_dir + '/dproq')
                 dproq_ranking_dockq.to_csv(output_dir + '/dproq_ranking_dockq.csv')
                 dproq_ranking_evalue.to_csv(output_dir + '/dproq_ranking_evalue.csv')
             result_dict["dproq_ranking_dockq"] = output_dir + '/dproq_ranking_dockq.csv'
@@ -130,7 +130,7 @@ class Quaternary_structure_evaluation_pipeline:
 
         if "multieva" in self.run_methods and "alphafold" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
-            ranks = [i+1 for i in range(len(pairwise_ranking_df))]
+            ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
             pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
             print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
@@ -147,7 +147,8 @@ class Quaternary_structure_evaluation_pipeline:
                 alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
-                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank'])+int(avg_ranking_df.loc[i, 'alphafold_rank']))/2
+                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
+                    avg_ranking_df.loc[i, 'alphafold_rank'])) / 2
                 avg_rankings += [avg_rank]
             avg_ranking_df['avg_score'] = avg_scores
             avg_ranking_df['avg_rank'] = avg_rankings
@@ -160,7 +161,7 @@ class Quaternary_structure_evaluation_pipeline:
 
         if "multieva" in self.run_methods and "bfactor" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
-            ranks = [i+1 for i in range(len(pairwise_ranking_df))]
+            ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
             pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
             print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
@@ -177,7 +178,8 @@ class Quaternary_structure_evaluation_pipeline:
                 alphafold_score = float(avg_ranking_df.loc[i, 'bfactor'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
-                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank'])+int(avg_ranking_df.loc[i, 'bfactor_rank']))/2
+                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
+                    avg_ranking_df.loc[i, 'bfactor_rank'])) / 2
                 avg_rankings += [avg_rank]
             avg_ranking_df['avg_score'] = avg_scores
             avg_ranking_df['avg_rank'] = avg_rankings
