@@ -95,7 +95,7 @@ def main(argv):
             makedir_if_not_exists(N3_monomer_outdir)
             if not run_monomer_structure_generation_pipeline_v2(params=params,
                                                                 run_methods=['default', 'default+seq_template',
-                                                                             'default_uniref30',
+                                                                             'default_uniclust30',
                                                                              'original', 'original+seq_template',
                                                                              'colabfold', 'colabfold+seq_template'],
                                                                 fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
