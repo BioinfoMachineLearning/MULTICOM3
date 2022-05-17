@@ -7,6 +7,7 @@ from bml_casp15.monomer_alignment_generation.pipeline import *
 from bml_casp15.monomer_structure_generation.pipeline import *
 from bml_casp15.monomer_structure_generation.pipeline_v2 import *
 from bml_casp15.monomer_structure_evaluation.pipeline_sep import *
+from bml_casp15.monomer_structure_evaluation.human_pipeline import *
 from bml_casp15.monomer_templates_search.sequence_based_pipeline_pdb import *
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
@@ -292,6 +293,28 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
     qa_result = None
     pipeline = Monomer_structure_evaluation_pipeline(params=params,
                                                      use_gpu=True)
+    try:
+        qa_result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
+                                     monomer_model_dir=input_monomer_dir, multimer_model_dir=input_multimer_dir,
+                                     output_dir=outputdir, model_count=model_count)
+    except Exception as e:
+        print(e)
+
+    if generate_egnn_models:
+        if input_multimer_dir == "":
+            select_models_monomer_only(qa_result=qa_result, outputdir=outputdir, params=params)
+        else:
+            select_models_with_multimer(qa_result=qa_result, outputdir=outputdir)
+
+    return qa_result
+
+
+def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_monomer_dir, outputdir,
+                                          input_multimer_dir="", generate_egnn_models=False, model_count=5):
+    makedir_if_not_exists(outputdir)
+    qa_result = None
+    pipeline = Monomer_structure_evaluation_human_pipeline(params=params,
+                                                           use_gpu=True)
     try:
         qa_result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
                                      monomer_model_dir=input_monomer_dir, multimer_model_dir=input_multimer_dir,
@@ -721,7 +744,8 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
         if not is_homomer:
             chain_group = extract_monomer_models_from_complex(complex_pdb=f"{outdir}/deep{i + 1}.pdb",
                                                               complex_pkl=f"{outdir}/pkl/{model_name.replace('.pdb', '.pkl')}",
-                                                              chain_id_map=chain_id_map, workdir=f"{outdir}/deep{i + 1}")
+                                                              chain_id_map=chain_id_map,
+                                                              workdir=f"{outdir}/deep{i + 1}")
             for chain_id in chain_group:
                 chain_outdir = f"{outdir}/deep_{chain_id}"
                 makedir_if_not_exists(chain_outdir)
@@ -746,5 +770,3 @@ def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir
         chain_outdir = f"{finaldir}/deep_{chain_id}"
         makedir_if_not_exists(chain_outdir)
         os.system(f"cp {finaldir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
-
-

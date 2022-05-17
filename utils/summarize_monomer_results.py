@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--option_file', type=is_file, required=True)
     parser.add_argument('--workdir', type=is_file, required=True)
     parser.add_argument('--tmpdir', type=str, required=True)
+    parser.add_argument('--refpdb', type=is_file, required=True)
 
     args = parser.parse_args()
 
@@ -62,6 +63,7 @@ if __name__ == '__main__':
 
     all_models = []
     all_alignments = []
+    all_tmscores = []
 
     egnn_ranking = qa_dir + '/egnn_selected.csv'
     alignment_depth = []
@@ -70,8 +72,13 @@ if __name__ == '__main__':
     for i in range(len(pairwise_ranking_df)):
         model = pairwise_ranking_df.loc[i, 'selected_models']
         msa = qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
-        alignment_depth += [len(open(msa).readlines())/2]
+        alignment_depth += [len(open(msa).readlines()) / 2]
         ranked_modeles += [model]
+
+        tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
+                                 inpdb=qa_dir + '/pdb/' + model,
+                                 nativepdb=args.refpdb, tmpdir=args.tmpdir)
+        all_tmscores += [tmscore]
 
     print(f"\negnn models: {ranked_modeles}, {alignment_depth}\n")
     all_models += ranked_modeles
@@ -90,30 +97,19 @@ if __name__ == '__main__':
     ranked_modeles = []
     alignment_depth = []
     for i in range(5):
-        ranked_modeles += [refine_ranking_df.loc[i, 'selected_models']]
-        msa = refine_dir + '/' + refine_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
+        model = refine_ranking_df.loc[i, 'selected_models']
+        ranked_modeles += [model]
+        msa = refine_dir + '/' + model.replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines()) / 2]
+
+        tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
+                                 inpdb=refine_dir + '/' + model,
+                                 nativepdb=args.refpdb, tmpdir=args.tmpdir)
+        all_tmscores += [tmscore]
 
     print(f"\nrefine models: {ranked_modeles}\n")
     all_models += ranked_modeles
     all_alignments += alignment_depth
-
-    refine_dir = args.workdir + '/N5_monomer_structure_refinement_avg_final/'
-    if os.path.exists(args.workdir + '/N7_monomer_structure_refinement_avg_final/'):
-        refine_dir = args.workdir + '/N7_monomer_structure_refinement_avg_final/'
-
-    if not os.path.exists(refine_dir):
-        print("Rerunning the evaluation pipeline")
-        refine_dir = args.workdir + '/N2_monomer_structure_refinement_avg_final/'
-
-    refine_ranking = refine_dir + 'refine_selected.csv'
-    refine_ranking_df = pd.read_csv(refine_ranking)
-    ranked_modeles = []
-    alignment_depth = []
-    for i in range(5):
-        ranked_modeles += [refine_ranking_df.loc[i, 'selected_models']]
-        msa = refine_dir + '/' + refine_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
-        alignment_depth += [len(open(msa).readlines()) / 2]
 
     deep_ranking = qa_dir + '/deep_selected.csv'
     alignment_depth = []
@@ -121,9 +117,14 @@ if __name__ == '__main__':
     ranked_modeles = []
     for i in range(len(pairwise_ranking_df)):
         model = pairwise_ranking_df.loc[i, 'selected_models']
-        msa = qa_dir + '/msa/' + pairwise_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
+        msa = qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
         alignment_depth += [len(open(msa).readlines()) / 2]
         ranked_modeles += [model]
+
+        tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
+                                 inpdb=qa_dir + '/pdb/' + model,
+                                 nativepdb=args.refpdb, tmpdir=args.tmpdir)
+        all_tmscores += [tmscore]
 
     print(f"\ndeep models: {ranked_modeles}, {alignment_depth}\n")
     all_models += ranked_modeles
@@ -136,14 +137,20 @@ if __name__ == '__main__':
         ranked_modeles = []
         alignment_depth = []
         for i in range(5):
-            ranked_modeles += [qa_ranking_df.loc[i, 'selected_models']]
-            msa = refine_qa_dir + '/' + qa_ranking_df.loc[i, 'selected_models'].replace('.pdb', '.a3m')
+            model = qa_ranking_df.loc[i, 'selected_models']
+            ranked_modeles += [model]
+            msa = refine_qa_dir + '/' + model.replace('.pdb', '.a3m')
             alignment_depth += [len(open(msa).readlines()) / 2]
+            tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
+                                     inpdb=refine_qa_dir + '/' + model,
+                                     nativepdb=args.refpdb, tmpdir=args.tmpdir)
+            all_tmscores += [tmscore]
+
         print(f"\nqa models: {ranked_modeles}\n")
         all_models += ranked_modeles
         all_alignments += alignment_depth
 
-    df = pd.DataFrame({'model': all_models, 'alignment_depth': all_alignments})
+    df = pd.DataFrame({'model': all_models, 'alignment_depth': all_alignments, 'tmscore': all_tmscores})
     print(df)
     df.to_csv(args.workdir + '/summary.csv')
 
@@ -154,8 +161,8 @@ if __name__ == '__main__':
         for i, line in enumerate(contents):
             line = line.rstrip('\n')
             if line == "No 1":
-                template_name = contents[i+1].split()[0].lstrip('>')
-                evalue = contents[i+2].split()[1].split('=')[1]
+                template_name = contents[i + 1].split()[0].lstrip('>')
+                evalue = contents[i + 2].split()[1].split('=')[1]
                 print(f"\nPDB70 Template: {template_name}, e-value: {evalue}")
                 break
 
@@ -170,4 +177,3 @@ if __name__ == '__main__':
                 evalue = contents[i + 2].split()[1].split('=')[1]
                 print(f"\nIn house PDB Template: {template_name}, e-value: {evalue}")
                 break
-
