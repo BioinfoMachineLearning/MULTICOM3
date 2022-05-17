@@ -322,10 +322,9 @@ def main(argv):
         makedir_if_not_exists(current_work_dir)
 
         for chain_id in chain_id_map:
-            monomer_id = chain_id_map[chain_id].description
-            monomer_pdb_dir = current_work_dir + '/' + monomer_id
-            makedir_if_not_exists(monomer_pdb_dir)
-            os.system(f"cp {qa_result_dir}/{monomer_id}/pdb/{pdb_name} {monomer_pdb_dir}/{pdb_name}")
+            chain_pdb_dir = current_work_dir + '/' + chain_id_map[chain_id].description
+            makedir_if_not_exists(chain_pdb_dir)
+            os.system(f"cp {qa_result_dir}/{monomer_id}/pdb/{pdb_name} {chain_pdb_dir}/{pdb_name}")
 
             new_contents = []
             for idx, line in enumerate(
@@ -335,9 +334,9 @@ def main(argv):
                 else:
                     new_contents += [line]
 
-            open(f"{monomer_pdb_dir}/{pdb_name.replace('.pdb', '.a3m')}", 'w').writelines(new_contents)
-            monomer_pdb_dirs[chain_id] = f"{monomer_pdb_dir}/{pdb_name}"
-            monomer_alphafold_a3ms[chain_id] = f"{monomer_pdb_dir}/{pdb_name.replace('.pdb', '.a3m')}"
+            open(f"{chain_pdb_dir}/{pdb_name.replace('.pdb', '.a3m')}", 'w').writelines(new_contents)
+            monomer_pdb_dirs[chain_id] = f"{chain_pdb_dir}/{pdb_name}"
+            monomer_alphafold_a3ms[chain_id] = f"{chain_pdb_dir}/{pdb_name.replace('.pdb', '.a3m')}"
 
         print(monomer_alphafold_a3ms)
         pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
