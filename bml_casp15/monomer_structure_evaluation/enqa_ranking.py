@@ -92,7 +92,7 @@ class En_qa:
 
         return pd.DataFrame({'model': models, 'score': scores})
 
-    def run_with_pairwise_ranking(self, input_dir, pkl_dir, pairwise_ranking_file, outputdir):
+    def run_with_pairwise_ranking(self, input_dir, pkl_dir, pairwise_ranking_file, outputdir, pdbs_with_dist):
 
         input_dir = os.path.abspath(input_dir)
         pkl_dir = os.path.abspath(pkl_dir)
@@ -111,6 +111,8 @@ class En_qa:
             if i >= model_count:
                 break
             model = pairwise_ranking.loc[i, 'model']
+            if model not in pdbs_with_dist:
+                continue
             os.system(f"ln -s {input_dir}/{model} relaxed_model_{i+1}.pdb")
             os.system(f"ln -s {pkl_dir}/{model.replace('.pdb', '.pkl')} result_model_{i+1}.pkl")
 

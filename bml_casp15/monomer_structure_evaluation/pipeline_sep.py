@@ -96,20 +96,24 @@ def extract_monomer_pdbs(complex_pdb, sequence, output_prefix):
 
 
 def extract_pkl(src_pkl, output_pkl, residue_start=-1, residue_end=-1):
+    has_distogram = False
     with open(src_pkl, 'rb') as f:
         prediction_result = pickle.load(f)
         if residue_end != -1 and residue_start != -1:
-            prediction_result_monomer = {'plddt': prediction_result['plddt'][residue_start:residue_end+1, ]}
-            distogram_monomer = prediction_result['distogram']
-            distogram_monomer['logits'] = distogram_monomer['logits'][residue_start:residue_end+1,
-                                          residue_start:residue_end+1, :]
-            prediction_result_monomer['distogram'] = distogram_monomer
-
+            prediction_result_monomer = {'plddt': prediction_result['plddt'][residue_start:residue_end + 1, ]}
+            if 'distogram' in prediction_result:
+                distogram_monomer = prediction_result['distogram']
+                distogram_monomer['logits'] = distogram_monomer['logits'][residue_start:residue_end + 1,
+                                              residue_start:residue_end + 1, :]
+                prediction_result_monomer['distogram'] = distogram_monomer
+                has_distogram = True
         else:
-            prediction_result_monomer = {'plddt': prediction_result['plddt'],
-                                         'distogram': prediction_result['distogram']}
+            prediction_result_monomer = {'plddt': prediction_result['plddt']}
+            if 'distogram' in prediction_result:
+                prediction_result_monomer['distogram'] = prediction_result['distogram']
         with open(output_pkl, 'wb') as f:
             pickle.dump(prediction_result_monomer, f, protocol=4)
+    return has_distogram
 
 
 class Monomer_structure_evaluation_pipeline:
@@ -126,7 +130,8 @@ class Monomer_structure_evaluation_pipeline:
         self.enqa = En_qa(enqa_program=params['enqa_program'], use_gpu=use_gpu)
         self.bfactorqa = Bfactor_qa()
 
-    def run_qas(self, fasta_file, pdbdir, pkldir, output_dir_abs, pdbs_from_monomer, pdbs_from_multimer):
+    def run_qas(self, fasta_file, pdbdir, pkldir, output_dir_abs,
+                pdbs_from_monomer, pdbs_from_multimer, pdbs_with_dist):
 
         result_dict = {}
         cwd = os.getcwd()
@@ -162,7 +167,7 @@ class Monomer_structure_evaluation_pipeline:
 
             # if not os.path.exists(output_dir_abs + '/alphafold_ranking_monomer.csv'):
             monomer_indices = [i for i in range(len(alphafold_ranking)) if
-                                   alphafold_ranking.loc[i, 'model'] in pdbs_from_monomer]
+                               alphafold_ranking.loc[i, 'model'] in pdbs_from_monomer]
             alphafold_ranking_monomer = copy.deepcopy(alphafold_ranking.iloc[monomer_indices])
             alphafold_ranking_monomer.reset_index(inplace=True, drop=True)
             alphafold_ranking_monomer.to_csv(output_dir_abs + '/alphafold_ranking_monomer.csv')
@@ -170,7 +175,7 @@ class Monomer_structure_evaluation_pipeline:
 
             # if not os.path.exists(output_dir_abs + '/alphafold_ranking_multimer.csv'):
             monomer_indices = [i for i in range(len(alphafold_ranking)) if
-                                   alphafold_ranking.loc[i, 'model'] in pdbs_from_multimer]
+                               alphafold_ranking.loc[i, 'model'] in pdbs_from_multimer]
             alphafold_ranking_multimer = copy.deepcopy(alphafold_ranking.iloc[monomer_indices])
             alphafold_ranking_multimer.reset_index(inplace=True, drop=True)
             alphafold_ranking_multimer.to_csv(output_dir_abs + '/alphafold_ranking_multimer.csv')
@@ -189,7 +194,8 @@ class Monomer_structure_evaluation_pipeline:
                 enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
                                                                    pkl_dir=pkldir,
                                                                    pairwise_ranking_file=output_dir_abs + '/pairwise_ranking.tm',
-                                                                   outputdir=output_dir_abs + '/enqa')
+                                                                   outputdir=output_dir_abs + '/enqa',
+                                                                   pdbs_with_dist=pdbs_with_dist)
                 enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
             result_dict["enQA"] = output_dir_abs + '/enqa_ranking.csv'
         if "bfactor" in self.run_methods:
@@ -285,6 +291,8 @@ class Monomer_structure_evaluation_pipeline:
         msadir_multimer = output_dir + '/msa_multimer'
         makedir_if_not_exists(msadir_multimer)
 
+        pdbs_with_dist = []
+
         pdbs_from_monomer = []
         if os.path.exists(monomer_model_dir):
             for method in os.listdir(monomer_model_dir):
@@ -294,14 +302,18 @@ class Monomer_structure_evaluation_pipeline:
                     os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir_monomer}/{method}_{i}.pdb")
 
                     model_name = list(ranking_json["order"])[i]
-                    extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_{model_name}.pkl",
-                                output_pkl=f"{pkldir_monomer}/{method}_{i}.pkl")
-                    os.system(f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir_monomer}/{method}_{i}.a3m")
+                    has_distogram = extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_{model_name}.pkl",
+                                                output_pkl=f"{pkldir_monomer}/{method}_{i}.pkl")
+                    os.system(
+                        f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir_monomer}/{method}_{i}.a3m")
                     pdbs_from_monomer += [f"{method}_{i}.pdb"]
 
                     os.system(f"ln -s {pdbdir_monomer}/{method}_{i}.pdb {pdbdir}/{method}_{i}.pdb")
                     os.system(f"ln -s {pkldir_monomer}/{method}_{i}.pkl {pkldir}/{method}_{i}.pkl")
                     os.system(f"ln -s {msadir_monomer}/{method}_{i}.a3m {msadir}/{method}_{i}.a3m")
+
+                    if has_distogram:
+                        pdbs_with_dist += [f"{method}_{i}.pdb"]
 
         pdbs_from_multimer = []
         if os.path.exists(multimer_model_dir):
@@ -321,10 +333,11 @@ class Monomer_structure_evaluation_pipeline:
                             pdbname = chain_pdb_dict[chain_id]['pdbname']
                             print(pdbname)
                             model_name = list(ranking_json["order"])[i]
-                            extract_pkl(src_pkl=f"{multimer_model_dir}/{method}/result_{model_name}.pkl",
-                                        residue_start=chain_pdb_dict[chain_id]['chain_start'],
-                                        residue_end=chain_pdb_dict[chain_id]['chain_end'],
-                                        output_pkl=pkldir_multimer + '/' + pdbname.replace('.pdb', '.pkl'))
+                            has_distogram = extract_pkl(
+                                src_pkl=f"{multimer_model_dir}/{method}/result_{model_name}.pkl",
+                                residue_start=chain_pdb_dict[chain_id]['chain_start'],
+                                residue_end=chain_pdb_dict[chain_id]['chain_end'],
+                                output_pkl=pkldir_multimer + '/' + pdbname.replace('.pdb', '.pkl'))
 
                             os.system(f"cp {multimer_model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
                                       f"{msadir_multimer}/{pdbname.replace('.pdb', '.a3m')}")
@@ -340,8 +353,12 @@ class Monomer_structure_evaluation_pipeline:
                                 f"ln -s {msadir_multimer}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')} "
                                 f"{msadir}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')}")
 
+                            if has_distogram:
+                                pdbs_with_dist += [pdbname]
+
         return self.run_qas(fasta_file=fasta_file, pdbdir=pdbdir, pkldir=pkldir, output_dir_abs=output_dir_abs,
-                            pdbs_from_monomer=pdbs_from_monomer, pdbs_from_multimer=pdbs_from_multimer)
+                            pdbs_from_monomer=pdbs_from_monomer, pdbs_from_multimer=pdbs_from_multimer,
+                            pdbs_with_dist=pdbs_with_dist)
 
     def reprocess(self, targetname, fasta_file, output_dir):
 
