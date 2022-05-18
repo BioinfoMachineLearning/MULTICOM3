@@ -312,9 +312,11 @@ def main(argv):
         monomer_pdb_dirs = {}
         monomer_alphafold_a3ms = {}
         pdb_name = None
+
+        first_monomer_id = ""
         for chain_id in chain_id_map:
-            monomer_id = chain_id_map[chain_id].description
-            monomer_ranking = read_qa_txt_as_df(monomer_qas_res[monomer_id]['apollo'])
+            first_monomer_id = chain_id_map[chain_id].description
+            monomer_ranking = read_qa_txt_as_df(monomer_qas_res[first_monomer_id]['apollo'])
             pdb_name = monomer_ranking.loc[i, 'model']
             break
 
@@ -322,13 +324,14 @@ def main(argv):
         makedir_if_not_exists(current_work_dir)
 
         for chain_id in chain_id_map:
-            chain_pdb_dir = current_work_dir + '/' + chain_id_map[chain_id].description
+            monomer_id = chain_id_map[chain_id].description
+            chain_pdb_dir = current_work_dir + '/' + monomer_id
             makedir_if_not_exists(chain_pdb_dir)
-            os.system(f"cp {qa_result_dir}/{monomer_id}/pdb/{pdb_name} {chain_pdb_dir}/{pdb_name}")
+            os.system(f"cp {qa_result_dir}/{first_monomer_id}/pdb/{pdb_name} {chain_pdb_dir}/{pdb_name}")
 
             new_contents = []
             for idx, line in enumerate(
-                    open(f"{qa_result_dir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}").readlines()):
+                    open(f"{qa_result_dir}/{first_monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}").readlines()):
                 if idx == 0:
                     new_contents += [f">{monomer_id}\n"]
                 else:

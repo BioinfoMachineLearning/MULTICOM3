@@ -64,11 +64,7 @@ class Multimer_iterative_refinement_pipeline:
                 templates_filtered.reset_index(inplace=True, drop=True)
 
                 curr_df = create_template_df(templates_filtered)
-                curr_df = curr_df.rename(columns={"tpdbcode": f"tpdbcode{chain_idx + 1}"})
-                # print(curr_df)
                 curr_df = curr_df.add_suffix(f"{chain_idx + 1}")
-                curr_df['tpdbcode'] = curr_df[f'tpdbcode{chain_idx + 1}']
-                curr_df = curr_df.drop([f'tpdbcode{chain_idx + 1}'], axis=1)
                 if complex_templates_df is None:
                     complex_templates_df = curr_df
                 else:

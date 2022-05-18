@@ -35,6 +35,34 @@ def get_complex_alignments_by_method(monomers, concatenate_method, aln_dir):
     return a3ms_path
 
 
+def combine_a3ms(infiles, outfile):
+    targetname = None
+    targetseq = None
+    descriptions = []
+    seqs = []
+    for infile in infiles:
+        for line in open(infile):
+            line = line.rstrip('\n')
+            if line.startswith('>'):
+                descriptions += [line]
+                if targetname is None:
+                    targetname = line
+            else:
+                seqs += [line]
+                if targetseq is None:
+                    targetseq = line
+
+    seen_seqs = []
+    with open(outfile, 'w') as fw:
+        fw.write(f"{targetname}\n{targetseq}\n")
+        for (desc, seq) in zip(descriptions, seqs):
+            if desc == targetname and seq == targetseq:
+                continue
+            if seq not in seen_seqs:
+                fw.write(f"{desc}\n{seq}\n")
+                seen_seqs.append(seq)
+
+
 class Quaternary_structure_prediction_homo_pipeline:
 
     def __init__(self, params):  # , run_methods):
@@ -98,25 +126,51 @@ class Quaternary_structure_prediction_homo_pipeline:
                     output_dir):
 
         outdir = f"{output_dir}/img_multimer"
-        if complete_result(outdir):
-            return
+        if not complete_result(outdir):
+            monomers = [chain_id_map[chain_id].description for chain_id in chain_id_map]
+            img_a3ms = [f"{aln_dir}/{monomer}/{monomer}.a3m" for monomer in monomers]
+            template_stos = [f"{aln_dir}/{monomer}/{monomer}_uniref90.sto" for monomer in monomers]
+            makedir_if_not_exists(outdir)
 
-        monomers = [chain_id_map[chain_id].description for chain_id in chain_id_map]
-        img_a3ms = [f"{aln_dir}/{monomer}/{monomer}.a3m" for monomer in monomers]
-        template_stos = [f"{aln_dir}/{monomer}/{monomer}_uniref90.sto" for monomer in monomers]
-        makedir_if_not_exists(outdir)
+            base_cmd = f"python {self.params['alphafold_multimer_program']} " \
+                       f"--fasta_path {fasta_path} " \
+                       f"--monomer_a3ms {','.join(img_a3ms)} " \
+                       f"--multimer_a3ms {','.join(img_a3ms)} " \
+                       f"--template_stos {','.join(template_stos)} " \
+                       f"--env_dir {self.params['alphafold_env_dir']} " \
+                       f"--database_dir {self.params['alphafold_database_dir']} " \
+                       f"--output_dir {outdir} "
 
-        base_cmd = f"python {self.params['alphafold_multimer_program']} " \
-                   f"--fasta_path {fasta_path} " \
-                   f"--monomer_a3ms {','.join(img_a3ms)} " \
-                   f"--multimer_a3ms {','.join(img_a3ms)} " \
-                   f"--template_stos {','.join(template_stos)} " \
-                   f"--env_dir {self.params['alphafold_env_dir']} " \
-                   f"--database_dir {self.params['alphafold_database_dir']} " \
-                   f"--output_dir {outdir} "
+            print(base_cmd)
+            os.system(base_cmd)
 
-        print(base_cmd)
-        os.system(base_cmd)
+        outdir = f"{output_dir}/default_img"
+        if not complete_result(outdir):
+            monomers = []
+            img_default_a3ms = []
+            template_stos = []
+            for chain_id in chain_id_map:
+                monomer = chain_id_map[chain_id].description
+                monomers += [monomer]
+                img_a3m = f"{aln_dir}/{monomer}/{monomer}.a3m"
+                default_a3m = f"{output_dir}/default_multimer/msas/{chain_id}/monomer_final.a3m"
+                combine_a3ms([default_a3m, img_a3m], f"{aln_dir}/{monomer}/{monomer}_default_img.a3m")
+                img_default_a3ms += [f"{aln_dir}/{monomer}/{monomer}_default_img.a3m"]
+                template_stos += [f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"]
+
+            makedir_if_not_exists(outdir)
+
+            base_cmd = f"python {self.params['alphafold_multimer_program']} " \
+                       f"--fasta_path {fasta_path} " \
+                       f"--monomer_a3ms {','.join(img_default_a3ms)} " \
+                       f"--multimer_a3ms {','.join(img_default_a3ms)} " \
+                       f"--template_stos {','.join(template_stos)} " \
+                       f"--env_dir {self.params['alphafold_env_dir']} " \
+                       f"--database_dir {self.params['alphafold_database_dir']} " \
+                       f"--output_dir {outdir} "
+
+            print(base_cmd)
+            os.system(base_cmd)
 
     def process(self,
                 fasta_path,
@@ -217,7 +271,6 @@ class Quaternary_structure_prediction_homo_pipeline:
             print(cmd)
             os.system(cmd)
 
-
         os.chdir(self.params['alphafold_program_dir'])
 
         # Customized complex alignment pipelines using original template search pipeline in alphafold
@@ -249,6 +302,9 @@ class Quaternary_structure_prediction_homo_pipeline:
             if concatenate_method == "default":
                 a3m_paths = default_alphafold_monomer_a3ms
             else:
+                msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
+                if len(pd.read_csv(msa_pair_file)) <= 1:
+                    continue
                 a3m_paths = [f"{complex_aln_dir}/{concatenate_method}/{monomer}_con.a3m"
                              for monomer in monomers]
                 print(a3m_paths)
