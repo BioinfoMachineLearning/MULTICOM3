@@ -814,13 +814,13 @@ def run_quaternary_structure_generation_pipeline_foldseek_old(params, fasta_path
                                             chain_id_map=chain_id_map,
                                             monomer_pdb_dirs=pipeline_input.monomer_pdb_dirs,
                                             monomer_alphafold_a3ms=pipeline_input.monomer_alphafold_a3ms,
-                                            outdir=f"{outdir}/old_iter_{i + 1 + start}")
+                                            outdir=f"{outdir}/iter_{i + 1 + start}_old")
             else:
                 pipeline.search_single(fasta_file=fasta_path,
                                        chain_id_map=chain_id_map,
                                        monomer_pdb_dirs=pipeline_input.monomer_pdb_dirs,
                                        monomer_alphafold_a3ms=pipeline_input.monomer_alphafold_a3ms,
-                                       outdir=f"{outdir}/old_iter_{i + 1 + start}")
+                                       outdir=f"{outdir}/iter_{i + 1 + start}_old")
     except Exception as e:
         print(e)
         return False

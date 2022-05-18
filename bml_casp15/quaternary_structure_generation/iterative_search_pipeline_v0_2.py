@@ -659,8 +659,8 @@ class Multimer_iterative_generation_pipeline_monomer:
 
                 template_results += [foldseek_res]
 
-                # self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
-                #                           outdir=out_template_dir)
+                self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
+                                          outdir=out_template_dir)
 
             if len(template_results) != len(chain_id_map):
                 return None
