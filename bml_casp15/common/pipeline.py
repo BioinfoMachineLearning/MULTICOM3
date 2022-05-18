@@ -356,7 +356,8 @@ def select_models_monomer_only_human(qa_result, outputdir, params):
     selected_df.to_csv(outputdir + '/multicom_selected.csv')
 
     selected_models = []
-    casp13_human_ranking_df = pd.read_csv(qa_result["casp13"])
+    casp13_human_ranking_df = read_qa_txt_as_df(qa_result["casp13"])
+    casp13_human_ranking_df['model'] = casp13_human_ranking_df['model'] + '.pdb'
     for i in range(4):
         model = casp13_human_ranking_df.loc[i, 'model']
         os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom_human{i + 1}.pdb")

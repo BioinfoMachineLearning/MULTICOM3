@@ -111,6 +111,7 @@ def extract_pkl(src_pkl, output_pkl, residue_start=-1, residue_end=-1):
             prediction_result_monomer = {'plddt': prediction_result['plddt']}
             if 'distogram' in prediction_result:
                 prediction_result_monomer['distogram'] = prediction_result['distogram']
+                has_distogram = True
         with open(output_pkl, 'wb') as f:
             pickle.dump(prediction_result_monomer, f, protocol=4)
     return has_distogram
