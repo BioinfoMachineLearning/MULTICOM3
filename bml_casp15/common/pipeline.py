@@ -309,6 +309,137 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
     return qa_result
 
 
+def select_models_monomer_only_human(qa_result, outputdir, params):
+    if "pairwise_af_avg" not in qa_result:
+        raise Exception(
+            f"Cannot find pairwise ranking file for generating multicom models: {qa_result['pairwise_af_avg']}")
+
+    selected_models = []
+    pairwise_ranking_df = pd.read_csv(qa_result["pairwise_af_avg"])
+    for i in range(4):
+        model = pairwise_ranking_df.loc[i, 'model']
+        os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom{i + 1}.pdb")
+        selected_models += [model]
+
+    multicom_model_count = 5
+    multicom_added_models = []
+    top1_model = f"{outputdir}/pdb/{pairwise_ranking_df.loc[0, 'model']}"
+    for i in range(4, len(pairwise_ranking_df)):
+        model = pairwise_ranking_df.loc[i, 'model']
+        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
+                                        f"{outputdir}/pdb/{model}",
+                                        top1_model,
+                                        outputdir + '/tmp')
+        if tmscore < 0.98:
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom{multicom_model_count}.pdb")
+            multicom_added_models += [model]
+            selected_models += [model]
+            multicom_model_count += 1
+            if multicom_model_count > 5:
+                break
+        else:
+            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
+
+    if multicom_model_count <= 5:
+        for i in range(4, len(pairwise_ranking_df)):
+            model = pairwise_ranking_df.loc[i, 'model']
+            if model in multicom_added_models:
+                continue
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom{multicom_model_count}.pdb")
+            multicom_added_models += [model]
+            multicom_model_count += 1
+            selected_models += [model]
+            if multicom_model_count > 5:
+                break
+    selected_df = pd.DataFrame({'selected_models': selected_models})
+    selected_df.to_csv(outputdir + '/multicom_selected.csv')
+
+    selected_models = []
+    casp13_human_ranking_df = pd.read_csv(qa_result["casp13"])
+    for i in range(4):
+        model = casp13_human_ranking_df.loc[i, 'model']
+        os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom_human{i + 1}.pdb")
+        selected_models += [model]
+
+    multicom_human_model_count = 5
+    multicom_human_added_models = []
+    top1_model = f"{outputdir}/pdb/{casp13_human_ranking_df.loc[0, 'model']}"
+    for i in range(4, len(casp13_human_ranking_df)):
+        model = casp13_human_ranking_df.loc[i, 'model']
+        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
+                                        f"{outputdir}/pdb/{model}",
+                                        top1_model,
+                                        outputdir + '/tmp')
+        if tmscore < 0.98:
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom_human{multicom_human_model_count}.pdb")
+            multicom_human_added_models += [model]
+            selected_models += [model]
+            multicom_human_model_count += 1
+            if multicom_human_model_count > 5:
+                break
+        else:
+            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
+
+    if multicom_human_model_count <= 5:
+        for i in range(4, len(casp13_human_ranking_df)):
+            model = casp13_human_ranking_df.loc[i, 'model']
+            if model in multicom_human_added_models:
+                continue
+            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom_human{multicom_human_model_count}.pdb")
+            multicom_human_added_models += [model]
+            multicom_human_model_count += 1
+            selected_models += [model]
+            if multicom_human_model_count > 5:
+                break
+    selected_df = pd.DataFrame({'selected_models': selected_models})
+    selected_df.to_csv(outputdir + '/multicom_human_selected.csv')
+
+
+# def select_models_with_multimer(qa_result, outputdir):
+#     if "pairwise_af_avg" not in qa_result:
+#         raise Exception(
+#             f"Cannot find pairwise ranking file for generating multicom-egnn models: {qa_result['pairwise_af_avg']}")
+#
+#     # pdbs_from_monomer = [qa_result['pairwise_af_avg_monomer'].loc[i, 'model']
+#     #                      for i in range(len(qa_result['pairwise_af_avg_monomer']))]
+#     #
+#     # pdbs_from_multimer = [qa_result['pairwise_af_avg_multimer'].loc[i, 'model']
+#     #                       for i in range(len(qa_result['pairwise_af_avg_multimer']))]
+#     pairwise_af_avg_multimer_ranking = pd.read_csv(qa_result['pairwise_af_avg_multimer'])
+#     pairwise_af_avg_ranking = pd.read_csv(qa_result['pairwise_af_avg'])
+#     selected_multimer_models = [pairwise_af_avg_multimer_ranking.loc[i, 'model'] for i in range(3)]
+#     for i in range(len(pairwise_af_avg_ranking)):
+#         if pairwise_af_avg_ranking.loc[i, 'model'] in selected_multimer_models:
+#             continue
+#         else:
+#             selected_multimer_models += [pairwise_af_avg_ranking.loc[i, 'model']]
+#             if len(selected_multimer_models) >= 5:
+#                 break
+#
+#     for i in range(len(selected_multimer_models)):
+#         os.system(f"cp {outputdir}/pdb/{selected_multimer_models[i]} {outputdir}/egnn{i + 1}.pdb")
+#
+#     selected_df = pd.DataFrame({'selected_models': selected_multimer_models})
+#     selected_df.to_csv(outputdir + '/egnn_selected.csv')
+#
+#     alphafold_multimer_ranking = pd.read_csv(qa_result['alphafold_multimer'])
+#     alphafold_ranking = pd.read_csv(qa_result['alphafold'])
+#     selected_multimer_models = [alphafold_multimer_ranking.loc[i, 'model'] for i in range(3)]
+#     for i in range(len(alphafold_ranking)):
+#         if alphafold_ranking.loc[i, 'model'] in selected_multimer_models:
+#             continue
+#         else:
+#             selected_multimer_models += [alphafold_ranking.loc[i, 'model']]
+#             if len(selected_multimer_models) >= 5:
+#                 break
+#
+#     for i in range(len(selected_multimer_models)):
+#         os.system(f"cp {outputdir}/pdb/{selected_multimer_models[i]} {outputdir}/refine{i + 1}.pdb")
+#
+#     selected_df = pd.DataFrame({'selected_models': selected_multimer_models})
+#     selected_df.to_csv(outputdir + '/refine_selected.csv')
+
+
 def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_monomer_dir, outputdir,
                                           input_multimer_dir="", generate_egnn_models=False, model_count=5):
     makedir_if_not_exists(outputdir)
@@ -323,8 +454,8 @@ def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_
         print(e)
 
     if generate_egnn_models:
-        if input_multimer_dir == "":
-            select_models_monomer_only(qa_result=qa_result, outputdir=outputdir, params=params)
+        if input_multimer_dir == "" or not os.path.exists(input_multimer_dir):
+            select_models_monomer_only_human(qa_result=qa_result, outputdir=outputdir, params=params)
         else:
             select_models_with_multimer(qa_result=qa_result, outputdir=outputdir)
 

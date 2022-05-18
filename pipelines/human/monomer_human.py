@@ -48,7 +48,7 @@ def main(argv):
     monomer_model_dir = FLAGS.output_dir + '/monomer_models'
     multimer_model_dir = FLAGS.output_dir + '/multimer_models'
 
-    N1_outdir = FLAGS.output_dir + '/N1_monomer_structure_evaluation'
+    N1_outdir = FLAGS.output_dir + '/N1'
     makedir_if_not_exists(N1_outdir)
     processed_seuqences = {}
     for chain_id in chain_id_map:
