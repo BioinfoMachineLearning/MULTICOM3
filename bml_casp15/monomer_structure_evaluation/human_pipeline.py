@@ -153,8 +153,8 @@ class Monomer_structure_evaluation_human_pipeline:
             result_dict["pairwise_af_avg_multimer"] = output_dir_abs + '/pairwise_af_avg_multimer.ranking'
 
         if "human" in self.run_methods:
-            casp13_ranking = output_dir_abs + '/casp13/Full_TS/eva/Human_TS.txt'
-            casp14_deeprank_ranking = output_dir_abs + '/casp14/Full_TS/eva/Human_TS.txt'
+            casp13_ranking = output_dir_abs + '/casp13/Full_TS/eva/HumanQA_gdt_prediction_sort.txt'
+            casp14_deeprank_ranking = output_dir_abs + '/casp14/Full_TS/eva/HumanQA_gdt_prediction_sort.txt'
             casp14_deeprank3_ranking = output_dir_abs + '/casp14/Full_TS/eva_DeepRank3/DeepRank3_Cluster.txt'
             if not os.path.exists(casp13_ranking):
                 cmd = f"perl {self.casp13_script} {targetname} {fasta_file} {output_dir_abs}/casp13 NULL NULL {pdbdir} &> {output_dir_abs}/run_casp13_human.log "
