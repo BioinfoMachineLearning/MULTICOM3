@@ -249,11 +249,18 @@ class Monomer_structure_evaluation_human_pipeline:
                             pdbname = chain_pdb_dict[chain_id]['pdbname']
                             print(pdbname)
                             model_name = list(ranking_json["order"])[i]
-                            has_distogram = extract_pkl(
+                            has_distogram = False
+
+                            src_pkl = f"{multimer_model_dir}/{method}/result_{model_name}.pkl"
+                            if os.path.exists(src_pkl):
+                                has_distogram = extract_pkl(
                                 src_pkl=f"{multimer_model_dir}/{method}/result_{model_name}.pkl",
                                 residue_start=chain_pdb_dict[chain_id]['chain_start'],
                                 residue_end=chain_pdb_dict[chain_id]['chain_end'],
                                 output_pkl=pkldir_multimer + '/' + pdbname.replace('.pdb', '.pkl'))
+                                os.system(
+                                    f"ln -s {pkldir_multimer}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}"
+                                    f" {pkldir}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}")
 
                             os.system(f"cp {multimer_model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
                                       f"{msadir_multimer}/{pdbname.replace('.pdb', '.a3m')}")
@@ -262,9 +269,6 @@ class Monomer_structure_evaluation_human_pipeline:
                             pdbs_from_multimer += [pdbname]
 
                             os.system(f"ln -s {pdbdir_multimer}/{pdbname} {pdbdir}/{pdbname}")
-                            os.system(
-                                f"ln -s {pkldir_multimer}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}"
-                                f" {pkldir}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}")
                             os.system(
                                 f"ln -s {msadir_multimer}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')} "
                                 f"{msadir}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')}")

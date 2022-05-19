@@ -574,6 +574,16 @@ def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir,
     # pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
 
 
+def run_monomer_refinement_pipeline_human(params, ranking_df, refinement_inputs, outdir, finaldir, prefix, refpdb=""):
+    pipeline = iterative_refine_pipeline.Monomer_iterative_refinement_pipeline_server(params=params)
+    pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir)
+
+    makedir_if_not_exists(finaldir)
+
+    pipeline = iterative_refine_pipeline.Monomer_refinement_model_selection(params)
+    pipeline.select_v2(indir=outdir, outdir=finaldir, ranking_df=ranking_df, prefix=prefix, refpdb=refpdb)
+
+
 def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, outputdir, params, is_homomers=False):
     chains = multimer.split(',')
     # alignment = {'outdir': f"{outputdir}/{'_'.join(chains)}"}

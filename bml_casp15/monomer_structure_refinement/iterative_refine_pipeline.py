@@ -6,7 +6,7 @@ from bml_casp15.common.util import makedir_if_not_exists, check_dirs
 import dataclasses
 from bml_casp15.monomer_structure_refinement.iterative_refine_pipeline_v4_50 import *
 import pandas as pd
-
+from bml_casp15.monomer_structure_refinement.util import cal_tmscore
 
 class refinement_input:
     def __init__(self, fasta_path, pdb_path, pkl_path, msa_path):
@@ -126,7 +126,7 @@ class Monomer_refinement_model_selection:
 
         return outdir
 
-    def select_v2(self, ranking_df, indir, outdir):
+    def select_v2(self, ranking_df, indir, outdir, prefix, refpdb):
         if os.path.exists(outdir):
             os.system(f"rm -rf {outdir}")
         makedir_if_not_exists(outdir)
@@ -136,6 +136,8 @@ class Monomer_refinement_model_selection:
         start_plddts = []
         refine_plddts = []
         final_models = []
+        tmscores = []
+        reftmscores = []
         for i in range(5):
             pdb_name = ranking_df.loc[i, 'model'].replace('.pdb', '')
             start_pdb = indir + '/' + pdb_name + '/iteration1/start.pdb'
@@ -157,18 +159,32 @@ class Monomer_refinement_model_selection:
 
             refine_pdbs += [f"{pdb_name}_ref.pdb"]
             refine_plddts += [plddt_ref]
+            tmscore, _ = cal_tmscore(tmscore_program=self.params['tmscore_program'],
+                                     inpdb=start_pdb,
+                                     nativepdb=refine_pdb,
+                                     tmpdir=outdir + '/tmp')
+            tmscores += [tmscore]
+
+            reftmscore = 0
+            if os.path.exists(refpdb):
+                reftmscore, _ = cal_tmscore(tmscore_program=self.params['tmscore_program'],
+                                         inpdb=refpdb,
+                                         nativepdb=refine_pdb,
+                                         tmpdir=outdir + '/tmp')
+            reftmscores += [reftmscore]
 
             if plddt_start > plddt_ref:
-                os.system(f"cp {outdir}/{pdb_name}_ori.pdb {outdir}/refine{i + 1}.pdb")
-                os.system(f"cp {outdir}/{pdb_name}_ori.pkl {outdir}/refine{i + 1}.pkl")
+                os.system(f"cp {outdir}/{pdb_name}_ori.pdb {outdir}/{prefix}{i + 1}.pdb")
+                os.system(f"cp {outdir}/{pdb_name}_ori.pkl {outdir}/{prefix}{i + 1}.pkl")
                 final_models += [f"{pdb_name}_ori.pdb"]
             else:
-                os.system(f"cp {outdir}/{pdb_name}_ref.pdb {outdir}/refine{i + 1}.pdb")
-                os.system(f"cp {outdir}/{pdb_name}_ref.pkl {outdir}/refine{i + 1}.pkl")
+                os.system(f"cp {outdir}/{pdb_name}_ref.pdb {outdir}/{prefix}{i + 1}.pdb")
+                os.system(f"cp {outdir}/{pdb_name}_ref.pkl {outdir}/{prefix}{i + 1}.pkl")
                 final_models += [f"{pdb_name}_ref.pdb"]
 
         df = pd.DataFrame({'start_model': start_pdbs, 'start_plddt': start_plddts,
-                           'refine_model': refine_pdbs, 'refine_plddt': refine_plddts, 'final_model': final_models})
+                           'refine_model': refine_pdbs, 'refine_plddt': refine_plddts,
+                           'tmscore': tmscores, 'reftmscore': reftmscores, 'final_model': final_models})
         df.to_csv(outdir + '/final_ranking.csv')
 
         return outdir
