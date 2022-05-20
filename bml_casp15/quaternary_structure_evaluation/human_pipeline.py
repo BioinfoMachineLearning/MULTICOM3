@@ -24,7 +24,7 @@ def combine_pdb(pdbs, combine_pdb):
                 out.write(line[:21] + chain_id + line[22:])
             out.write('TER\n')
 
-def extract_pkl(inpkl, outpkl, chain_starts, chain_ends):
+def extract_multimer_pkl(inpkl, outpkl, chain_starts, chain_ends):
     with open(inpkl, 'rb') as f:
         prediction_result = pickle.load(f)
         indices = []
@@ -145,7 +145,7 @@ def extract_multimer_pdbs(chain_id_map, complex_pdb, workdir, complex_pkl,
     for pair_idx, pair in enumerate(src_pair_dict):
         combine_pdb([src_pair_dict[pair]['pdb'][chain_idx] for chain_idx, chain_id in enumerate(pair.split('_'))],
                     output_pdb_name + pair + '.pdb')
-        extract_pkl(complex_pkl, output_pkl_name + pair + '.pkl',
+        extract_multimer_pkl(complex_pkl, output_pkl_name + pair + '.pkl',
                     src_pair_dict[pair]['chain_start'], src_pair_dict[pair]['chain_end'])
 
 
@@ -219,7 +219,7 @@ class Quaternary_structure_evaluation_pipeline_human:
                     extract_multimer_pdbs(chain_id_map=chain_id_map,
                                                             complex_pdb=complex_pdb,
                                                            complex_pkl=complex_pkl,
-                                                           workdir=f"{extract_model_dir}/{method}/ranked_{i}"
+                                                           workdir=f"{extract_model_dir}/{method}/ranked_{i}",
                                                            output_pdb_name=f"{pdbdir}/{method}_{i}",
                                                             output_pkl_name=f"{pkldir}/{method}_{i}")
 

@@ -102,19 +102,23 @@ class En_qa:
 
         pairwise_ranking = convert_pairwise_ranking_to_df(pairwise_ranking_file)
 
+        if os.path.exists(outputdir + '/alphafold_prediction'):
+            os.system(outputdir + '/alphafold_prediction')
+
         makedir_if_not_exists(outputdir + '/alphafold_prediction')
 
-        model_count = 5
+        model_count = 1
 
         os.chdir(f"{outputdir}/alphafold_prediction")
         for i in range(len(pairwise_ranking)):
-            if i >= model_count:
+            if model_count > 5:
                 break
             model = pairwise_ranking.loc[i, 'model']
             if model not in pdbs_with_dist:
                 continue
-            os.system(f"ln -s {input_dir}/{model} relaxed_model_{i+1}.pdb")
-            os.system(f"ln -s {pkl_dir}/{model.replace('.pdb', '.pkl')} result_model_{i+1}.pkl")
+            os.system(f"ln -s {input_dir}/{model} relaxed_model_{model_count}.pdb")
+            os.system(f"ln -s {pkl_dir}/{model.replace('.pdb', '.pkl')} result_model_{model_count}.pkl")
+            model_count += 1
 
         print("Try to run the ensemble model first")
         cmd = f"sh {self.enqa_program} {input_dir} {outputdir} ensemble {outputdir}/alphafold_prediction"
