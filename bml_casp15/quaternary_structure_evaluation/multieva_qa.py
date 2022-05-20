@@ -31,6 +31,10 @@ class MultiEva_qa:
         if not os.path.exists(result_csv):
             return None
 
+        df = pd.read_csv(result_csv)
+        df = df.sort_values(by=['MMalign score'], ascending=False)
+        df.reset_index(inplace=True,drop=True)
+        df.to_csv(result_csv)
         return result_csv
 
     def run_with_pairwise_ranking(self, input_dir, pkl_dir, pairwise_ranking_file, outputdir):

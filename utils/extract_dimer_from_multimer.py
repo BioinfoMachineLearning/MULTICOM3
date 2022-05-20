@@ -28,7 +28,7 @@ def extract_pkl(inpkl, outpkl, chain_starts, chain_ends):
         prediction_result = pickle.load(f)
         indices = []
         for chain_start, chain_end in zip(chain_starts, chain_ends):
-            indices += list(range(chain_start, chain_end))
+            indices += list(range(chain_start, chain_end+1))
         prediction_result_new = {'plddt': prediction_result['plddt'][indices, ]}
         if 'distogram' in prediction_result:
             distogram_new = prediction_result['distogram']

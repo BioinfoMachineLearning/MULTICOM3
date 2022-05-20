@@ -114,7 +114,7 @@ def main(argv):
             else:
                 max_tmscores = []
                 for j in range(len(prev_df)):
-                    max_tmscore = np.max(np.array([prev_df.loc[j, f"evalue{j + 1}"] for k in range(len(chain_id_map))]))
+                    max_tmscore = np.max(np.array([prev_df.loc[j, f"evalue{k + 1}"] for k in range(len(chain_id_map))]))
                     max_tmscores += [max_tmscore]
                 prev_df['max_tmscore'] = max_tmscores
                 prev_df = prev_df.sort_values(by=['max_tmscore'], ascending=False)

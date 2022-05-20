@@ -46,13 +46,13 @@ def main(argv):
     chain_id_map, chain_id_seq_map = make_chain_id_map(sequences=input_seqs,
                                                        descriptions=input_descs)
 
-    monomer_model_dir = FLAGS.output_dir + '/monomer_structure_evaluation'
-    multimer_model_dir = FLAGS.output_dir + '/quaternary_structure_generation'
-    extract_multimer_model_dir = FLAGS.output_dir + '/quaternary_structure_generation_extract'
+    monomer_qa_dir = FLAGS.output_dir + '/N1_monomer_structure_evaluation'
+    multimer_model_dir = FLAGS.output_dir + '/multimer_models_ori'
+    extract_multimer_model_dir = FLAGS.output_dir + '/multimer_models_extract'
 
     N1_outdir = FLAGS.output_dir + '/N1_quaternary_structure_evaluation'
     multimer_qa_result = run_multimer_evaluation_pipeline_human(fasta_path=FLAGS.fasta_path,
-                                                          params=params, monomer_model_dir=monomer_model_dir,
+                                                          params=params, monomer_model_dir=monomer_qa_dir,
                                                           chain_id_map=chain_id_map,
                                                           indir=multimer_model_dir,
                                                           extract_dir=extract_multimer_model_dir,

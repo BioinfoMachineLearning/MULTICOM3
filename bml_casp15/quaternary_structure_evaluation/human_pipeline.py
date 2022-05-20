@@ -3,7 +3,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, check_dirs
 import pandas as pd
-from bml_casp15.quaternary_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
+from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
 from bml_casp15.quaternary_structure_evaluation.pairwise_dockq import Pairwise_dockq_qa
 from bml_casp15.quaternary_structure_evaluation.dproq_ranking import DPROQ
 from bml_casp15.quaternary_structure_evaluation.enqa_ranking import En_qa
@@ -11,6 +11,11 @@ from bml_casp15.monomer_structure_evaluation.bfactor_ranking import Bfactor_qa
 from bml_casp15.quaternary_structure_evaluation.multieva_qa import MultiEva_qa
 from bml_casp15.quaternary_structure_evaluation.foldseek_ranking import FoldSeek_qa
 from bml_casp15.common.protein import complete_result
+from bml_casp15.monomer_structure_evaluation.pipeline_sep import extract_monomer_pdbs
+from Bio.PDB.PDBParser import PDBParser
+import numpy as np
+import pickle
+
 
 PDB_CHAIN_IDS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -29,11 +34,12 @@ def extract_multimer_pkl(inpkl, outpkl, chain_starts, chain_ends):
         prediction_result = pickle.load(f)
         indices = []
         for chain_start, chain_end in zip(chain_starts, chain_ends):
-            indices += list(range(chain_start, chain_end))
+            indices += list(range(chain_start, chain_end+1))
         prediction_result_new = {'plddt': prediction_result['plddt'][indices, ]}
         if 'distogram' in prediction_result:
             distogram_new = prediction_result['distogram']
-            distogram_new['logits'] = distogram_new['logits'][indices, indices, :]
+            ttt1 = distogram_new['logits'][indices, :, :]
+            distogram_new['logits'] = ttt1[:, indices, :]
             prediction_result_new['distogram'] = distogram_new
         with open(outpkl, 'wb') as f:
             pickle.dump(prediction_result_new, f, protocol=4)
@@ -145,8 +151,9 @@ def extract_multimer_pdbs(chain_id_map, complex_pdb, workdir, complex_pkl,
     for pair_idx, pair in enumerate(src_pair_dict):
         combine_pdb([src_pair_dict[pair]['pdb'][chain_idx] for chain_idx, chain_id in enumerate(pair.split('_'))],
                     output_pdb_name + pair + '.pdb')
-        extract_multimer_pkl(complex_pkl, output_pkl_name + pair + '.pkl',
-                    src_pair_dict[pair]['chain_start'], src_pair_dict[pair]['chain_end'])
+        if os.path.exists(complex_pkl):
+            extract_multimer_pkl(complex_pkl, output_pkl_name + pair + '.pkl',
+                        src_pair_dict[pair]['chain_start'], src_pair_dict[pair]['chain_end'])
 
 
 
@@ -161,7 +168,7 @@ class Quaternary_structure_evaluation_pipeline_human:
         self.run_methods = run_methods
 
         self.pairwise_qa = Pairwise_dockq_qa(params['dockq_program'])
-        self.alphafold_qa = Alphafold_pkl_qa()
+        self.alphafold_qa = Alphafold_pkl_qa(ranking_methods = ['plddt_avg'])
         self.dproq = DPROQ(dproq_program=params['dproq_program'])
         self.enqa = En_qa(enqa_program=params['enqa_program'])
         self.bfactorqa = Bfactor_qa()
@@ -213,7 +220,7 @@ class Quaternary_structure_evaluation_pipeline_human:
             for i in range(model_count):
                 model_name = list(ranking_json["order"])[i]
                 complex_pdb = f"{extract_model_dir}/{method}/ranked_{i}.pdb"
-                complex_pkl = f"{model_dir}/{method}/result_{model_name}.pkl"
+                complex_pkl = f"{extract_model_dir}/{method}/result_{model_name}.pkl"
 
                 if os.path.exists(complex_pdb):
                     extract_multimer_pdbs(chain_id_map=chain_id_map,
@@ -304,7 +311,7 @@ class Quaternary_structure_evaluation_pipeline_human:
             print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
                 pairwise_score = float(avg_ranking_df.loc[i, 'MMalign score'])
-                alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
                 avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
