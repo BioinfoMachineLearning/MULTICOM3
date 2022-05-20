@@ -45,7 +45,7 @@ def main(argv):
     chain_id_map, chain_id_seq_map = make_chain_id_map(sequences=input_seqs,
                                                        descriptions=input_descs)
 
-    # monomer_model_dir = FLAGS.output_dir + '/monomer_structure_generation'
+    monomer_model_dir = FLAGS.output_dir + '/monomer_structure_generation'
     multimer_model_dir = FLAGS.output_dir + '/quaternary_structure_generation'
 
     N1_outdir = FLAGS.output_dir + '/N1_monomer_structure_evaluation'
@@ -62,7 +62,7 @@ def main(argv):
             result = run_monomer_evaluation_pipeline(params=params,
                                                      targetname=monomer_id,
                                                      fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                     input_monomer_dir="",
+                                                     input_monomer_dir=monomer_model_dir + '/' + monomer_id,
                                                      input_multimer_dir=multimer_model_dir,
                                                      outputdir=N1_monomer_outdir, generate_egnn_models=True,
                                                      model_count=5)

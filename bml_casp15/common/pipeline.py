@@ -22,6 +22,7 @@ from bml_casp15.quaternary_structure_generation.pipeline_homo_v2 import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2_old import *
 from bml_casp15.quaternary_structure_evaluation.pipeline import *
+from bml_casp15.quaternary_structure_evaluation.human_pipeline import *
 from bml_casp15.common.protein import *
 import pandas as pd
 import numpy as np
@@ -887,6 +888,50 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
         multimer_qa_result = pipeline.process(fasta_path=fasta_path,
                                               chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
                                               model_dir=indir,
+                                              output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
+    except Exception as e:
+        print(e)
+
+    alphafold_confidence_ranking = pd.read_csv(multimer_qa_result['alphafold'])
+    for i in range(5):
+        model_name = alphafold_confidence_ranking.loc[i, 'model']
+        os.system(f"cp {outdir}/pdb/{model_name} {outdir}/qa{i + 1}.pdb")
+        if not is_homomer:
+            chain_group = extract_monomer_models_from_complex(complex_pdb=f"{outdir}/qa{i + 1}.pdb",
+                                                              complex_pkl=f"{outdir}/pkl/{model_name.replace('.pdb', '.pkl')}",
+                                                              chain_id_map=chain_id_map, workdir=f"{outdir}/qa{i + 1}")
+            for chain_id in chain_group:
+                chain_outdir = f"{outdir}/qa_{chain_id}"
+                makedir_if_not_exists(chain_outdir)
+                os.system(f"cp {outdir}/qa{i + 1}/{chain_id}_top1.pdb {chain_outdir}/qa{i + 1}.pdb")
+
+    af_pairwise_avg_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])
+    for i in range(5):
+        model_name = af_pairwise_avg_ranking.loc[i, 'model']
+        os.system(f"cp {outdir}/pdb/{model_name} {outdir}/deep{i + 1}.pdb")
+        if not is_homomer:
+            chain_group = extract_monomer_models_from_complex(complex_pdb=f"{outdir}/deep{i + 1}.pdb",
+                                                              complex_pkl=f"{outdir}/pkl/{model_name.replace('.pdb', '.pkl')}",
+                                                              chain_id_map=chain_id_map,
+                                                              workdir=f"{outdir}/deep{i + 1}")
+            for chain_id in chain_group:
+                chain_outdir = f"{outdir}/deep_{chain_id}"
+                makedir_if_not_exists(chain_outdir)
+                os.system(f"cp {outdir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
+
+    return multimer_qa_result
+
+
+def run_multimer_evaluation_pipeline_human(params, fasta_path, chain_id_map, monomer_model_dir,
+                                     indir, extract_dir, outdir, stoichiometry, is_homomer=False, model_count=5):
+    makedir_if_not_exists(outdir)
+    pipeline = Quaternary_structure_evaluation_pipeline_human(params=params)
+    multimer_qa_result = None
+    try:
+        multimer_qa_result = pipeline.process(fasta_path=fasta_path,
+                                              chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
+                                              model_dir=indir,
+                                              extract_model_dir=extract_dir,
                                               output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
     except Exception as e:
         print(e)

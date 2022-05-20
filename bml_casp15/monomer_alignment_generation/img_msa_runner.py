@@ -40,6 +40,7 @@ class IMG_Msa_runner:
               f"-hmmsearchdb={self.metaclust_database_path}:{self.mgnify_database_path}:{self.uniref90_database_path} " \
               f"-outdir={outpath} -tmpdir={outpath}/tmp -ncpu=8 >/dev/null 2>&1 &"
 
+        print(cmd)
         os.system(cmd)
         #
         # if not os.path.exist(f'{outpath}/{targetname}.a3m'):
