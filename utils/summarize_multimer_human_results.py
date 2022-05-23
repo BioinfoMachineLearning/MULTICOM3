@@ -89,10 +89,11 @@ if __name__ == '__main__':
 
     params = read_option_file(args.option_file)
 
-    qa_dir = args.workdir + '/N1_multimer/'
+    qa_dir = args.workdir + '/N1_quaternary_structure_evaluation/'
     pdb_dir = qa_dir + '/pdb'
 
-    ranking_csvs = {'bfactor_multieva_avg': f"{qa_dir}/pairwise_bfactor_avg.ranking",
+    ranking_csvs = {'af_multieva_avg': f"{qa_dir}/pairwise_af_avg.ranking",
+                    'bfactor_multieva_avg': f"{qa_dir}/pairwise_bfactor_avg.ranking",
                     'af': f"{qa_dir}/alphafold_ranking.csv",
                     'bfactor': f"{qa_dir}/bfactor_ranking.csv",
                     'multieva': f"{qa_dir}/multieva.csv"}
@@ -122,7 +123,7 @@ if __name__ == '__main__':
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
                                                   tmscore_progarm=params['mmalign_program'],
-                                                  ranked_field='plddt_avg',
+                                                  ranked_field='confidence',
                                                   is_csv=True)
         elif method == 'bfactor':
             global_scores = convert_ranking_to_df(method=method,
@@ -148,7 +149,7 @@ if __name__ == '__main__':
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
                                                   tmscore_progarm=params['mmalign_program'],
-                                                  ranked_field='MMalign score',
+                                                  ranked_field='average_MMS',
                                                   is_csv=True, index_col=None)
         # elif method == 'enqa':
         #     global_scores = convert_ranking_to_df(infile=ranking_csvs[method],

@@ -84,7 +84,7 @@ enqa_program = /bmlfast/bml_casp15/BML_CASP15/bml_casp15/monomer_structure_evalu
 dproq_program = /bmlfast/bml_casp15/BML_CASP15/bml_casp15/quaternary_structure_evaluation/dproq.sh
 
 #multieva_program
-multieva_program = /bmlfast/bml_casp15/casp15_qa_multimer_eva/MultimerEva/multi_eva_lite_cdpred.py
+multieva_program = /bmlfast/bml_casp15/casp15_qa_multimer_eva/MultimerEva/multi_eva_mmalign.py
 
 ######################Monomer template search option#################################
 

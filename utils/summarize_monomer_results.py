@@ -93,23 +93,24 @@ if __name__ == '__main__':
         refine_dir = args.workdir + '/N2_monomer_structure_refinement_avg_final/'
 
     refine_ranking = refine_dir + 'refine_selected.csv'
-    refine_ranking_df = pd.read_csv(refine_ranking)
-    ranked_modeles = []
-    alignment_depth = []
-    for i in range(5):
-        model = refine_ranking_df.loc[i, 'selected_models']
-        ranked_modeles += [model]
-        msa = refine_dir + '/' + model.replace('.pdb', '.a3m')
-        alignment_depth += [len(open(msa).readlines()) / 2]
+    if os.path.exists(refine_ranking):
+        refine_ranking_df = pd.read_csv(refine_ranking)
+        ranked_modeles = []
+        alignment_depth = []
+        for i in range(5):
+            model = refine_ranking_df.loc[i, 'selected_models']
+            ranked_modeles += [model]
+            msa = refine_dir + '/' + model.replace('.pdb', '.a3m')
+            alignment_depth += [len(open(msa).readlines()) / 2]
 
-        tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
-                                 inpdb=refine_dir + '/' + model,
-                                 nativepdb=args.refpdb, tmpdir=args.tmpdir)
-        all_tmscores += [tmscore]
+            tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
+                                     inpdb=refine_dir + '/' + model,
+                                     nativepdb=args.refpdb, tmpdir=args.tmpdir)
+            all_tmscores += [tmscore]
 
-    print(f"\nrefine models: {ranked_modeles}\n")
-    all_models += ranked_modeles
-    all_alignments += alignment_depth
+        print(f"\nrefine models: {ranked_modeles}\n")
+        all_models += ranked_modeles
+        all_alignments += alignment_depth
 
     deep_ranking = qa_dir + '/deep_selected.csv'
     alignment_depth = []
