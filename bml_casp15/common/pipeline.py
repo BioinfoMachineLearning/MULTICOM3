@@ -966,7 +966,7 @@ def run_multimer_evaluation_pipeline_human(params, fasta_path, chain_id_map, mon
     return multimer_qa_result
 
 
-def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir, stoichiometry):
+def run_multimer_refinement_pipeline(params, chain_id_map, refinement_inputs, outdir, finaldir, stoichiometry):
     pipeline = iterative_refine_pipeline_multimer.Multimer_iterative_refinement_pipeline_server(params=params)
     pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir, stoichiometry=stoichiometry)
 
@@ -975,10 +975,11 @@ def run_multimer_refinement_pipeline(params, refinement_inputs, outdir, finaldir
     pipeline = iterative_refine_pipeline_multimer.Multimer_refinement_model_selection()
     pipeline.select_v1(indir=outdir, outdir=finaldir)
 
-    chain_group = extract_monomer_models_from_complex(complex_pdb=f"{finaldir}/deep{i + 1}.pdb",
-                                                      complex_pkl=f"{finaldir}/pkl/{model_name.replace('.pdb', '.pkl')}",
-                                                      chain_id_map=chain_id_map, workdir=f"{finaldir}/deep{i + 1}")
-    for chain_id in chain_group:
-        chain_outdir = f"{finaldir}/deep_{chain_id}"
-        makedir_if_not_exists(chain_outdir)
-        os.system(f"cp {finaldir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
+    for i in range(5):
+        chain_group = extract_monomer_models_from_complex(complex_pdb=f"{finaldir}/deep{i + 1}.pdb",
+                                                          complex_pkl=f"{finaldir}/deep{i+1}.pkl",
+                                                          chain_id_map=chain_id_map, workdir=f"{finaldir}/deep{i + 1}")
+        for chain_id in chain_group:
+            chain_outdir = f"{finaldir}/deep_{chain_id}"
+            makedir_if_not_exists(chain_outdir)
+            os.system(f"cp {finaldir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
