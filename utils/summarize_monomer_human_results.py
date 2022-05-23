@@ -134,26 +134,22 @@ if __name__ == '__main__':
     for method in ['dist_pearson', 'dist_ssim', 'dncon4_long-range']:
         ranking_csvs[method] = f"{qa_dir}/{target}/casp14/Full_TS/eva_DeepRank3/ALL_scores/feature_{method}.{target}"
 
-    print(' '.join([method for method in ranking_csvs]))
     # print(ranking_csvs)
-    miss_res = []
-    find_all_res = True
+    find_res = {}
     for method in ranking_csvs:
         if not os.path.exists(ranking_csvs[method]):
             print(f"cannot find {ranking_csvs[method]}")
-            find_all_res = False
-            break
-
-    if not find_all_res:
-        raise Exception("Cannot find all the results")
+        else:
+            find_res[method] = ranking_csvs[method]
+    print(' '.join([method for method in find_res]))
 
     all_dfs = []
 
-    for index, method in enumerate(ranking_csvs):
-        print(ranking_csvs[method])
+    for index, method in enumerate(find_res):
+        print(find_res[method])
         if method == 'af':
             global_scores = convert_ranking_to_df(method=method,
-                                                  infile=ranking_csvs[method],
+                                                  infile=find_res[method],
                                                   index=index,
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
@@ -163,7 +159,7 @@ if __name__ == '__main__':
                                                   is_csv=True)
         elif method == 'af_apollo_avg':
             global_scores = convert_ranking_to_df(method=method,
-                                                  infile=ranking_csvs[method],
+                                                  infile=find_res[method],
                                                   index=index,
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
@@ -173,7 +169,7 @@ if __name__ == '__main__':
                                                   is_csv=True)
         elif method == 'af_apollo_avg_rank':
             global_scores = convert_ranking_to_df(method=method,
-                                                  infile=ranking_csvs[method],
+                                                  infile=find_res[method],
                                                   index=index,
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
@@ -183,7 +179,7 @@ if __name__ == '__main__':
                                                   is_csv=True, ascending=True)
         elif method == 'enqa':
             global_scores = convert_ranking_to_df(method=method,
-                                                  infile=ranking_csvs[method],
+                                                  infile=find_res[method],
                                                   index=index,
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
@@ -193,7 +189,7 @@ if __name__ == '__main__':
                                                   is_csv=True)
         else:
             global_scores = convert_ranking_to_df(method=method,
-                                                  infile=ranking_csvs[method],
+                                                  infile=find_res[method],
                                                   index=index,
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
