@@ -4,11 +4,12 @@ from bml_casp15.common.util import check_file, check_dir, check_dirs, makedir_if
     read_option_file
 from bml_casp15.monomer_alignment_generation.alignment import write_fasta
 from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_result, make_chain_id_map
-from bml_casp15.monomer_structure_evaluation.pipeline_sep import extract_monomer_pdbs
+from bml_casp15.monomer_structure_evaluation.pipeline_sep import get_sequence
 import pandas as pd
 from Bio.PDB.PDBParser import PDBParser
 import numpy as np
 import pickle
+import pathlib
 
 # need to add A if using relaxation in alphafold
 PDB_CHAIN_IDS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -23,13 +24,14 @@ def combine_pdb(pdbs, combine_pdb):
                 out.write(line[:21] + chain_id + line[22:])
             out.write('TER\n')
 
+
 def extract_pkl(inpkl, outpkl, chain_starts, chain_ends):
     with open(inpkl, 'rb') as f:
         prediction_result = pickle.load(f)
         indices = []
         for chain_start, chain_end in zip(chain_starts, chain_ends):
-            indices += list(range(chain_start, chain_end+1))
-        prediction_result_new = {'plddt': prediction_result['plddt'][indices, ]}
+            indices += list(range(chain_start, chain_end + 1))
+        prediction_result_new = {'plddt': prediction_result['plddt'][indices,]}
         if 'distogram' in prediction_result:
             distogram_new = prediction_result['distogram']
             distogram_new['logits'] = distogram_new['logits'][indices, indices, :]
@@ -38,10 +40,55 @@ def extract_pkl(inpkl, outpkl, chain_starts, chain_ends):
             pickle.dump(prediction_result_new, f, protocol=4)
 
 
+def extract_monomer_pdbs_reindex(complex_pdb, sequence, output_prefix):
+    chain_contents = {}
+    prev_chain_name = ""
+    residue_count = 0
+    prev_num = 0
+    for line in open(complex_pdb, 'r').readlines():
+        if not line.startswith('ATOM'):
+            continue
+        residue_num = int(line[22:26].strip())
+        if residue_num != prev_num:
+            residue_count += 1
+            prev_num = residue_num
+
+        chain_id = line[21]
+        if chain_id not in chain_contents:
+            if chain_id != prev_chain_name and prev_chain_name != "":
+                chain_contents[prev_chain_name]['res_end'] = residue_count - 1
+                chain_contents[prev_chain_name]['sequence'] = get_sequence(chain_contents[prev_chain_name]['content'])
+            chain_contents[chain_id] = dict(content=[line],
+                                            sequence="",
+                                            res_start=residue_count,
+                                            res_end=-1)
+            prev_chain_name = chain_id
+        else:
+            chain_contents[chain_id]['content'] += [line]
+
+    if prev_chain_name != "":
+        chain_contents[prev_chain_name]['res_end'] = residue_count
+        chain_contents[prev_chain_name]['sequence'] = get_sequence(chain_contents[prev_chain_name]['content'])
+
+    result_dict = {}
+    for chain_id in chain_contents:
+        if chain_contents[chain_id]['sequence'] == sequence:
+            with open(f"{output_prefix}_{chain_id}.pdb_ori", 'w') as fw:
+                fw.writelines(chain_contents[chain_id]['content'])
+            os.system(f"perl /home/bml_casp15/BML_CASP15/utils/reindex_pdb.pl "
+                      f"{output_prefix}_{chain_id}.pdb_ori {output_prefix}_{chain_id}.pdb")
+            result_dict[chain_id] = dict(pdb=f"{output_prefix}_{chain_id}.pdb",
+                                         pdbname=pathlib.Path(f"{output_prefix}_{chain_id}.pdb").name,
+                                         chain_start=chain_contents[chain_id]['res_start'] - 1,
+                                         chain_end=chain_contents[chain_id]['res_end'] - 1)
+    return result_dict
+
+
 def cal_contact_ratio_between_pdbs(pdb1, pdb2):
     parser = PDBParser(PERMISSIVE=1)
     structure1 = parser.get_structure('', pdb1)
     structure2 = parser.get_structure('', pdb2)
+    print(pdb2)
 
     model1 = structure1[0]
     chain_id1 = list(model1.child_dict.keys())
@@ -52,7 +99,6 @@ def cal_contact_ratio_between_pdbs(pdb1, pdb2):
     xyzPDB2 = model2[chain_id2[0]]
 
     h_dist_map = np.zeros((len(xyzPDB1), len(xyzPDB2)))
-
     for i in range(1, len(xyzPDB1) + 1):
         for j in range(1, len(xyzPDB2) + 1):
             res_i = xyzPDB1[i]
@@ -77,6 +123,8 @@ def pair_chain_ids(src_pair_dict, trg_chain_pdb_dict):
     ratios = []
     for src_pair_id in src_pair_dict:
         for trg_chain_id in trg_chain_pdb_dict:
+            if trg_chain_id in src_pair_id.split('_'):
+                continue
             max_ratio = 0
             pdb2 = trg_chain_pdb_dict[trg_chain_id]['pdb']
             for src_chain_idx, src_chain_id in enumerate(src_pair_id.split('_')):
@@ -101,7 +149,7 @@ def pair_chain_ids(src_pair_dict, trg_chain_pdb_dict):
         if chain1 in processed_ids or chain2 in processed_ids:
             continue
 
-        res_pair_dict[f"{chain1}_{chain2}"] = {'pdb': [], 'chain_start':[], 'chain_end':[]}
+        res_pair_dict[f"{chain1}_{chain2}"] = {'pdb': [], 'chain_start': [], 'chain_end': []}
         res_pair_dict[f"{chain1}_{chain2}"]['pdb'] += src_pair_dict[chain1]['pdb']
         res_pair_dict[f"{chain1}_{chain2}"]['pdb'] += [trg_chain_pdb_dict[chain2]['pdb']]
 
@@ -121,7 +169,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--fasta_path', type=str, required=True)
     parser.add_argument('--inpdb', type=str, required=True)
-    parser.add_argument('--inpkl', type=str, required=True)
+    parser.add_argument('--inpkl', type=str, required=False)
     parser.add_argument('--outdir', type=str, required=True)
     args = parser.parse_args()
 
@@ -145,9 +193,9 @@ if __name__ == '__main__':
     makedir_if_not_exists(workdir)
     multimer_pdbs = {}
     for chain_id in chain_id_map:
-        chain_pdb_dict = extract_monomer_pdbs(complex_pdb=args.inpdb,
-                                              sequence=chain_id_map[chain_id].sequence,
-                                              output_prefix=f"{workdir}/{chain_id}")
+        chain_pdb_dict = extract_monomer_pdbs_reindex(complex_pdb=args.inpdb,
+                                                      sequence=chain_id_map[chain_id].sequence,
+                                                      output_prefix=f"{workdir}/{chain_id}")
         print(chain_pdb_dict)
         multimer_pdbs[chain_id] = chain_pdb_dict
 
@@ -166,5 +214,6 @@ if __name__ == '__main__':
     for pair_idx, pair in enumerate(src_pair_dict):
         combine_pdb([src_pair_dict[pair]['pdb'][chain_idx] for chain_idx, chain_id in enumerate(pair.split('_'))],
                     args.outdir + '/' + pair + '.pdb')
-        extract_pkl(args.inpkl, args.outdir + '/' + pair + '.pkl',
-                    src_pair_dict[pair]['chain_start'], src_pair_dict[pair]['chain_end'])
+        if args.inpkl is not None:
+            extract_pkl(args.inpkl, args.outdir + '/' + pair + '.pkl',
+                        src_pair_dict[pair]['chain_start'], src_pair_dict[pair]['chain_end'])

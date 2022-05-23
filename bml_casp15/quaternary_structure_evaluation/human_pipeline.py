@@ -3,7 +3,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, check_dirs
 import pandas as pd
-from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
+from bml_casp15.quaternary_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
 from bml_casp15.quaternary_structure_evaluation.pairwise_dockq import Pairwise_dockq_qa
 from bml_casp15.quaternary_structure_evaluation.dproq_ranking import DPROQ
 from bml_casp15.quaternary_structure_evaluation.enqa_ranking import En_qa
@@ -151,9 +151,9 @@ def extract_multimer_pdbs(chain_id_map, complex_pdb, workdir, complex_pkl,
     for pair_idx, pair in enumerate(src_pair_dict):
         combine_pdb([src_pair_dict[pair]['pdb'][chain_idx] for chain_idx, chain_id in enumerate(pair.split('_'))],
                     output_pdb_name + pair + '.pdb')
-        if os.path.exists(complex_pkl):
-            extract_multimer_pkl(complex_pkl, output_pkl_name + pair + '.pkl',
-                        src_pair_dict[pair]['chain_start'], src_pair_dict[pair]['chain_end'])
+        # if os.path.exists(complex_pkl):
+        #     extract_multimer_pkl(complex_pkl, output_pkl_name + pair + '.pkl',
+        #                 src_pair_dict[pair]['chain_start'], src_pair_dict[pair]['chain_end'])
 
 
 
@@ -168,7 +168,7 @@ class Quaternary_structure_evaluation_pipeline_human:
         self.run_methods = run_methods
 
         self.pairwise_qa = Pairwise_dockq_qa(params['dockq_program'])
-        self.alphafold_qa = Alphafold_pkl_qa(ranking_methods = ['plddt_avg'])
+        self.alphafold_qa = Alphafold_pkl_qa()
         self.dproq = DPROQ(dproq_program=params['dproq_program'])
         self.enqa = En_qa(enqa_program=params['enqa_program'])
         self.bfactorqa = Bfactor_qa()
@@ -210,25 +210,25 @@ class Quaternary_structure_evaluation_pipeline_human:
                     os.system(f"cp {model_dir}/{method}/msas/{chain_id_map[chain_id].description}.paired.a3m "
                               f"{msa_chain_outdir}/{method}_{i}.paired.a3m")
 
+        if os.path.exists(extract_model_dir):
+            for method in os.listdir(extract_model_dir):
+                ranking_json_file = f"{extract_model_dir}/{method}/ranking_debug.json"
+                if not os.path.exists(ranking_json_file):
+                    continue
+                ranking_json = json.loads(open(ranking_json_file).read())
 
-        for method in os.listdir(extract_model_dir):
-            ranking_json_file = f"{extract_model_dir}/{method}/ranking_debug.json"
-            if not os.path.exists(ranking_json_file):
-                continue
-            ranking_json = json.loads(open(ranking_json_file).read())
+                for i in range(model_count):
+                    model_name = list(ranking_json["order"])[i]
+                    complex_pdb = f"{extract_model_dir}/{method}/ranked_{i}.pdb"
+                    complex_pkl = f"{extract_model_dir}/{method}/result_{model_name}.pkl"
 
-            for i in range(model_count):
-                model_name = list(ranking_json["order"])[i]
-                complex_pdb = f"{extract_model_dir}/{method}/ranked_{i}.pdb"
-                complex_pkl = f"{extract_model_dir}/{method}/result_{model_name}.pkl"
-
-                if os.path.exists(complex_pdb):
-                    extract_multimer_pdbs(chain_id_map=chain_id_map,
-                                                            complex_pdb=complex_pdb,
-                                                           complex_pkl=complex_pkl,
-                                                           workdir=f"{extract_model_dir}/{method}/ranked_{i}",
-                                                           output_pdb_name=f"{pdbdir}/{method}_{i}",
-                                                            output_pkl_name=f"{pkldir}/{method}_{i}")
+                    if os.path.exists(complex_pdb):
+                        extract_multimer_pdbs(chain_id_map=chain_id_map,
+                                                                complex_pdb=complex_pdb,
+                                                               complex_pkl=complex_pkl,
+                                                               workdir=f"{extract_model_dir}/{method}/ranked_{i}",
+                                                               output_pdb_name=f"{pdbdir}/{method}_{i}",
+                                                                output_pkl_name=f"{pkldir}/{method}_{i}")
 
 
         result_dict = {}
@@ -310,8 +310,8 @@ class Quaternary_structure_evaluation_pipeline_human:
             avg_rankings = []
             print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
-                pairwise_score = float(avg_ranking_df.loc[i, 'MMalign score'])
-                alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg'])
+                pairwise_score = float(avg_ranking_df.loc[i, 'average_MMS'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
                 avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
@@ -341,7 +341,7 @@ class Quaternary_structure_evaluation_pipeline_human:
             avg_rankings = []
             print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
-                pairwise_score = float(avg_ranking_df.loc[i, 'MMalign score'])
+                pairwise_score = float(avg_ranking_df.loc[i, 'average_MMS'])
                 alphafold_score = float(avg_ranking_df.loc[i, 'bfactor'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
