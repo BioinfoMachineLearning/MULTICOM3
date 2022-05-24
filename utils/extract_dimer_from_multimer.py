@@ -208,8 +208,7 @@ if __name__ == '__main__':
                                                 'chain_end': [multimer_pdbs[chain_id][same_chain_id]['chain_end']]}
         else:
             src_pair_dict = pair_chain_ids(src_pair_dict, multimer_pdbs[chain_id])
-
-    print(src_pair_dict)
+        print(src_pair_dict)
 
     for pair_idx, pair in enumerate(src_pair_dict):
         combine_pdb([src_pair_dict[pair]['pdb'][chain_idx] for chain_idx, chain_id in enumerate(pair.split('_'))],
