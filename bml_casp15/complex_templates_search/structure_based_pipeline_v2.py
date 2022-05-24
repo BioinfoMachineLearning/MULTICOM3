@@ -216,7 +216,11 @@ class Complex_structure_based_template_search_pipeline:
                         row_list += [row_dict]
                         row_index += 1
 
-                curr_pd = pd.DataFrame(row_list)
+                if len(row_list) == 0:
+                    curr_pd = pd.DataFrame(columns=['index', 'template', 'aln_query', 'qstart',
+                                                    'qend', 'aln_temp', 'tstart', 'tend', 'tmscore', 'aligned_length'])
+                else:
+                    curr_pd = pd.DataFrame(row_list)
                 curr_pd = curr_pd.add_suffix(f"{i + 1}")
                 curr_pd['index'] = curr_pd[f'index{i + 1}']
                 curr_pd = curr_pd.drop([f'index{i + 1}'], axis=1)
@@ -383,7 +387,12 @@ class Complex_structure_based_template_search_pipeline:
                         row_list += [row_dict]
                         row_index += 1
 
-                curr_pd = pd.DataFrame(row_list)
+                if len(row_list) == 0:
+                    curr_pd = pd.DataFrame(columns=['index', 'template', 'aln_query', 'qstart',
+                                                    'qend', 'aln_temp', 'tstart', 'tend', 'tmscore', 'aligned_length'])
+                else:
+                    curr_pd = pd.DataFrame(row_list)
+                    
                 curr_pd = curr_pd.add_suffix(f"{i + 1}")
                 curr_pd['index'] = curr_pd[f'index{i + 1}']
                 curr_pd = curr_pd.drop([f'index{i + 1}'], axis=1)

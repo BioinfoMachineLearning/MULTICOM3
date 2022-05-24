@@ -52,13 +52,13 @@ def main(argv):
 
     N1_outdir = FLAGS.output_dir + '/N1_quaternary_structure_evaluation'
     multimer_qa_result = run_multimer_evaluation_pipeline_human(fasta_path=FLAGS.fasta_path,
-                                                          params=params, monomer_model_dir=monomer_qa_dir,
-                                                          chain_id_map=chain_id_map,
-                                                          indir=multimer_model_dir,
-                                                          extract_dir=extract_multimer_model_dir,
-                                                          outdir=N1_outdir,
-                                                          stoichiometry=FLAGS.stoichiometry,
-                                                          model_count=5)
+                                                                params=params, monomer_model_dir=monomer_qa_dir,
+                                                                chain_id_map=chain_id_map,
+                                                                indir=multimer_model_dir,
+                                                                extract_dir=extract_multimer_model_dir,
+                                                                outdir=N1_outdir,
+                                                                stoichiometry=FLAGS.stoichiometry,
+                                                                model_count=5)
 
 
 if __name__ == '__main__':
