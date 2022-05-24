@@ -410,7 +410,8 @@ def main(argv):
         refine_inputs += [refine_input]
 
     final_dir = N12_outdir + '_final'
-    run_multimer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N12_outdir,
+    run_multimer_refinement_pipeline(chain_id_map=chain_id_map,
+                                     params=params, refinement_inputs=refine_inputs, outdir=N12_outdir,
                                      finaldir=final_dir, stoichiometry=FLAGS.stoichiometry2)
 
     print("The refinement for the top-ranked multimer models has been finished!")

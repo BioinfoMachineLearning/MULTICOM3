@@ -117,7 +117,7 @@ class Multimer_refinement_model_selection:
             refine_pdb = indir + '/' + pdb + '/final/final.pdb'
             refine_pkl = indir + '/' + pdb + '/final/final.pkl'
             os.system(f"cp {refine_pdb} {outdir}/{pdb}_ref.pdb")
-            os.system(f"cp {refine_pkl} {outdir}/{pdb}_ref.pdb")
+            os.system(f"cp {refine_pkl} {outdir}/{pdb}_ref.pkl")
 
         pdbs = []
         confidences = []
@@ -137,6 +137,7 @@ class Multimer_refinement_model_selection:
             os.system(f"cp {outdir}/{pdb_name} {outdir}/deep{i + 1}.pdb")
             os.system(f"cp {outdir}/{pdb_name.replace('.pdb', '.pkl')} {outdir}/deep{i + 1}.pkl")
 
+        df.to_csv(outdir + '/final_ranking.csv')
         return outdir
 
     def select_v2(self, ranking_df, indir, outdir):
