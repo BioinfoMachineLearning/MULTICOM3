@@ -312,9 +312,12 @@ class Complex_sequence_based_template_search_pipeline:
 
         concatenated_pd = self.filter_same_pdbcodes(concatenated_pd, len(monomer_template_results))
 
+        concatenated_pd_v2 = copy.deepcopy(concatenated_pd)
+
         if len(concatenated_pd) < 50:
             print(f"template count is smaller than 50, add monomer templates")
             prev_pd = None
+            prev_pd_v2 = None
             for i in range(len(monomer_template_results)):
                 seen_templates_sequences = [f"{concatenated_pd.loc[j, f'name{i+1}']}_{concatenated_pd.loc[j, f'hit_sequence{i+1}']}" for j in range(len(concatenated_pd))]
                 monomer_template_hits = []
@@ -337,12 +340,16 @@ class Complex_sequence_based_template_search_pipeline:
 
                 if prev_pd is None:
                     prev_pd = curr_pd
+                    prev_pd_v2 = curr_pd
                 else:
                     prev_pd = prev_pd.merge(curr_pd, how="inner", on='index')
+                    prev_pd_v2 = prev_pd_v2.merge(curr_pd, how="outer", on='index')
 
             concatenated_pd = concatenated_pd.append(prev_pd)
+            concatenated_pd_v2 = concatenated_pd_v2.append(prev_pd_v2)
 
         concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
+        concatenated_pd_v2.to_csv(outdir + '/sequence_templates_v2.csv')
 
         concatenated_pd_nocheck = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir, False)
 

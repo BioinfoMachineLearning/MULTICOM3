@@ -205,6 +205,90 @@ def main(argv):
 
     print("#################################################################################################")
 
+    run_img = False
+    for chain_id in chain_id_map:
+        monomer_id = chain_id_map[chain_id].description
+        default_alphafold_msa = N3_outdir + '/' + monomer_id + '/default/msas/monomer_final.a3m'
+        if len(open(default_alphafold_msa).readlines()) < 200:
+            run_img = True
+            break
+
+    if run_img:
+        N7_outdir = FLAGS.output_dir + '/N7_monomer_structure_evaluation'
+        makedir_if_not_exists(N7_outdir)
+
+        img_wait_list = [chain_id for chain_id in chain_id_map]
+        img_processed_list = []
+        while len(img_processed_list) != len(img_wait_list):
+            for chain_id in img_wait_list:
+                if chain_id in img_processed_list:
+                    continue
+                if os.path.exists(img_msas[chain_id]):
+                    print("Found img alignment, start to run monomer model generation again")
+                    monomer_id = chain_id_map[chain_id].description
+                    N1_monomer_outdir = N1_outdir + '/' + monomer_id
+                    N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
+                    os.system(f"cp {N1_monomer_outdir}/{monomer_id}_uniref90.sto {N1_outdir_img}")
+                    pipeline = Monomer_tertiary_structure_prediction_pipeline(params)
+                    pipeline.process_single(fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                            alndir=N1_monomer_outdir_img,
+                                            outdir=N3_outdir + '/' + monomer_id,
+                                            run_methods=['img'])
+
+                    print("10. Start to evaluate monomer models")
+
+                    N7_monomer_outdir = N7_outdir + '/' + monomer_id
+
+                    makedir_if_not_exists(N7_monomer_outdir)
+
+                    result = run_monomer_evaluation_pipeline(targetname=monomer_id,
+                                                             fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                             input_monomer_dir=N3_outdir + '/' + monomer_id,
+                                                             input_multimer_dir=N7_outdir,
+                                                             chainid=chain_id,
+                                                             unrelaxed_chainid=chain_id,
+                                                             outputdir=N7_monomer_outdir,
+                                                             generate_egnn_models=True)
+
+                    if result is None:
+                        raise RuntimeError("Program failed in step 6: monomer model evaluation")
+
+                    new_qa_result[chain_id] = result
+
+                    print("The evaluation for monomer models has been finished!")
+
+                    print(
+                        "#################################################################################################")
+
+                    print(
+                        "#################################################################################################")
+
+                    img_processed_list += [chain_id]
+
+                else:
+                    # check same sequences
+                    for other_chain_id in img_processed_list:
+                        processed_monomer_id = chain_id_map[other_chain_id].description
+                        if chain_id_map[other_chain_id].sequence == chain_id_map[chain_id].squence:
+                            monomer_id = chain_id_map[chain_id].description
+                            N3_monomer_outdir = N3_outdir + '/' + monomer_id
+                            N7_monomer_outdir = N7_outdir + '/' + monomer_id
+
+                            os.system(f"rm -rf {N3_monomer_outdir}")
+                            os.system(f"cp -r {N3_outdir}/{processed_monomer_id} {N3_monomer_outdir}")
+                            os.system(f"cp -r {N7_outdir}/{processed_monomer_id} {N7_monomer_outdir}")
+
+                            for msa in os.listdir(N10_monomer_outdir + '/msa'):
+                                os.system(
+                                    f"sed -i 's/>{processed_monomer_id}/>{monomer_id}/g' {N7_monomer_outdir}/msa/{msa}")
+
+                            img_processed_list += [chain_id]
+                            break
+
+            # sleep for 5 mins
+            time.sleep(300)
+
+
     print("#################################################################################################")
 
     print("8. Start to evaluate multimer models")

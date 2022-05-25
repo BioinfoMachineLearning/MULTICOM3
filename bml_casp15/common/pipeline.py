@@ -654,28 +654,32 @@ def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_mod
     print("searching complex sequence based template search pipelineL RCSB_PDB")
     pdb_seq_dir = outdir + '/pdb_seq'
     makedir_if_not_exists(pdb_seq_dir)
-    if not os.path.exists(pdb_seq_dir + '/sequence_templates.csv'):
+    if not os.path.exists(pdb_seq_dir + '/sequence_templates.csv') or \
+            not os.path.exists(pdb_seq_dir + '/sequence_templates_v2.csv'):
         pipeline = sequence_based_pipeline_pdb.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, pdb_seq_dir)
 
     print("searching complex sequence based template search pipeline: Complex")
     complex_pdb_seq_dir = outdir + '/complex_pdb_seq'
     makedir_if_not_exists(complex_pdb_seq_dir)
-    if not os.path.exists(complex_pdb_seq_dir + '/sequence_templates.csv'):
+    if not os.path.exists(complex_pdb_seq_dir + '/sequence_templates.csv') or \
+            not os.path.exists(complex_pdb_seq_dir + '/sequence_templates_v2.csv'):
         pipeline = sequence_based_pipeline_complex_pdb.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, complex_pdb_seq_dir)
 
     print("searching complex sequence based template search pipeline: pdb70")
     pdb70_seq_dir = outdir + '/pdb70_seq'
     makedir_if_not_exists(pdb70_seq_dir)
-    if not os.path.exists(pdb70_seq_dir + '/sequence_templates.csv'):
+    if not os.path.exists(pdb70_seq_dir + '/sequence_templates.csv') or \
+            not os.path.exists(pdb70_seq_dir + '/sequence_templates_v2.csv'):
         pipeline = sequence_based_pipeline.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, pdb70_seq_dir)
 
     print("searching complex structure based template search pipeline")
     struct_temp_dir = outdir + '/struct_temp'
     makedir_if_not_exists(struct_temp_dir)
-    if not os.path.exists(struct_temp_dir + '/structure_templates.csv'):
+    if not os.path.exists(struct_temp_dir + '/structure_templates.csv') or \
+            not os.path.exists(struct_temp_dir + '/structure_templates_v2.csv'):
         monomer_pdbs = []
         for chain in multimers:
             monomer_pdb = f"{monomer_model_dir}/{chain}/default/ranked_0.pdb"
@@ -923,7 +927,7 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
 
 
 def run_multimer_evaluation_pipeline_human(params, fasta_path, chain_id_map, monomer_model_dir,
-                                     indir, extract_dir, outdir, stoichiometry, is_homomer=False, model_count=5):
+                                           indir, extract_dir, outdir, stoichiometry, is_homomer=False, model_count=5):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline_human(params=params)
     multimer_qa_result = None
@@ -977,7 +981,7 @@ def run_multimer_refinement_pipeline(params, chain_id_map, refinement_inputs, ou
 
     for i in range(5):
         chain_group = extract_monomer_models_from_complex(complex_pdb=f"{finaldir}/deep{i + 1}.pdb",
-                                                          complex_pkl=f"{finaldir}/deep{i+1}.pkl",
+                                                          complex_pkl=f"{finaldir}/deep{i + 1}.pkl",
                                                           chain_id_map=chain_id_map, workdir=f"{finaldir}/deep{i + 1}")
         for chain_id in chain_group:
             chain_outdir = f"{finaldir}/deep_{chain_id}"
