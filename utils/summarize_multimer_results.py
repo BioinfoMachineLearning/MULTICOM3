@@ -12,8 +12,9 @@ from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_r
 
 def cal_mmalign(mmalign_program, inpdb, nativepdb):
     cmd = mmalign_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $2}' "
+    # print(cmd)
     tmscore_contents = os.popen(cmd).read().split('\n')
-    tmscore = float(tmscore_contents[1].rstrip('\n'))
+    tmscore = float(tmscore_contents[0].rstrip('\n'))
     return tmscore
 
 
@@ -76,7 +77,10 @@ if __name__ == '__main__':
         print("summarizing results for homo-multimers\n")
         is_homomer = True
 
-    monomer_qa_dir = args.workdir + '/N7_monomer_structure_evaluation'
+    monomer_qa_dir = args.workdir + '/N8_monomer_structure_evaluation'
+    multimer_qa_dir = args.workdir + '/N9_multimer_structure_evaluation'
+    deep_ranking = multimer_qa_dir + '/pairwise_af_avg.ranking'
+    qa_ranking = multimer_qa_dir + '/alphafold_ranking.csv'
 
     processed_seq = []
     first_unit = None
@@ -106,10 +110,9 @@ if __name__ == '__main__':
             msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
             alignment_depth += [len(open(msa).readlines()) / 2]
             ranked_modeles += [model]
-            tmscore = cal_tmscore(tmscore_program=params['tmscore_program'],
+            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
                                   inpdb=chain_qa_dir + '/pdb/' + model,
-                                  nativepdb=args.refpdb,
-                                  tmpdir=args.workdir + '/tmp')
+                                  nativepdb=args.refpdb)
             tmscores += [tmscore]
 
         print(f"\negnn models: {ranked_modeles}, {alignment_depth}\n")
@@ -127,13 +130,53 @@ if __name__ == '__main__':
             ranked_modeles += [model]
             msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
             alignment_depth += [len(open(msa).readlines()) / 2]
-            tmscore = cal_tmscore(tmscore_program=params['tmscore_program'],
+            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
                                   inpdb=chain_qa_dir + '/pdb/' + model,
-                                  nativepdb=args.refpdb,
-                                  tmpdir=args.workdir + '/tmp')
+                                  nativepdb=args.refpdb)
             tmscores += [tmscore]
 
         print(f"\nrefine models: {ranked_modeles}\n")
+        all_models += ranked_modeles
+        all_alignments += alignment_depth
+        all_tmscores += tmscores
+
+
+        pairwise_ranking_df = pd.read_csv(deep_ranking)
+        ranked_modeles = []
+        alignment_depth = []
+        tmscores = []
+        for i in range(5):
+            model = pairwise_ranking_df.loc[i, 'Name'] + '.pdb'
+            msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
+            alignment_depth += [len(open(msa).readlines()) / 2]
+            ranked_modeles += [model]
+
+            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
+                                  inpdb=f"{multimer_qa_dir}/deep{i+1}/{chain_id}_top1.pdb",
+                                  nativepdb=args.refpdb)
+
+            tmscores += [tmscore]
+
+        print(f"\ndeep models: {ranked_modeles}\n")
+        all_models += ranked_modeles
+        all_alignments += alignment_depth
+        all_tmscores += tmscores
+
+        qa_ranking_df = pd.read_csv(qa_ranking)
+        ranked_modeles = []
+        alignment_depth = []
+        tmscores = []
+        for i in range(5):
+            model = qa_ranking_df.loc[i, 'model']
+            ranked_modeles += [model]
+            msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
+            alignment_depth += [len(open(msa).readlines()) / 2]
+            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
+                                  inpdb=f"{multimer_qa_dir}/qa{i+1}/{chain_id}_top1.pdb",
+                                  nativepdb=args.refpdb)
+
+            tmscores += [tmscore]
+        print(f"\nqa models: {ranked_modeles}\n")
         all_models += ranked_modeles
         all_alignments += alignment_depth
         all_tmscores += tmscores
@@ -174,9 +217,7 @@ if __name__ == '__main__':
     all_alignments = []
     all_tmscores = []
 
-    multimer_qa_dir = args.workdir + '/N9_multimer_structure_evaluation'
 
-    deep_ranking = multimer_qa_dir + '/pairwise_af_avg.ranking'
     alignment_depth = []
     pairwise_ranking_df = pd.read_csv(deep_ranking)
     ranked_modeles = []
@@ -201,7 +242,7 @@ if __name__ == '__main__':
     all_alignments += alignment_depth
     all_tmscores += tmscores
 
-    qa_ranking = multimer_qa_dir + '/alphafold_ranking.csv'
+
     qa_ranking_df = pd.read_csv(qa_ranking)
     ranked_modeles = []
     alignment_depth = []

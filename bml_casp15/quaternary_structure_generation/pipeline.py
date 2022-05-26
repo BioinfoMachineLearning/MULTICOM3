@@ -269,7 +269,8 @@ class Quaternary_structure_prediction_pipeline:
                 elif concatenate_method == "species_colabfold_interact":
                     species_msa_pair_file = f"{complex_aln_dir}/species_interact_uniref_a3m/species_interact_uniref_a3m_interact.csv"
                     msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
-                    if len(pd.read_csv(msa_pair_file)) == len(pd.read_csv(species_msa_pair_file)) + 1:
+                    if len(pd.read_csv(msa_pair_file)) == 1 or \
+                            len(pd.read_csv(msa_pair_file)) == len(pd.read_csv(species_msa_pair_file)) + 1:
                         continue
                     a3m_paths = [f"{complex_aln_dir}/{concatenate_method}/{monomer}_con.a3m" for monomer in monomers]
                 else:

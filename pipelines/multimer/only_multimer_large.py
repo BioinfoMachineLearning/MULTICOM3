@@ -183,25 +183,25 @@ def main(argv):
                                                         output_dir=N7_outdir):
         print("Program failed in step 7")
 
-    pipeline_inputs = []
-    for i in range(2):
-        monomer_pdb_dirs = {}
-        monomer_alphafold_a3ms = {}
-        for chain_id in chain_id_map:
-            monomer_id = chain_id_map[chain_id].description
-            monomer_ranking = read_qa_txt_as_df(monomer_qas_res[chain_id]['apollo'])
-            pdb_name = monomer_ranking.loc[i, 'model']
-            monomer_pdb_dirs[chain_id] = f"{N4_outdir}/{monomer_id}/pdb/{pdb_name}"
-            monomer_alphafold_a3ms[chain_id] = f"{N4_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}"
-        pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
-                                                             monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
-
-    if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
-                                                                 chain_id_map=chain_id_map,
-                                                                 pipeline_inputs=pipeline_inputs, outdir=N7_outdir):
-        print("Program failed in step 7 iterative")
-
-    print("Complex quaternary structure generation has been finished!")
+    # pipeline_inputs = []
+    # for i in range(2):
+    #     monomer_pdb_dirs = {}
+    #     monomer_alphafold_a3ms = {}
+    #     for chain_id in chain_id_map:
+    #         monomer_id = chain_id_map[chain_id].description
+    #         monomer_ranking = read_qa_txt_as_df(monomer_qas_res[chain_id]['apollo'])
+    #         pdb_name = monomer_ranking.loc[i, 'model']
+    #         monomer_pdb_dirs[chain_id] = f"{N4_outdir}/{monomer_id}/pdb/{pdb_name}"
+    #         monomer_alphafold_a3ms[chain_id] = f"{N4_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}"
+    #     pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
+    #                                                          monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
+    #
+    # if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
+    #                                                              chain_id_map=chain_id_map,
+    #                                                              pipeline_inputs=pipeline_inputs, outdir=N7_outdir):
+    #     print("Program failed in step 7 iterative")
+    #
+    # print("Complex quaternary structure generation has been finished!")
 
     print("#################################################################################################")
 
@@ -213,9 +213,10 @@ def main(argv):
             run_img = True
             break
 
+    new_qa_result = {}
     if run_img:
-        N7_outdir = FLAGS.output_dir + '/N7_monomer_structure_evaluation'
-        makedir_if_not_exists(N7_outdir)
+        N8_outdir = FLAGS.output_dir + '/N8_monomer_structure_evaluation'
+        makedir_if_not_exists(N8_outdir)
 
         img_wait_list = [chain_id for chain_id in chain_id_map]
         img_processed_list = []
@@ -228,26 +229,27 @@ def main(argv):
                     monomer_id = chain_id_map[chain_id].description
                     N1_monomer_outdir = N1_outdir + '/' + monomer_id
                     N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
-                    os.system(f"cp {N1_monomer_outdir}/{monomer_id}_uniref90.sto {N1_outdir_img}")
-                    pipeline = Monomer_tertiary_structure_prediction_pipeline(params)
-                    pipeline.process_single(fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                            alndir=N1_monomer_outdir_img,
-                                            outdir=N3_outdir + '/' + monomer_id,
-                                            run_methods=['img'])
+
+                    if not run_monomer_structure_generation_pipeline(params=params,
+                                                                     run_methods=['img'],
+                                                                     fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                     alndir=N1_monomer_outdir_img,
+                                                                     templatedir=N2_outdir + '/' + monomer_id,
+                                                                     outdir=N3_outdir + '/' + monomer_id):
+                        print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
                     print("10. Start to evaluate monomer models")
 
-                    N7_monomer_outdir = N7_outdir + '/' + monomer_id
+                    N8_monomer_outdir = N8_outdir + '/' + monomer_id
 
-                    makedir_if_not_exists(N7_monomer_outdir)
+                    makedir_if_not_exists(N8_monomer_outdir)
 
-                    result = run_monomer_evaluation_pipeline(targetname=monomer_id,
+                    result = run_monomer_evaluation_pipeline(params=params,
+                                                             targetname=monomer_id,
                                                              fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                                                              input_monomer_dir=N3_outdir + '/' + monomer_id,
                                                              input_multimer_dir=N7_outdir,
-                                                             chainid=chain_id,
-                                                             unrelaxed_chainid=chain_id,
-                                                             outputdir=N7_monomer_outdir,
+                                                             outputdir=N8_monomer_outdir,
                                                              generate_egnn_models=True)
 
                     if result is None:
@@ -293,11 +295,11 @@ def main(argv):
 
     print("8. Start to evaluate multimer models")
 
-    N8_outdir = FLAGS.output_dir + '/N8_multimer_structure_evaluation'
+    N9_outdir = FLAGS.output_dir + '/N9_multimer_structure_evaluation'
     multimer_qa_result = run_multimer_evaluation_pipeline(params=params, fasta_path=FLAGS.fasta_path,
                                                           chain_id_map=chain_id_map, monomer_model_dir=N3_outdir,
                                                           indir=N7_outdir,
-                                                          outdir=N8_outdir, stoichiometry=FLAGS.stoichiometry)
+                                                          outdir=N9_outdir, stoichiometry=FLAGS.stoichiometry)
 
 
 if __name__ == '__main__':
