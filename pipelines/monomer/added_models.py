@@ -14,6 +14,7 @@ from absl import app
 flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
 flags.DEFINE_string('model_path', None, 'Path to monomer models')
+flags.DEFINE_boolean('refine', None, 'Path to monomer models')
 flags.DEFINE_list('refine_paths', None, 'Path to monomer models')
 flags.DEFINE_string('output_dir', None, 'Output directory')
 FLAGS = flags.FLAGS
@@ -73,37 +74,38 @@ def main(argv):
 
     print("2. Start to refine monomer models based on the qa rankings")
 
-    N2_outdir_avg = outdir + '/N2_monomer_structure_refinement_avg'
+    if FLAGS.refine:
+        N2_outdir_avg = outdir + '/N2_monomer_structure_refinement_avg'
 
-    makedir_if_not_exists(N2_outdir_avg)
+        makedir_if_not_exists(N2_outdir_avg)
 
-    os.system(f"cp {result['pairwise_af_avg']} {N2_outdir_avg}")
+        os.system(f"cp {result['pairwise_af_avg']} {N2_outdir_avg}")
 
-    ref_ranking_avg = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
+        ref_ranking_avg = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
-    refined_models = {}
-    for refine_path in FLAGS.refine_paths:
-        files = os.listdir(refine_path)
-        for file in files:
-            if file != "pairwise_af_avg.ranking" and file != "alphafold_ranking.csv":
-                refined_models[file] = refine_path + '/' + file
+        refined_models = {}
+        for refine_path in FLAGS.refine_paths:
+            files = os.listdir(refine_path)
+            for file in files:
+                if file != "pairwise_af_avg.ranking" and file != "alphafold_ranking.csv":
+                    refined_models[file] = refine_path + '/' + file
 
-    refine_inputs = []
-    for i in range(5):
-        pdb_name = ref_ranking_avg.loc[i, 'model']
-        if pdb_name.replace('.pdb', '') in refined_models:
-            os.system(f"cp -r {refined_models[pdb_name.replace('.pdb', '')]} {N2_outdir_avg}")
-        refine_input = iterative_refine_pipeline.refinement_input(fasta_path=FLAGS.fasta_path,
-                                                                  pdb_path=N1_outdir + '/pdb/' + pdb_name,
-                                                                  pkl_path=N1_outdir + '/pkl/' + pdb_name.replace(
-                                                                      '.pdb', '.pkl'),
-                                                                  msa_path=N1_outdir + '/msa/' + pdb_name.replace(
-                                                                      '.pdb', '.a3m'))
-        refine_inputs += [refine_input]
+        refine_inputs = []
+        for i in range(5):
+            pdb_name = ref_ranking_avg.loc[i, 'model']
+            if pdb_name.replace('.pdb', '') in refined_models:
+                os.system(f"cp -r {refined_models[pdb_name.replace('.pdb', '')]} {N2_outdir_avg}")
+            refine_input = iterative_refine_pipeline.refinement_input(fasta_path=FLAGS.fasta_path,
+                                                                      pdb_path=N1_outdir + '/pdb/' + pdb_name,
+                                                                      pkl_path=N1_outdir + '/pkl/' + pdb_name.replace(
+                                                                          '.pdb', '.pkl'),
+                                                                      msa_path=N1_outdir + '/msa/' + pdb_name.replace(
+                                                                          '.pdb', '.a3m'))
+            refine_inputs += [refine_input]
 
-    final_dir = N2_outdir_avg + '_final'
-    run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N2_outdir_avg,
-                                    finaldir=final_dir, prefix="refine")
+        final_dir = N2_outdir_avg + '_final'
+        run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N2_outdir_avg,
+                                        finaldir=final_dir, prefix="refine")
 
 
 if __name__ == '__main__':
