@@ -303,7 +303,7 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
         print(e)
 
     if generate_egnn_models:
-        if input_multimer_dir == "":
+        if input_multimer_dir == "" or not os.path.exists(input_multimer_dir):
             select_models_monomer_only(qa_result=qa_result, outputdir=outputdir, params=params)
         else:
             select_models_with_multimer(qa_result=qa_result, outputdir=outputdir)
