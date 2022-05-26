@@ -59,7 +59,8 @@ if __name__ == '__main__':
 
     if not os.path.exists(qa_dir):
         print("Rerunning the evaluation pipeline")
-        qa_dir = args.workdir + '/N1_monomer_structure_evaluation'
+        qa_dir = args.workdir + '/N1'
+        qa_dir = args.workdir + '/N1/' + os.listdir(qa_dir)[0]
 
     all_models = []
     all_alignments = []
