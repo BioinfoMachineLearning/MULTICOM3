@@ -73,7 +73,11 @@ if __name__ == '__main__':
     for i in range(len(pairwise_ranking_df)):
         model = pairwise_ranking_df.loc[i, 'selected_models']
         msa = qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
-        alignment_depth += [len(open(msa).readlines()) / 2]
+        if os.path.exists(msa):
+            alignment_depth += [len(open(msa).readlines()) / 2]
+        else:
+            alignment_depth += [0]
+
         ranked_modeles += [model]
 
         tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
@@ -102,8 +106,10 @@ if __name__ == '__main__':
             model = refine_ranking_df.loc[i, 'selected_models']
             ranked_modeles += [model]
             msa = refine_dir + '/' + model.replace('.pdb', '.a3m')
-            alignment_depth += [len(open(msa).readlines()) / 2]
-
+            if os.path.exists(msa):
+                alignment_depth += [len(open(msa).readlines()) / 2]
+            else:
+                alignment_depth += [0]
             tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
                                      inpdb=refine_dir + '/' + model,
                                      nativepdb=args.refpdb, tmpdir=args.tmpdir)
@@ -120,9 +126,11 @@ if __name__ == '__main__':
     for i in range(len(pairwise_ranking_df)):
         model = pairwise_ranking_df.loc[i, 'selected_models']
         msa = qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
-        alignment_depth += [len(open(msa).readlines()) / 2]
+        if os.path.exists(msa):
+            alignment_depth += [len(open(msa).readlines()) / 2]
+        else:
+            alignment_depth += [0]
         ranked_modeles += [model]
-
         tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
                                  inpdb=qa_dir + '/pdb/' + model,
                                  nativepdb=args.refpdb, tmpdir=args.tmpdir)
@@ -142,7 +150,10 @@ if __name__ == '__main__':
             model = qa_ranking_df.loc[i, 'selected_models']
             ranked_modeles += [model]
             msa = refine_qa_dir + '/' + model.replace('.pdb', '.a3m')
-            alignment_depth += [len(open(msa).readlines()) / 2]
+            if os.path.exists(msa):
+                alignment_depth += [len(open(msa).readlines()) / 2]
+            else:
+                alignment_depth += [0]
             tmscore, _ = cal_tmscore(tmscore_program=params['tmscore_program'],
                                      inpdb=refine_qa_dir + '/' + model,
                                      nativepdb=args.refpdb, tmpdir=args.tmpdir)

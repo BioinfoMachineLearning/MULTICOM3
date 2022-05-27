@@ -254,10 +254,10 @@ class Monomer_structure_evaluation_human_pipeline:
                             src_pkl = f"{multimer_model_dir}/{method}/result_{model_name}.pkl"
                             if os.path.exists(src_pkl):
                                 has_distogram = extract_pkl(
-                                src_pkl=f"{multimer_model_dir}/{method}/result_{model_name}.pkl",
-                                residue_start=chain_pdb_dict[chain_id]['chain_start'],
-                                residue_end=chain_pdb_dict[chain_id]['chain_end'],
-                                output_pkl=pkldir_multimer + '/' + pdbname.replace('.pdb', '.pkl'))
+                                    src_pkl=f"{multimer_model_dir}/{method}/result_{model_name}.pkl",
+                                    residue_start=chain_pdb_dict[chain_id]['chain_start'],
+                                    residue_end=chain_pdb_dict[chain_id]['chain_end'],
+                                    output_pkl=pkldir_multimer + '/' + pdbname.replace('.pdb', '.pkl'))
                                 os.system(
                                     f"ln -s {pkldir_multimer}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}"
                                     f" {pkldir}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}")
