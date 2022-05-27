@@ -7,7 +7,7 @@ from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_r
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
 from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_template_search_pipeline, \
-    run_monomer_structure_generation_pipeline, run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
+    run_monomer_structure_generation_pipeline_v2, run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
     run_concatenate_dimer_msas_pipeline, run_complex_template_search_pipeline, \
     run_quaternary_structure_generation_pipeline, \
     run_quaternary_structure_generation_pipeline_foldseek, run_multimer_refinement_pipeline, \
@@ -91,15 +91,15 @@ def main(argv):
 
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             makedir_if_not_exists(N3_monomer_outdir)
-            if not run_monomer_structure_generation_pipeline(params=params,
-                                                             run_methods=['default', 'default+seq_template',
-                                                                          'default_uniref30',
-                                                                          'original', 'original+seq_template',
-                                                                          'colabfold', 'colabfold+seq_template'],
-                                                             fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                             alndir=N1_monomer_outdir,
-                                                             templatedir=N2_monomer_outdir,
-                                                             outdir=N3_monomer_outdir):
+            if not run_monomer_structure_generation_pipeline_v2(params=params,
+                                                                run_methods=['default', 'default+seq_template',
+                                                                             'default_uniclust', 'default_uniref_22',
+                                                                             'original', 'original+seq_template',
+                                                                             'colabfold', 'colabfold+seq_template'],
+                                                                fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                alndir=N1_monomer_outdir,
+                                                                templatedir=N2_monomer_outdir,
+                                                                outdir=N3_monomer_outdir):
                 print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
             processed_seuqences[monomer_sequence] = monomer_id
@@ -356,8 +356,8 @@ def main(argv):
     if len(img_wait_list) != 0:
         for chain_id in chain_id_map:
             monomer_id = chain_id_map[chain_id].description
-            monomer_pdb_dirs[chain_id] = f"{qa_result_dir}/{monomer_id}/pdb/img_1.pdb"
-            monomer_alphafold_a3ms[chain_id] = f"{qa_result_dir}/{monomer_id}/msa/img_1.a3m"
+            monomer_pdb_dirs[chain_id] = f"{qa_result_dir}/{monomer_id}/pdb/img_0.pdb"
+            monomer_alphafold_a3ms[chain_id] = f"{qa_result_dir}/{monomer_id}/msa/img_0.a3m"
         pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
                                                              monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
 

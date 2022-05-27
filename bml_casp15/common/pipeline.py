@@ -32,6 +32,7 @@ from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_
 
 def run_monomer_msa_pipeline(fasta, outdir, params):
     uniref30 = params['uniref_db_dir'] + '/' + params['uniref_db']
+    uniref30_new = params['uniref_db_dir_new'] + '/' + params['uniref_db_new']
     uniclust30 = params['uniclust_db_dir'] + '/' + params['uniclust_db']
     uniref90_fasta = params['uniref90_fasta']
     uniprot_fasta = params['uniprot_fasta']
@@ -61,6 +62,7 @@ def run_monomer_msa_pipeline(fasta, outdir, params):
                                                          small_bfd_database_path=smallbfd,
                                                          bfd_database_path=bfd,
                                                          uniref30_database_path=uniref30,
+                                                         uniref30_database_path_new=uniref30_new,
                                                          uniclust30_database_path=uniclust30,
                                                          uniprot_database_path=uniprot_fasta,
                                                          colabfold_databases=colabfold_databases)

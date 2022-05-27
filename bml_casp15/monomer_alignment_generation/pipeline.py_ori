@@ -35,7 +35,6 @@ class Monomer_alignment_generation_pipeline:
                  small_bfd_database_path,
                  bfd_database_path,
                  uniref30_database_path,
-                 uniref30_database_path_new,
                  uniclust30_database_path,
                  uniprot_database_path,
                  colabfold_databases,
@@ -57,11 +56,6 @@ class Monomer_alignment_generation_pipeline:
         self.jackhmmer_small_bfd_runner = None
         self.rosettafold_msa_runner = None
         self.colabfold_msa_runner = None
-        self.uniref30_bfd_msa_runner = None
-        self.unclust30_bfd_msa_runner = None
-
-        self.hhblits_uniref_runner_new = None
-        self.uniref30_bfd_msa_runner_new = None
 
         if len(uniref90_database_path) > 0:
             self.jackhmmer_uniref90_runner = jackhmmer.Jackhmmer(
@@ -78,11 +72,6 @@ class Monomer_alignment_generation_pipeline:
             self.hhblits_uniref_runner = hhblits.HHBlits(
                 binary_path=hhblits_binary_path,
                 databases=[uniref30_database_path])
-
-        if len(uniref30_database_path_new) > 0:
-            self.hhblits_uniref_runner_new = hhblits.HHBlits(
-                binary_path=hhblits_binary_path,
-                databases=[uniref30_database_path_new])
 
         if len(mgnify_database_path) > 0:
             self.jackhmmer_mgnify_runner = jackhmmer.Jackhmmer(
@@ -130,11 +119,6 @@ class Monomer_alignment_generation_pipeline:
                 binary_path=hhblits_binary_path,
                 databases=[bfd_database_path, uniref30_database_path])
 
-        if len(uniref30_database_path_new) > 0 and len(bfd_database_path) > 0:
-            self.uniref30_bfd_msa_runner_new = hhblits.HHBlits(
-                binary_path=hhblits_binary_path,
-                databases=[bfd_database_path, uniref30_database_path_new])
-
         if len(colabfold_databases) > 0:
             self.colabfold_msa_runner = ColabFold_Msa_runner(colabfold_search_binary_path=colabfold_search_binary,
                                                              colabfold_split_msas_binary_path=colabfold_split_msas_binary,
@@ -171,10 +155,6 @@ class Monomer_alignment_generation_pipeline:
             msa_process_list.append([self.hhblits_uniref_runner, input_fasta_path,
                                      msa_output_dir, f'{input_id}_uniref30.a3m', 'uniref30_a3m'])
 
-        if self.hhblits_uniref_runner_new is not None:
-            msa_process_list.append([self.hhblits_uniref_runner_new, input_fasta_path,
-                                     msa_output_dir, f'{input_id}_uniref30_22.a3m', 'uniref30_a3m_22'])
-
         if self.hhblits_uniclust_runner is not None:
             msa_process_list.append(
                 [self.hhblits_uniclust_runner, input_fasta_path,
@@ -207,11 +187,6 @@ class Monomer_alignment_generation_pipeline:
             msa_process_list.append(
                 [self.uniref30_bfd_msa_runner, input_fasta_path,
                  msa_output_dir, f'{input_id}_uniref30_bfd.a3m', 'uniref30_bfd_a3m'])
-
-        if self.uniref30_bfd_msa_runner_new is not None:
-            msa_process_list.append(
-                [self.uniref30_bfd_msa_runner_new, input_fasta_path,
-                 msa_output_dir, f'{input_id}_uniref30_22_bfd.a3m', 'uniref30_22_bfd_a3m'])
 
         if multiprocess:
             pool = Pool(processes=len(msa_process_list))
