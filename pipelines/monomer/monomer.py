@@ -88,7 +88,7 @@ def main(argv):
                                                         run_methods=['default', 'default+seq_template',
                                                                      'default_uniclust', 'default_uniref_22',
                                                                      'original', 'original+seq_template',
-                                                                     'colabfold'],
+                                                                     'colabfold', 'colabfold+seq_template'],
                                                         fasta_path=FLAGS.fasta_path,
                                                         alndir=N1_outdir, templatedir=N2_outdir, outdir=N3_outdir):
         print("Program failed in step 3: monomer structure generation")

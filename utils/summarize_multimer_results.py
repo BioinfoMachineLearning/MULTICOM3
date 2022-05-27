@@ -78,6 +78,9 @@ if __name__ == '__main__':
         is_homomer = True
 
     monomer_qa_dir = args.workdir + '/N8_monomer_structure_evaluation'
+    if not os.path.exists(monomer_qa_dir):
+        monomer_qa_dir = args.workdir + '/N7_monomer_structure_evaluation'
+
     multimer_qa_dir = args.workdir + '/N9_multimer_structure_evaluation'
     deep_ranking = multimer_qa_dir + '/pairwise_af_avg.ranking'
     qa_ranking = multimer_qa_dir + '/alphafold_ranking.csv'
