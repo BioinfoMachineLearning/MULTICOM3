@@ -139,22 +139,6 @@ class Monomer_structure_evaluation_pipeline:
 
         pdb_count = len(os.listdir(pdbdir))
 
-        if "apollo" in self.run_methods:
-            if os.path.exists(output_dir_abs + '/pairwise_ranking.tm'):
-                df = read_qa_txt_as_df(output_dir_abs + '/pairwise_ranking.tm')
-                if len(df) != pdb_count:
-                    os.system(f"rm {output_dir_abs}/pairwise_ranking.tm")
-
-            if not os.path.exists(output_dir_abs + '/pairwise_ranking.tm'):
-                os.chdir(output_dir_abs)
-                with open("model.list", 'w') as fw:
-                    for pdb in os.listdir(pdbdir):
-                        fw.write(f"pdb/{pdb}\n")
-                print(f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
-                os.system(
-                    f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
-            result_dict["apollo"] = output_dir_abs + '/pairwise_ranking.tm'
-
         if "alphafold" in self.run_methods:
             # if os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
             #     df = pd.read_csv(output_dir_abs + '/alphafold_ranking.csv')
@@ -182,6 +166,22 @@ class Monomer_structure_evaluation_pipeline:
             alphafold_ranking_multimer.to_csv(output_dir_abs + '/alphafold_ranking_multimer.csv')
             result_dict["alphafold_multimer"] = output_dir_abs + '/alphafold_ranking_multimer.csv'
 
+        if "apollo" in self.run_methods:
+            if os.path.exists(output_dir_abs + '/pairwise_ranking.tm'):
+                df = read_qa_txt_as_df(output_dir_abs + '/pairwise_ranking.tm')
+                if len(df) != pdb_count:
+                    os.system(f"rm {output_dir_abs}/pairwise_ranking.tm")
+
+            if not os.path.exists(output_dir_abs + '/pairwise_ranking.tm'):
+                os.chdir(output_dir_abs)
+                with open("model.list", 'w') as fw:
+                    for pdb in os.listdir(pdbdir):
+                        fw.write(f"pdb/{pdb}\n")
+                print(f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
+                os.system(
+                    f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
+            result_dict["apollo"] = output_dir_abs + '/pairwise_ranking.tm'
+            
         if "enQA" in self.run_methods:
             if os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
                 df = pd.read_csv(output_dir_abs + '/enqa_ranking.csv')

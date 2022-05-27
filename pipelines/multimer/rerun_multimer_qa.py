@@ -55,7 +55,7 @@ def main(argv):
                                                           chain_id_map=chain_id_map,
                                                           indir=multimer_model_dir, outdir=N1_outdir,
                                                           stoichiometry=FLAGS.stoichiometry,
-                                                          model_count=10)
+                                                          model_count=5)
 
 
 if __name__ == '__main__':
