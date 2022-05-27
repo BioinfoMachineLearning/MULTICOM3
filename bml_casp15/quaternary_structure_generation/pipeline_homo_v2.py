@@ -316,7 +316,6 @@ class Quaternary_structure_prediction_homo_pipeline:
 
             print(cmd)
             os.system(cmd)
-        result_dirs += [outdir]
 
         os.chdir(self.params['alphafold_program_dir'])
 
