@@ -478,11 +478,13 @@ class Multimer_iterative_generation_pipeline_monomer:
                     complex_templates_df = complex_templates_df.merge(curr_df, how="outer",
                                                                       left_on=f'tpdbcode{chain_idx}',
                                                                       right_on=f'tpdbcode{chain_idx + 1}')
+                curr_df.to_csv(f'{outpath}/{chain_id_map[chain_id].description}_{evalue_threshold}_{tmscore_threshold}.csv')
 
             keep_indices = []
             seen_complex_seq = []
             seen_complex_seq += ["".join([chain_template_msas[chain_id]['seq'][0] for chain_id in chain_template_msas])]
             seen_pdbcodes = []
+            print(f"complex_templates_df: {len(complex_templates_df)}")
             for i in range(len(complex_templates_df)):
                 if len(keep_indices) > self.max_template_count:
                     break
@@ -566,6 +568,8 @@ class Multimer_iterative_generation_pipeline_monomer:
                                                inplace=True)
             complex_templates_df_filtered.reset_index(inplace=True, drop=True)
 
+            print(f"complex templates: {len(complex_templates_df_filtered)}")
+            complex_templates_df_filtered.to_csv(f'{outpath}/complex_templates_{evalue_threshold}_{tmscore_threshold}.csv')
             if len(complex_templates_df_filtered) > self.max_template_count:
                 break
 

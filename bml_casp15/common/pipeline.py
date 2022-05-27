@@ -654,32 +654,28 @@ def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_mod
     print("searching complex sequence based template search pipelineL RCSB_PDB")
     pdb_seq_dir = outdir + '/pdb_seq'
     makedir_if_not_exists(pdb_seq_dir)
-    if not os.path.exists(pdb_seq_dir + '/sequence_templates.csv') or \
-            not os.path.exists(pdb_seq_dir + '/sequence_templates_v2.csv'):
+    if not os.path.exists(pdb_seq_dir + '/sequence_templates.csv'):
         pipeline = sequence_based_pipeline_pdb.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, pdb_seq_dir)
 
     print("searching complex sequence based template search pipeline: Complex")
     complex_pdb_seq_dir = outdir + '/complex_pdb_seq'
     makedir_if_not_exists(complex_pdb_seq_dir)
-    if not os.path.exists(complex_pdb_seq_dir + '/sequence_templates.csv') or \
-            not os.path.exists(complex_pdb_seq_dir + '/sequence_templates_v2.csv'):
+    if not os.path.exists(complex_pdb_seq_dir + '/sequence_templates.csv'):
         pipeline = sequence_based_pipeline_complex_pdb.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, complex_pdb_seq_dir)
 
     print("searching complex sequence based template search pipeline: pdb70")
     pdb70_seq_dir = outdir + '/pdb70_seq'
     makedir_if_not_exists(pdb70_seq_dir)
-    if not os.path.exists(pdb70_seq_dir + '/sequence_templates.csv') or \
-            not os.path.exists(pdb70_seq_dir + '/sequence_templates_v2.csv'):
+    if not os.path.exists(pdb70_seq_dir + '/sequence_templates.csv'):
         pipeline = sequence_based_pipeline.Complex_sequence_based_template_search_pipeline(params)
         pipeline.search(monomer_template_inputs, pdb70_seq_dir)
 
     print("searching complex structure based template search pipeline")
     struct_temp_dir = outdir + '/struct_temp'
     makedir_if_not_exists(struct_temp_dir)
-    if not os.path.exists(struct_temp_dir + '/structure_templates.csv') or \
-            not os.path.exists(struct_temp_dir + '/structure_templates_v2.csv'):
+    if not os.path.exists(struct_temp_dir + '/structure_templates.csv'):
         monomer_pdbs = []
         for chain in multimers:
             monomer_pdb = f"{monomer_model_dir}/{chain}/default/ranked_0.pdb"

@@ -352,11 +352,12 @@ def main(argv):
         pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
                                                              monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
 
-    if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
-                                                                 chain_id_map=chain_id_map,
-                                                                 pipeline_inputs=pipeline_inputs, outdir=N6_outdir,
-                                                                 is_homomers=True):
-        print("Program failed in step 6 iterative")
+    if len(chain_id_map) <= 5:
+        if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
+                                                                     chain_id_map=chain_id_map,
+                                                                     pipeline_inputs=pipeline_inputs, outdir=N6_outdir,
+                                                                     is_homomers=True):
+            print("Program failed in step 6 iterative")
 
     if not run_quaternary_structure_generation_pipeline_foldseek_old(params=params, fasta_path=FLAGS.fasta_path,
                                                                      chain_id_map=chain_id_map,
@@ -385,34 +386,35 @@ def main(argv):
 
     print("9. Start to refine multimer models based on the qa rankings")
 
-    N10_outdir = FLAGS.output_dir + '/N10_multimer_structure_refinement'
+    if len(chain_id_map) <= 5:
+        N10_outdir = FLAGS.output_dir + '/N10_multimer_structure_refinement'
 
-    makedir_if_not_exists(N10_outdir)
-    ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
+        makedir_if_not_exists(N10_outdir)
+        ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
-    refine_inputs = []
-    for i in range(5):
-        pdb_name = ref_ranking.loc[i, 'model']
-        msa_paths = {}
-        for chain_id in chain_id_map:
-            msa_paths[chain_id] = dict(
-                paired_msa=f"{N9_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.paired.a3m",
-                monomer_msa=f"{N9_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
-        print(msa_paths)
-        refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
-                                                                                    fasta_path=FLAGS.fasta_path,
-                                                                                    pdb_path=N9_outdir + '/pdb/' + pdb_name,
-                                                                                    pkl_path=N9_outdir + '/pkl/' + pdb_name.replace(
-                                                                                        '.pdb', '.pkl'),
-                                                                                    msa_paths=msa_paths)
-        refine_inputs += [refine_input]
+        refine_inputs = []
+        for i in range(5):
+            pdb_name = ref_ranking.loc[i, 'model']
+            msa_paths = {}
+            for chain_id in chain_id_map:
+                msa_paths[chain_id] = dict(
+                    paired_msa=f"{N9_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.paired.a3m",
+                    monomer_msa=f"{N9_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
+            print(msa_paths)
+            refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
+                                                                                        fasta_path=FLAGS.fasta_path,
+                                                                                        pdb_path=N9_outdir + '/pdb/' + pdb_name,
+                                                                                        pkl_path=N9_outdir + '/pkl/' + pdb_name.replace(
+                                                                                            '.pdb', '.pkl'),
+                                                                                        msa_paths=msa_paths)
+            refine_inputs += [refine_input]
 
-    final_dir = N10_outdir + '_final'
-    run_multimer_refinement_pipeline(chain_id_map=chain_id_map,
-                                     params=params, refinement_inputs=refine_inputs, outdir=N10_outdir,
-                                     finaldir=final_dir, stoichiometry="homomer")
+        final_dir = N10_outdir + '_final'
+        run_multimer_refinement_pipeline(chain_id_map=chain_id_map,
+                                         params=params, refinement_inputs=refine_inputs, outdir=N10_outdir,
+                                         finaldir=final_dir, stoichiometry="homomer")
 
-    print("The refinement for the top-ranked multimer models has been finished!")
+        print("The refinement for the top-ranked multimer models has been finished!")
 
 
 if __name__ == '__main__':

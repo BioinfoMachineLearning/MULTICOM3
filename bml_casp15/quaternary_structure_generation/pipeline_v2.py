@@ -213,8 +213,6 @@ class Quaternary_structure_prediction_pipeline:
                 os.system(cmd)
             result_dirs += [outdir]
 
-            os.chdir(self.params['alphafold_program_dir'])
-
             # Customized complex alignment pipelines using original template search pipeline in alphafold
             default_alphafold_monomer_a3ms = []
             default_alphafold_multimer_a3ms = []
@@ -239,6 +237,9 @@ class Quaternary_structure_prediction_pipeline:
                 default_alphafold_multimer_a3ms += [default_alphafold_multimer_a3m]
 
             for method in self.run_methods:
+
+                os.chdir(self.params['alphafold_program_dir'])
+
                 if method == "default" or method == "default_uniclust30":
                     continue
                 concatenate_method = ""
@@ -305,6 +306,10 @@ class Quaternary_structure_prediction_pipeline:
                     template_file = f"{template_dir}/struct_temp/structure_templates.csv"
                     if len(pd.read_csv(template_file)) == 0:
                         continue
+                    elif len(pd.read_csv(template_file)) < 4:
+                        template_file = f"{template_dir}/struct_temp/structure_templates_v2.csv"
+                        os.chdir(self.params['alphafold_temp_program_dir'])
+
                     base_cmd += f"--temp_struct_csv {template_file} "
                     base_cmd += f"--struct_atom_dir {template_dir}/struct_temp/templates "
 
@@ -312,6 +317,10 @@ class Quaternary_structure_prediction_pipeline:
                     template_file = f"{template_dir}/pdb_seq/sequence_templates.csv"
                     if len(pd.read_csv(template_file)) == 0:
                         continue
+                    elif len(pd.read_csv(template_file)) < 4:
+                        template_file = f"{template_dir}/pdb_seq/sequence_templates_v2.csv"
+                        os.chdir(self.params['alphafold_temp_program_dir'])
+
                     base_cmd += f"--temp_struct_csv {template_file} "
                     base_cmd += f"--struct_atom_dir {template_dir}/pdb_seq/templates "
 
@@ -319,6 +328,10 @@ class Quaternary_structure_prediction_pipeline:
                     template_file = f"{template_dir}/complex_pdb_seq/sequence_templates.csv"
                     if len(pd.read_csv(template_file)) == 0:
                         continue
+                    elif len(pd.read_csv(template_file)) < 4:
+                        template_file = f"{template_dir}/complex_pdb_seq/sequence_templates_v2.csv"
+                        os.chdir(self.params['alphafold_temp_program_dir'])
+
                     base_cmd += f"--temp_struct_csv {template_file} "
                     base_cmd += f"--struct_atom_dir {template_dir}/complex_pdb_seq/templates "
 
@@ -326,6 +339,10 @@ class Quaternary_structure_prediction_pipeline:
                     template_file = f"{template_dir}/pdb70_seq/sequence_templates.csv"
                     if len(pd.read_csv(template_file)) == 0:
                         continue
+                    elif len(pd.read_csv(template_file)) < 4:
+                        template_file = f"{template_dir}/pdb70_seq/sequence_templates_v2.csv"
+                        os.chdir(self.params['alphafold_temp_program_dir'])
+
                     template_hits_files = []
                     for monomer in monomers:
                         template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/output.hhr"
