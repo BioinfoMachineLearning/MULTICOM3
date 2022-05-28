@@ -68,6 +68,7 @@ def main(argv):
                                                      model_count=5)
             if result is None:
                 raise RuntimeError(f"Program failed in step 7: monomer {monomer_id} model evaluation")
+            processed_seuqences[monomer_sequence] = monomer_id
 
 
 if __name__ == '__main__':
