@@ -168,7 +168,8 @@ def main(argv):
     N6_outdir = FLAGS.output_dir + '/N6_quaternary_structure_generation'
     makedir_if_not_exists(N6_outdir)
 
-    run_methods_part1 = ['default', 'default+sequence_based_template_pdb70',
+    run_methods_part1 = ['default',
+                         'default+sequence_based_template_pdb70',
                          'default_uniclust30',
                          'default_uniref30_22',
                          'default+structure_based_template',
