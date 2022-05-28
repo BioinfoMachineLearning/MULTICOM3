@@ -168,6 +168,24 @@ def main(argv):
     N6_outdir = FLAGS.output_dir + '/N6_quaternary_structure_generation'
     makedir_if_not_exists(N6_outdir)
 
+    run_methods_part1 = ['default', 'default+sequence_based_template_pdb70',
+                         'default_uniclust30',
+                         'default_uniref30_22',
+                         'default+structure_based_template',
+                         'default+sequence_based_template_pdb',
+                         'default+sequence_based_template_complex_pdb',
+                         'default+alphafold_model_templates',
+                         'uniclust_oxmatch_a3m',
+                         'pdb_interact_uniref_a3m',
+                         'species_interact_uniref_a3m',
+                         'species_interact_uniref_a3m+sequence_based_template_pdb70',
+                         'species_interact_uniref_a3m+structure_based_template',
+                         'species_interact_uniref_a3m+sequence_based_template_pdb',
+                         'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
+                         'species_interact_uniref_a3m+alphafold_model_templates',
+                         'uniprot_distance_uniref_a3m',
+                         'string_interact_uniref_a3m']
+
     if not run_quaternary_structure_generation_pipeline_v2(params=params,
                                                            fasta_path=FLAGS.fasta_path,
                                                            chain_id_map=chain_id_map,
@@ -175,7 +193,8 @@ def main(argv):
                                                            complex_aln_dir=N4_outdir,
                                                            template_dir=N5_outdir,
                                                            monomer_model_dir=N3_outdir,
-                                                           output_dir=N6_outdir):
+                                                           output_dir=N6_outdir,
+                                                           run_methods=run_methods_part1):
         print("Program failed in step 7")
 
     print("Complex quaternary structure generation has been finished!")

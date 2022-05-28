@@ -63,7 +63,7 @@ def combine_a3ms(infiles, outfile):
                 seen_seqs.append(seq)
 
 
-class Quaternary_structure_prediction_homo_pipeline:
+class Quaternary_structure_prediction_homo_pipeline_v2:
 
     def __init__(self, params):  # , run_methods):
 

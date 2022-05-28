@@ -181,6 +181,13 @@ class Monomer_structure_evaluation_pipeline:
                 os.system(
                     f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
             result_dict["apollo"] = output_dir_abs + '/pairwise_ranking.tm'
+            pairwise_ranking_df = read_qa_txt_as_df(output_dir_abs + '/pairwise_ranking.tm')
+            monomer_indices = [i for i in range(len(pairwise_ranking_df)) if
+                               pairwise_ranking_df.loc[i, 'model'] in pdbs_from_monomer]
+            pairwise_ranking_monomer = copy.deepcopy(pairwise_ranking_df.iloc[monomer_indices])
+            pairwise_ranking_monomer.reset_index(inplace=True, drop=True)
+            pairwise_ranking_monomer.to_csv(output_dir_abs + '/pairwise_ranking_monomer.csv')
+            result_dict["apollo_monomer"] = output_dir_abs + '/pairwise_ranking_monomer.csv'
             
         if "enQA" in self.run_methods:
             if os.path.exists(output_dir_abs + '/enqa_ranking.csv'):

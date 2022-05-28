@@ -35,45 +35,48 @@ def get_complex_alignments_by_method(monomers, concatenate_method, aln_dir):
     return a3ms_path
 
 
-class Quaternary_structure_prediction_pipeline:
+class Quaternary_structure_prediction_pipeline_v2:
 
-    def __init__(self, params):  # , run_methods):
+    def __init__(self, params, run_methods = None):
 
         self.params = params
 
-        self.run_methods = ['default', 'default+sequence_based_template_pdb70',
-                            'default_uniclust30',
-                            'default_uniref30_22',
-                            'default+structure_based_template',
-                            'default+sequence_based_template_pdb',
-                            'default+sequence_based_template_complex_pdb',
-                            'default+alphafold_model_templates',
-                            'uniclust_oxmatch_a3m',
-                            'pdb_interact_uniref_a3m',
-                            'species_interact_uniref_a3m',
-                            'species_interact_uniref_a3m+sequence_based_template_pdb70',
-                            'species_interact_uniref_a3m+structure_based_template',
-                            'species_interact_uniref_a3m+sequence_based_template_pdb',
-                            'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
-                            'species_interact_uniref_a3m+alphafold_model_templates',
-                            'uniprot_distance_uniref_a3m',
-                            'string_interact_uniref_a3m',
-                            # 'geno_dist_uniref_a3m',
-                            # 'pdb_interact_uniref_sto',
-                            'species_interact_uniref_sto',
-                            'uniprot_distance_uniref_sto',
-                            'string_interact_uniref_sto',
-                            'string_interact_uniref_sto+sequence_based_template_pdb70',
-                            'string_interact_uniref_sto+structure_based_template',
-                            'string_interact_uniref_sto+sequence_based_template_pdb',
-                            'string_interact_uniref_sto+sequence_based_template_complex_pdb',
-                            'string_interact_uniref_sto+alphafold_model_templates',
-                            # 'geno_dist_uniref_sto',
-                            # 'pdb_interact_uniprot_sto',
-                            'species_interact_uniprot_sto',
-                            'uniprot_distance_uniprot_sto',
-                            'string_interact_uniprot_sto',
-                            'species_colabfold_interact']
+        if run_methods is None:
+            self.run_methods = ['default', 'default+sequence_based_template_pdb70',
+                                'default_uniclust30',
+                                'default_uniref30_22',
+                                'default+structure_based_template',
+                                'default+sequence_based_template_pdb',
+                                'default+sequence_based_template_complex_pdb',
+                                'default+alphafold_model_templates',
+                                'uniclust_oxmatch_a3m',
+                                'pdb_interact_uniref_a3m',
+                                'species_interact_uniref_a3m',
+                                'species_interact_uniref_a3m+sequence_based_template_pdb70',
+                                'species_interact_uniref_a3m+structure_based_template',
+                                'species_interact_uniref_a3m+sequence_based_template_pdb',
+                                'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
+                                'species_interact_uniref_a3m+alphafold_model_templates',
+                                'uniprot_distance_uniref_a3m',
+                                'string_interact_uniref_a3m',
+                                # 'geno_dist_uniref_a3m',
+                                # 'pdb_interact_uniref_sto',
+                                'species_interact_uniref_sto',
+                                'uniprot_distance_uniref_sto',
+                                'string_interact_uniref_sto',
+                                'string_interact_uniref_sto+sequence_based_template_pdb70',
+                                'string_interact_uniref_sto+structure_based_template',
+                                'string_interact_uniref_sto+sequence_based_template_pdb',
+                                'string_interact_uniref_sto+sequence_based_template_complex_pdb',
+                                'string_interact_uniref_sto+alphafold_model_templates',
+                                # 'geno_dist_uniref_sto',
+                                # 'pdb_interact_uniprot_sto',
+                                'species_interact_uniprot_sto',
+                                'uniprot_distance_uniprot_sto',
+                                'string_interact_uniprot_sto',
+                                'species_colabfold_interact']
+        else:
+            self.run_methods = run_methods
 
         self.method2dir = {'default': 'default_multimer',
                            'default_uniclust30': 'default_uniclust30',
