@@ -308,7 +308,7 @@ def main(argv):
     makedir_if_not_exists(iterative_prepare_dir)
 
     pipeline_inputs = []
-    for i in range(1):
+    for i in range(2):
         monomer_pdb_dirs = {}
         monomer_alphafold_a3ms = {}
         pdb_name = None
@@ -345,18 +345,19 @@ def main(argv):
         pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
                                                              monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
 
-    if len(chain_id_map) <= 5:
-        if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
-                                                                     chain_id_map=chain_id_map,
-                                                                     pipeline_inputs=pipeline_inputs, outdir=N6_outdir,
-                                                                     is_homomers=True):
-            print("Program failed in step 6 iterative")
-
     if not run_quaternary_structure_generation_pipeline_foldseek_old(params=params, fasta_path=FLAGS.fasta_path,
                                                                      chain_id_map=chain_id_map,
                                                                      pipeline_inputs=pipeline_inputs, outdir=N6_outdir,
                                                                      is_homomers=True):
         print("Program failed in step 6 iterative")
+
+    if len(chain_id_map) <= 5:
+        if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
+                                                                     chain_id_map=chain_id_map,
+                                                                     pipeline_inputs=[pipeline_inputs[0]],
+                                                                     outdir=N6_outdir,
+                                                                     is_homomers=True):
+            print("Program failed in step 6 iterative")
 
     print("Complex quaternary structure generation has been finished!")
 

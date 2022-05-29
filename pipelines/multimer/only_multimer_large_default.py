@@ -6,9 +6,8 @@ from bml_casp15.monomer_alignment_generation.alignment import write_fasta
 from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_result, make_chain_id_map
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
 from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_template_search_pipeline, \
-    run_monomer_structure_generation_pipeline, run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
+    run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
     run_concatenate_dimer_msas_pipeline, run_complex_template_search_pipeline, \
-    run_quaternary_structure_generation_pipeline, \
     run_quaternary_structure_generation_pipeline_foldseek, run_multimer_refinement_pipeline, \
     run_multimer_evaluation_pipeline, run_monomer_msa_pipeline_img, foldseek_iterative_monomer_input, \
     copy_same_sequence_msas, run_quaternary_structure_generation_pipeline_default

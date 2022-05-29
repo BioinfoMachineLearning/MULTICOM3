@@ -339,25 +339,25 @@ def main(argv):
 
     print("9. Start to run multimer iterative generation pipeline using top-ranked monomer models")
 
-    pipeline_inputs = []
-    for i in range(2):
-        monomer_pdb_dirs = {}
-        monomer_alphafold_a3ms = {}
-        for chain_id in chain_id_map:
-            monomer_id = chain_id_map[chain_id].description
-            monomer_ranking = pd.read_csv(monomer_qas_res[monomer_id]['apollo_monomer'])
-            pdb_name = monomer_ranking.loc[i, 'model']
-            monomer_pdb_dirs[chain_id] = f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}"
-            monomer_alphafold_a3ms[chain_id] = f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}"
-        pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
-                                                             monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
-
-    if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
-                                                                 chain_id_map=chain_id_map,
-                                                                 pipeline_inputs=pipeline_inputs, outdir=N6_outdir):
-        print("Program failed in step 6 iterative")
-
-    print("Complex quaternary structure generation has been finished!")
+    # pipeline_inputs = []
+    # for i in range(2):
+    #     monomer_pdb_dirs = {}
+    #     monomer_alphafold_a3ms = {}
+    #     for chain_id in chain_id_map:
+    #         monomer_id = chain_id_map[chain_id].description
+    #         monomer_ranking = pd.read_csv(monomer_qas_res[monomer_id]['apollo_monomer'])
+    #         pdb_name = monomer_ranking.loc[i, 'model']
+    #         monomer_pdb_dirs[chain_id] = f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}"
+    #         monomer_alphafold_a3ms[chain_id] = f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}"
+    #     pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
+    #                                                          monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
+    #
+    # if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
+    #                                                              chain_id_map=chain_id_map,
+    #                                                              pipeline_inputs=pipeline_inputs, outdir=N6_outdir):
+    #     print("Program failed in step 6 iterative")
+    #
+    # print("Complex quaternary structure generation has been finished!")
 
     print("#################################################################################################")
 
