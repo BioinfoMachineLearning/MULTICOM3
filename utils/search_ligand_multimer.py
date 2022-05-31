@@ -94,7 +94,7 @@ def main(argv):
 
                 curr_df = curr_df.add_suffix(str(chain_idx + 1))
                 curr_df['pdbcode'] = pdbcodes
-
+                curr_df['pdbcode'] = curr_df['pdbcode'].astype(str)
                 if prev_df is None:
                     prev_df = curr_df
                 else:
