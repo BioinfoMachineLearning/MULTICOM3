@@ -1,4 +1,4 @@
-import os, sys, argparse, time
+import os, sys, argparse, time, copy
 from multiprocessing import Pool
 from tqdm import tqdm
 import numpy as np
@@ -36,6 +36,10 @@ class MultiEva_qa:
             df = df.sort_values(by=['MMalign score'], ascending=False)
         else:
             df = df.sort_values(by=['Final_Rank'])
+            mmalign_df = copy.deepcopy(df)
+            mmalign_df = mmalign_df.sort_values(by=['average_MMS'], ascending=False)
+            mmalign_df.reset_index(inplace=True, drop=True)
+            mmalign_df.to_csv(result_csv + '.mmalign')
         df.reset_index(inplace=True,drop=True)
         df.to_csv(result_csv)
         return result_csv

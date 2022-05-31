@@ -66,11 +66,11 @@ class Quaternary_structure_evaluation_pipeline:
 
         result_dict = {}
 
-        if "pairwise" in self.run_methods:
-            if not os.path.exists(output_dir + '/pairwise_ranking.csv'):
-                pairwise_ranking = self.pairwise_qa.run(pdbdir)
-                pairwise_ranking.to_csv(output_dir + '/pairwise_ranking.csv')
-            result_dict["pairwise"] = output_dir + '/pairwise_ranking.csv'
+        # if "pairwise" in self.run_methods:
+        #     if not os.path.exists(output_dir + '/pairwise_ranking.csv'):
+        #         pairwise_ranking = self.pairwise_qa.run(pdbdir)
+        #         pairwise_ranking.to_csv(output_dir + '/pairwise_ranking.csv')
+        #     result_dict["pairwise"] = output_dir + '/pairwise_ranking.csv'
 
         if "alphafold" in self.run_methods:
             if not os.path.exists(output_dir + '/alphafold_ranking.csv'):

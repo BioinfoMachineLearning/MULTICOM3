@@ -31,6 +31,7 @@ class Multimer_iterative_refinement_pipeline_server:
     def search(self, refinement_inputs, outdir, stoichiometry):
         result_dirs = []
         for refine_param in refinement_inputs:
+            result_dir = ""
             if stoichiometry == "homomer":
                 print("refining homomers")
                 pipeline_v1 = iterative_refine_pipeline_homo_v1.Multimer_iterative_refinement_pipeline(self.params)
