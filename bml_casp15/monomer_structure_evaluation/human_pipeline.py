@@ -304,4 +304,5 @@ class Monomer_structure_evaluation_human_pipeline:
         return self.run_qas(targetname=targetname,
                             fasta_file=fasta_file, pdbdir=pdbdir, pkldir=pkldir, output_dir_abs=output_dir_abs,
                             pdbs_from_monomer=pdbs_from_monomer,
-                            pdbs_from_multimer=pdbs_from_multimer)
+                            pdbs_from_multimer=pdbs_from_multimer,
+                            pdbs_with_dist=pdbs_from_monomer)
