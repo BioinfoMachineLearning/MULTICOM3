@@ -6,13 +6,7 @@ from bml_casp15.monomer_alignment_generation.alignment import write_fasta
 from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_result, make_chain_id_map
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
-from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_template_search_pipeline, \
-    run_monomer_structure_generation_pipeline_v2, run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
-    run_concatenate_dimer_msas_pipeline, run_complex_template_search_pipeline, \
-    run_quaternary_structure_generation_homo_pipeline, \
-    run_quaternary_structure_generation_pipeline_foldseek, run_multimer_refinement_pipeline, \
-    run_multimer_evaluation_pipeline, run_monomer_msa_pipeline_img, foldseek_iterative_monomer_input, \
-    copy_same_sequence_msas, run_quaternary_structure_generation_homo_pipeline_img
+from bml_casp15.common.pipeline import run_monomer_evaluation_pipeline
 
 from absl import flags
 from absl import app
@@ -64,7 +58,7 @@ def main(argv):
                                                      fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                                                      input_monomer_dir=monomer_model_dir + '/' + monomer_id,
                                                      input_multimer_dir=multimer_model_dir,
-                                                     outputdir=N1_monomer_outdir, generate_egnn_models=True,
+                                                     outputdir=N1_monomer_outdir, generate_egnn_models=False,
                                                      model_count=5)
             if result is None:
                 raise RuntimeError(f"Program failed in step 7: monomer {monomer_id} model evaluation")

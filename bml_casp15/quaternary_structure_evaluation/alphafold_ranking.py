@@ -16,7 +16,7 @@ class Alphafold_pkl_qa:
         ranking_pd = pd.DataFrame(columns=['model', 'ptm', 'plddt_avg', 'confidence'])
         model_count = 0
         for pkl in os.listdir(input_dir):
-            if pkl.index('.pkl') < 0:
+            if pkl.find('.pkl') < 0 or pkl == 'features.pkl':
                 continue
             ranking = {'model': pkl.replace('.pkl', '.pdb')}
             with open(input_dir + '/' + pkl, 'rb') as f:
