@@ -291,12 +291,12 @@ class Monomer_structure_evaluation_human_pipeline:
         pkldir = output_dir + '/pkl'
         msadir = output_dir + '/msa'
 
-        if os.path.exists(pdbdir + "_monomer"):
+        if not os.path.exists(pdbdir + "_monomer"):
             pdbs_from_monomer = []
         else:
             pdbs_from_monomer = os.listdir(pdbdir + "_monomer")
 
-        if os.path.exists(pdbdir + "_multimer"):
+        if not os.path.exists(pdbdir + "_multimer"):
             pdbs_from_multimer = []
         else:
             pdbs_from_multimer = os.listdir(pdbdir + "_multimer")
@@ -304,4 +304,5 @@ class Monomer_structure_evaluation_human_pipeline:
         return self.run_qas(targetname=targetname,
                             fasta_file=fasta_file, pdbdir=pdbdir, pkldir=pkldir, output_dir_abs=output_dir_abs,
                             pdbs_from_monomer=pdbs_from_monomer,
-                            pdbs_from_multimer=pdbs_from_multimer)
+                            pdbs_from_multimer=pdbs_from_multimer,
+                            pdbs_with_dist=pdbs_from_monomer)
