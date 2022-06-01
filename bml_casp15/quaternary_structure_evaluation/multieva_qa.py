@@ -8,6 +8,7 @@ from bml_casp15.common.util import makedir_if_not_exists
 import glob
 import pathlib
 
+
 class MultiEva_qa:
 
     def __init__(self, multieva_program):
@@ -19,7 +20,7 @@ class MultiEva_qa:
         makedir_if_not_exists(outputdir)
 
         cmd = f"python {self.multieva_program} {fasta_path} {input_dir} {stoichiometry} {alphafold_prediction_dir} 20 {outputdir}"
-            
+
         print(cmd)
         try:
             os.system(cmd)
@@ -40,6 +41,6 @@ class MultiEva_qa:
             mmalign_df = mmalign_df.sort_values(by=['average_MMS'], ascending=False)
             mmalign_df.reset_index(inplace=True, drop=True)
             mmalign_df.to_csv(result_csv + '.mmalign')
-        df.reset_index(inplace=True,drop=True)
+        df.reset_index(inplace=True, drop=True)
         df.to_csv(result_csv)
         return result_csv

@@ -467,6 +467,20 @@ def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_
     return qa_result
 
 
+def rerun_monomer_evaluation_pipeline_human(params, targetname, fasta_file, outputdir):
+    makedir_if_not_exists(outputdir)
+    result = None
+    pipeline = Monomer_structure_evaluation_human_pipeline(params=params,
+                                                           use_gpu=True)
+    try:
+        result = pipeline.reprocess(targetname=targetname, fasta_file=fasta_file,
+                                    output_dir=outputdir)
+    except Exception as e:
+        print(e)
+
+    return result
+
+
 def rerun_monomer_evaluation_pipeline(params, targetname, fasta_file, outputdir, generate_egnn_models=True):
     makedir_if_not_exists(outputdir)
     result = None
