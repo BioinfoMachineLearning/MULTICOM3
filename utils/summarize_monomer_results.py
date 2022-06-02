@@ -10,6 +10,10 @@ from bml_casp15.common.util import check_file, check_dir, check_dirs, makedir_if
 
 
 def cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
+
+    if nativepdb is None or not os.path.exists(nativepdb):
+        return 0, 0
+
     cwd = os.getcwd()
 
     makedir_if_not_exists(tmpdir)
@@ -43,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--option_file', type=is_file, required=True)
     parser.add_argument('--workdir', type=is_file, required=True)
     parser.add_argument('--tmpdir', type=str, required=True)
-    parser.add_argument('--refpdb', type=is_file, required=True)
+    parser.add_argument('--refpdb', type=is_file, required=False)
 
     args = parser.parse_args()
 
