@@ -58,7 +58,7 @@ def main(argv):
                                                      fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                                                      input_monomer_dir=monomer_model_dir + '/' + monomer_id,
                                                      input_multimer_dir=multimer_model_dir,
-                                                     outputdir=N1_monomer_outdir, generate_egnn_models=False,
+                                                     outputdir=N1_monomer_outdir, generate_egnn_models=True,
                                                      model_count=5)
             if result is None:
                 raise RuntimeError(f"Program failed in step 7: monomer {monomer_id} model evaluation")
