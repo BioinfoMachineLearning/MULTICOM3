@@ -54,6 +54,8 @@ def add_local_scores(inpdb, outdir, outpdb):
     for line in open(inpdb):
         if line.startswith('ATOM'):
             chain_id = line[21]
+            if len(chain_id.strip()) == 0:
+                chain_id = 'A'
             if chain_id not in chain_contents:
                 chain_contents[chain_id] = [line]
             else:
