@@ -267,24 +267,24 @@ def main(argv):
                 raise RuntimeError(f"Program failed in step 7: monomer {monomer_id} model evaluation")
             monomer_qas_res[monomer_id] = result
 
-            N8_monomer_outdir = N8_outdir + '/' + monomer_id
-            makedir_if_not_exists(N8_monomer_outdir)
-            final_dir = N8_monomer_outdir + '_final'
-
-            os.system(f"cp {result['pairwise_af_avg']} {N8_monomer_outdir}")
-            ref_ranking = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
-            refine_inputs = []
-            for i in range(5):
-                pdb_name = ref_ranking.loc[i, 'model']
-                refine_input = iterative_refine_pipeline.refinement_input(
-                    fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                    pdb_path=f"{N7_monomer_outdir}/pdb/{pdb_name}",
-                    pkl_path=f"{N7_monomer_outdir}/pkl/{pdb_name.replace('.pdb', '.pkl')}",
-                    msa_path=f"{N7_monomer_outdir}/msa/{pdb_name.replace('.pdb', '.a3m')}")
-                refine_inputs += [refine_input]
-
-            run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-                                            outdir=N8_monomer_outdir, finaldir=final_dir, prefix="refine")
+            # N8_monomer_outdir = N8_outdir + '/' + monomer_id
+            # makedir_if_not_exists(N8_monomer_outdir)
+            # final_dir = N8_monomer_outdir + '_final'
+            #
+            # os.system(f"cp {result['pairwise_af_avg']} {N8_monomer_outdir}")
+            # ref_ranking = pd.read_csv(result['pairwise_af_avg'])  # apollo or average ranking or the three qas
+            # refine_inputs = []
+            # for i in range(5):
+            #     pdb_name = ref_ranking.loc[i, 'model']
+            #     refine_input = iterative_refine_pipeline.refinement_input(
+            #         fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+            #         pdb_path=f"{N7_monomer_outdir}/pdb/{pdb_name}",
+            #         pkl_path=f"{N7_monomer_outdir}/pkl/{pdb_name.replace('.pdb', '.pkl')}",
+            #         msa_path=f"{N7_monomer_outdir}/msa/{pdb_name.replace('.pdb', '.a3m')}")
+            #     refine_inputs += [refine_input]
+            #
+            # run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
+            #                                 outdir=N8_monomer_outdir, finaldir=final_dir, prefix="refine")
 
             print("The refinement for the top-ranked monomer models has been finished!")
 
