@@ -896,6 +896,21 @@ def run_multimer_evaluation_pipeline_human(params, fasta_path, chain_id_map, mon
     return multimer_qa_result
 
 
+def rerun_multimer_evaluation_pipeline_human(params, fasta_path, chain_id_map, monomer_model_dir,
+                                             outdir, stoichiometry):
+    makedir_if_not_exists(outdir)
+    pipeline = Quaternary_structure_evaluation_pipeline_human(params=params)
+    multimer_qa_result = None
+    try:
+        multimer_qa_result = pipeline.reprocess(fasta_path=fasta_path,
+                                                chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
+                                                output_dir=outdir, stoichiometry=stoichiometry)
+    except Exception as e:
+        print(e)
+
+    return multimer_qa_result
+
+
 def run_multimer_refinement_pipeline(params, chain_id_map, refinement_inputs, outdir, finaldir, stoichiometry):
     pipeline = iterative_refine_pipeline_multimer.Multimer_iterative_refinement_pipeline_server(params=params)
     pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir, stoichiometry=stoichiometry)

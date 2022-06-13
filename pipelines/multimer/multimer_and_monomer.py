@@ -352,6 +352,7 @@ def main(argv):
                                                           indir=N6_outdir, outdir=N9_outdir,
                                                           stoichiometry=FLAGS.stoichiometry)
 
+    print(multimer_qa_result)
     print("#################################################################################################")
 
     print("#################################################################################################")
@@ -381,6 +382,7 @@ def main(argv):
         refine_inputs += [refine_input]
 
     final_dir = N10_outdir + '_final'
+    print(refine_inputs)
     run_multimer_refinement_pipeline(chain_id_map=chain_id_map,
                                      params=params, refinement_inputs=refine_inputs, outdir=N10_outdir,
                                      finaldir=final_dir, stoichiometry=FLAGS.stoichiometry2)
@@ -392,6 +394,8 @@ if __name__ == '__main__':
     flags.mark_flags_as_required([
         'option_file',
         'fasta_path',
-        'output_dir'
+        'output_dir',
+        'stoichiometry',
+        'stoichiometry2'
     ])
     app.run(main)
