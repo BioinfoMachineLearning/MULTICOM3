@@ -8,9 +8,11 @@ import pickle
 
 class Alphafold_pkl_qa:
 
-    def __init__(self, ranking_methods = ['ptm', 'plddt_avg', 'confidence']):
-
+    def __init__(self, ranking_methods=None, sort_field='plddt_avg'):
+        if ranking_methods is None:
+            ranking_methods = ['ptm', 'plddt_avg', 'confidence']
         self.methods = ranking_methods
+        self.sort_field = sort_field
 
     def run(self, input_dir):
         ranking_pd = pd.DataFrame(columns=['model'] + self.methods)
@@ -29,4 +31,4 @@ class Alphafold_pkl_qa:
                     ranking['confidence'] = float(prediction_result['ranking_confidence'])
                 ranking_pd = ranking_pd.append(pd.DataFrame(ranking, index=[model_count]))
                 model_count += 1
-        return ranking_pd.sort_values(by=['plddt_avg'], ascending=False, ignore_index=True)
+        return ranking_pd.sort_values(by=[self.sort_field], ascending=False, ignore_index=True)

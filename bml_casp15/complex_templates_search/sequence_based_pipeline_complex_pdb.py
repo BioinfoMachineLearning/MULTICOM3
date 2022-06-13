@@ -386,6 +386,14 @@ class Complex_sequence_based_template_search_pipeline:
                 template_pdb = concatenated_pd.loc[i, f'template{j + 1}'].split()[0]
                 os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")
                 os.system(f"gunzip -f {template_pdb}.atom.gz")
+
+        for i in range(len(concatenated_pd_v2)):
+            for j in range(len(monomer_inputs)):
+                template_name = concatenated_pd_v2.loc[i, f'template{j + 1}']
+                if not pd.isna(template_name):
+                    template_pdb = template_name.split()[0]
+                    os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")
+                    os.system(f"gunzip -f {template_pdb}.atom.gz")
         os.chdir(cwd)
 
         concatenated_pd_nocheck = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir, False)

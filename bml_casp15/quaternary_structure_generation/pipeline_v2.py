@@ -337,63 +337,61 @@ class Quaternary_structure_prediction_pipeline_v2:
 
                 outdir = f"{output_dir}/{self.method2dir[method]}"
 
-                if complete_result(outdir):
-                    continue
-
-                makedir_if_not_exists(outdir)
-
                 base_cmd = f"python {self.params['alphafold_multimer_program']} " \
                            f"--fasta_path {fasta_path} " \
                            f"--monomer_a3ms {','.join(default_alphafold_monomer_a3ms)} " \
                            f"--multimer_a3ms {','.join(a3m_paths)} " \
                            f"--msa_pair_file {msa_pair_file} " \
                            f"--env_dir {self.params['alphafold_env_dir']} " \
-                           f"--database_dir {self.params['alphafold_database_dir']} " \
-                           f"--output_dir {outdir} "
+                           f"--database_dir {self.params['alphafold_database_dir']} "
 
                 if template_method == "":
                     base_cmd += f"--template_stos {','.join(template_stos)} "
 
                 elif template_method == "structure_based_template":
                     template_file = f"{template_dir}/struct_temp/structure_templates.csv"
-                    if len(pd.read_csv(template_file)) == 0:
-                        continue
-                    elif len(pd.read_csv(template_file)) < 4:
+                    if len(pd.read_csv(template_file)) < 4:
                         template_file = f"{template_dir}/struct_temp/structure_templates_v2.csv"
+                        if len(pd.read_csv(template_file)) == 0:
+                            continue
                         os.chdir(self.params['alphafold_temp_program_dir'])
+                        outdir += '_v2'
 
                     base_cmd += f"--temp_struct_csv {template_file} "
                     base_cmd += f"--struct_atom_dir {template_dir}/struct_temp/templates "
 
                 elif template_method == "sequence_based_template_pdb":
                     template_file = f"{template_dir}/pdb_seq/sequence_templates.csv"
-                    if len(pd.read_csv(template_file)) == 0:
-                        continue
-                    elif len(pd.read_csv(template_file)) < 4:
+                    if len(pd.read_csv(template_file)) < 4:
                         template_file = f"{template_dir}/pdb_seq/sequence_templates_v2.csv"
+                        if len(pd.read_csv(template_file)) == 0:
+                            continue
                         os.chdir(self.params['alphafold_temp_program_dir'])
+                        outdir += '_v2'
 
                     base_cmd += f"--temp_struct_csv {template_file} "
                     base_cmd += f"--struct_atom_dir {template_dir}/pdb_seq/templates "
 
                 elif template_method == "sequence_based_template_complex_pdb":
                     template_file = f"{template_dir}/complex_pdb_seq/sequence_templates.csv"
-                    if len(pd.read_csv(template_file)) == 0:
-                        continue
-                    elif len(pd.read_csv(template_file)) < 4:
+                    if len(pd.read_csv(template_file)) < 4:
                         template_file = f"{template_dir}/complex_pdb_seq/sequence_templates_v2.csv"
+                        if len(pd.read_csv(template_file)) == 0:
+                            continue
                         os.chdir(self.params['alphafold_temp_program_dir'])
+                        outdir += '_v2'
 
                     base_cmd += f"--temp_struct_csv {template_file} "
                     base_cmd += f"--struct_atom_dir {template_dir}/complex_pdb_seq/templates "
 
                 elif template_method == "sequence_based_template_pdb70":
                     template_file = f"{template_dir}/pdb70_seq/sequence_templates.csv"
-                    if len(pd.read_csv(template_file)) == 0:
-                        continue
-                    elif len(pd.read_csv(template_file)) < 4:
+                    if len(pd.read_csv(template_file)) < 4:
                         template_file = f"{template_dir}/pdb70_seq/sequence_templates_v2.csv"
+                        if len(pd.read_csv(template_file)) == 0:
+                            continue
                         os.chdir(self.params['alphafold_temp_program_dir'])
+                        outdir += '_v2'
 
                     template_hits_files = []
                     for monomer in monomers:
@@ -403,7 +401,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                         template_hits_files += [template_hits_file]
                     base_cmd += f"--temp_seq_pair_file {template_file} "
                     base_cmd += f"--template_hits_files {','.join(template_hits_files)} "
-
+                    
                 elif template_method == "alphafold_model_templates":
                     monomer_paths = []
                     for monomer in monomers:
@@ -413,8 +411,11 @@ class Quaternary_structure_prediction_pipeline_v2:
                         monomer_paths += [monomer_path]
                     base_cmd += f"--monomer_model_paths {','.join(monomer_paths)} "
 
+                base_cmd += f"--output_dir {outdir} "
                 if complete_result(outdir):
                     continue
+
+                makedir_if_not_exists(outdir)
 
                 print(base_cmd)
                 os.system(base_cmd)

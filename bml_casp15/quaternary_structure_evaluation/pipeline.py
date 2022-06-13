@@ -3,7 +3,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, check_dirs
 import pandas as pd
-from bml_casp15.quaternary_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
+from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
 from bml_casp15.quaternary_structure_evaluation.pairwise_dockq import Pairwise_dockq_qa
 from bml_casp15.quaternary_structure_evaluation.dproq_ranking import DPROQ
 from bml_casp15.quaternary_structure_evaluation.enqa_ranking import En_qa
@@ -23,7 +23,7 @@ class Quaternary_structure_evaluation_pipeline:
         self.run_methods = run_methods
 
         self.pairwise_qa = Pairwise_dockq_qa(params['dockq_program'])
-        self.alphafold_qa = Alphafold_pkl_qa()
+        self.alphafold_qa = Alphafold_pkl_qa(sort_field='confidence')
         self.dproq = DPROQ(dproq_program=params['dproq_program'])
         self.enqa = En_qa(enqa_program=params['enqa_program'])
         self.bfactorqa = Bfactor_qa()
