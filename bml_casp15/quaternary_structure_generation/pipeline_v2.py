@@ -430,4 +430,6 @@ class Quaternary_structure_prediction_pipeline_v2:
             if not rerun:
                 break
 
+            print("end")
+
         print("The quaternary structure generation for multimers has finished!")

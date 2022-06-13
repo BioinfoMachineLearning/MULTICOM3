@@ -218,6 +218,7 @@ def main(argv):
                                                                             outdir=N3_outdir + '/' + monomer_id):
                             print("Program failed in step 3: monomer structure generation")
                         processed_seuqences[monomer_sequence] = monomer_id
+                        img_processed_list += [chain_id]
                 else:
                     copy_same_sequence_msas(srcdir=f"{N1_outdir}_img/{processed_seuqences[monomer_sequence]}",
                                             trgdir=f"{N1_outdir}_img/{monomer_id}",

@@ -31,15 +31,15 @@ def main(argv):
 
     check_file(FLAGS.fasta_path)
 
-    targetname = pathlib.Path(FLAGS.fasta_path).stem
-
+    # targetname = pathlib.Path(FLAGS.fasta_path).stem
+    targetname = None
     sequence = None
     for line in open(FLAGS.fasta_path):
         line = line.rstrip('\n').strip()
         if line.startswith('>'):
-            targetname_in_fasta = line[1:].split()[0]
-            if targetname_in_fasta != targetname:
-                print("Warning: fasta file name doesn't match with fasta content!")
+            targetname = line[1:].split()[0]
+            # if targetname_in_fasta != targetname:
+            #     print("Warning: fasta file name doesn't match with fasta content!")
         else:
             sequence = line
 
