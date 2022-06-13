@@ -446,7 +446,8 @@ def select_models_monomer_only_human(qa_result, outputdir, params):
 
 
 def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_monomer_dir, outputdir,
-                                          input_multimer_dir="", generate_egnn_models=False, model_count=5):
+                                          input_multimer_dir="", generate_egnn_models=False, model_count=5,
+                                          dncon2_file="", dncon4_file="", distmap=""):
     makedir_if_not_exists(outputdir)
     qa_result = None
     pipeline = Monomer_structure_evaluation_human_pipeline(params=params,
@@ -454,7 +455,8 @@ def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_
     try:
         qa_result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
                                      monomer_model_dir=input_monomer_dir, multimer_model_dir=input_multimer_dir,
-                                     output_dir=outputdir, model_count=model_count)
+                                     output_dir=outputdir, model_count=model_count,
+                                     dncon2_file=dncon2_file, dncon4_file=dncon4_file, distmap=distmap)
     except Exception as e:
         print(e)
 

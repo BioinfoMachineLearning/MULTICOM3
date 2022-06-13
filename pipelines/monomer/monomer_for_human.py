@@ -93,7 +93,9 @@ def main(argv):
                                                         alndir=N1_outdir, templatedir=N2_outdir, outdir=N3_outdir):
         print("Program failed in step 3: monomer structure generation")
 
+
     while not os.path.exists(img_msa):
+        print("Waiting for img alignment")
         # sleep for 5 mins
         time.sleep(300)
 

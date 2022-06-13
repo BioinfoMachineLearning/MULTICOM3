@@ -18,6 +18,9 @@ flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
 flags.DEFINE_string('output_dir', None, 'Output directory')
 flags.DEFINE_string('chain', 'A', 'Output directory')
 flags.DEFINE_boolean('refine', False, 'Output directory')
+flags.DEFINE_string('dncon2', None, '')
+flags.DEFINE_string('dncon4', None, '')
+flags.DEFINE_string('distmap', None, '')
 FLAGS = flags.FLAGS
 
 
@@ -64,7 +67,10 @@ def main(argv):
                                                            input_monomer_dir=monomer_model_dir + '/' + monomer_id,
                                                            input_multimer_dir=multimer_model_dir,
                                                            outputdir=N1_monomer_outdir, generate_egnn_models=True,
-                                                           model_count=5)
+                                                           model_count=5,
+                                                           dncon2_file=FLAGS.dncon2,
+                                                           dncon4_file=FLAGS.dncon4,
+                                                           distmap=FLAGS.distmap)
             if result is None:
                 raise RuntimeError(f"Program failed in step 7: monomer {monomer_id} model evaluation")
 

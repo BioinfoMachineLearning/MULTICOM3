@@ -13,6 +13,9 @@ import pickle
 import json
 import pathlib
 
+def run_cmd(inparams):
+    cmd = inparams
+    os.system(cmd)
 
 class Monomer_structure_evaluation_human_pipeline:
     """Runs the alignment tools and assembles the input features."""
@@ -31,7 +34,7 @@ class Monomer_structure_evaluation_human_pipeline:
         self.casp14_script = params['casp14_human_script']
 
     def run_qas(self, targetname, fasta_file, pdbdir, pkldir, output_dir_abs,
-                pdbs_from_monomer, pdbs_from_multimer, pdbs_with_dist):
+                pdbs_from_monomer, pdbs_from_multimer, pdbs_with_dist, dncon2_file, dncon4_file, distmap):
 
         result_dict = {}
         cwd = os.getcwd()
@@ -156,14 +159,31 @@ class Monomer_structure_evaluation_human_pipeline:
             casp13_ranking = output_dir_abs + '/casp13/Full_TS/eva/HumanQA_gdt_prediction_sort.txt'
             casp14_deeprank_ranking = output_dir_abs + '/casp14/Full_TS/eva/HumanQA_gdt_prediction_sort.txt'
             casp14_deeprank3_ranking = output_dir_abs + '/casp14/Full_TS/eva_DeepRank3/DeepRank3_Cluster.txt'
+
+            run_cmds = []
             if not os.path.exists(casp13_ranking):
-                cmd = f"perl {self.casp13_script} {targetname} {fasta_file} {output_dir_abs}/casp13 NULL NULL {pdbdir} &> {output_dir_abs}/run_casp13_human.log "
+                if dncon2_file is None or len(dncon2_file) == 0:
+                    cmd = f"perl {self.casp13_script} {targetname} {fasta_file} {output_dir_abs}/casp13 NULL NULL {pdbdir} &> {output_dir_abs}/run_casp13_human.log "
+                else:
+                    cmd = f"perl {self.casp13_script} {targetname} {fasta_file} {output_dir_abs}/casp13 NULL {dncon2_file} {pdbdir} &> {output_dir_abs}/run_casp13_human.log "
                 print(cmd)
-                os.system(cmd)
+                #os.system(cmd)
+                run_cmds += [cmd]
             if not os.path.exists(casp14_deeprank_ranking) or not os.path.exists(casp14_deeprank3_ranking):
-                cmd = f"perl {self.casp14_script} {targetname} {fasta_file} {output_dir_abs}/casp14 NULL NULL NULL {pdbdir} &> {output_dir_abs}/run_casp14_human.log "
+                if dncon4_file is None or len(dncon4_file) == 0 or distmap is None or len(distmap) == 0:
+                    cmd = f"perl {self.casp14_script} {targetname} {fasta_file} {output_dir_abs}/casp14 NULL NULL NULL {pdbdir} &> {output_dir_abs}/run_casp14_human.log "
+                else:
+                    cmd = f"perl {self.casp14_script} {targetname} {fasta_file} {output_dir_abs}/casp14 NULL {dncon4_file} {distmap} {pdbdir} &> {output_dir_abs}/run_casp14_human.log "
                 print(cmd)
-                os.system(cmd)
+                #os.system(cmd)
+                run_cmds += [cmd]
+
+            if len(run_cmds) > 0:
+                pool = Pool(processes=len(run_cmds))
+                results = pool.map(run_cmd, run_cmds)
+                pool.close()
+                pool.join()
+
             result_dict['casp13'] = casp13_ranking
             result_dict['casp14_deeprank'] = casp14_deeprank_ranking
             result_dict['casp14_deeprank3'] = casp14_deeprank3_ranking
@@ -172,7 +192,8 @@ class Monomer_structure_evaluation_human_pipeline:
 
         return result_dict
 
-    def process(self, targetname, fasta_file, monomer_model_dir, output_dir, multimer_model_dir="", model_count=5):
+    def process(self, targetname, fasta_file, monomer_model_dir, output_dir,
+                multimer_model_dir="", model_count=5, dncon2_file="", dncon4_file="", distmap=""):
 
         query_sequence = open(fasta_file).readlines()[1].rstrip('\n').strip()
 
@@ -279,9 +300,10 @@ class Monomer_structure_evaluation_human_pipeline:
         return self.run_qas(targetname=targetname, fasta_file=fasta_file, pdbdir=pdbdir, pkldir=pkldir,
                             output_dir_abs=output_dir_abs,
                             pdbs_from_monomer=pdbs_from_monomer, pdbs_from_multimer=pdbs_from_multimer,
-                            pdbs_with_dist=pdbs_with_dist)
+                            pdbs_with_dist=pdbs_with_dist, dncon2_file=dncon2_file, dncon4_file=dncon4_file,
+                            distmap=distmap)
 
-    def reprocess(self, targetname, fasta_file, output_dir):
+    def reprocess(self, targetname, fasta_file, output_dir, dncon2_file="", dncon4_file="", distmap=""):
 
         output_dir_abs = os.path.abspath(output_dir)
 
@@ -305,4 +327,6 @@ class Monomer_structure_evaluation_human_pipeline:
                             fasta_file=fasta_file, pdbdir=pdbdir, pkldir=pkldir, output_dir_abs=output_dir_abs,
                             pdbs_from_monomer=pdbs_from_monomer,
                             pdbs_from_multimer=pdbs_from_multimer,
-                            pdbs_with_dist=pdbs_from_monomer)
+                            pdbs_with_dist=pdbs_from_monomer,
+                            dncon2_file=dncon2_file, dncon4_file=dncon4_file,
+                            distmap=distmap)

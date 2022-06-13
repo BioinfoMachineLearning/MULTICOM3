@@ -123,7 +123,7 @@ if __name__ == '__main__':
                                                   pdb_dir=pdb_dir,
                                                   refpdb=args.refpdb,
                                                   tmscore_progarm=params['mmalign_program'],
-                                                  ranked_field='confidence',
+                                                  ranked_field='plddt_avg',
                                                   is_csv=True)
         elif method == 'bfactor':
             global_scores = convert_ranking_to_df(method=method,

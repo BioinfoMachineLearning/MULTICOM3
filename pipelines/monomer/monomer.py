@@ -180,7 +180,7 @@ def main(argv):
 
     default_alphafold_msa = N3_outdir + '/default/msas/monomer_final.a3m'
 
-    if len(open(default_alphafold_msa).readlines()) < 10000 * 2:
+    if len(open(default_alphafold_msa).readlines()) < 2000 * 2:
         while not os.path.exists(img_msa):
             # sleep for 5 mins
             time.sleep(300)
