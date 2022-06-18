@@ -252,14 +252,15 @@ class Complex_structure_based_template_search_pipeline:
                 os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb}.atom.gz .")
                 os.system(f"gunzip -f {template_pdb}.atom.gz")
 
-        prev_df_sorted_filtered = pd.read_csv(outdir + "/structure_templates_v2.csv")
-        for i in range(len(prev_df_sorted_filtered)):
-            for j in range(len(monomers_pdbs)):
-                template_name = prev_df_sorted_filtered.loc[i, f'template{j + 1}']
-                if not pd.isna(template_name):
-                    template_pdb = template_name.split()[0]
-                    os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb}.atom.gz .")
-                    os.system(f"gunzip -f {template_pdb}.atom.gz")
+        if os.path.exists(outdir + "/structure_templates_v2.csv"):
+            prev_df_sorted_filtered = pd.read_csv(outdir + "/structure_templates_v2.csv")
+            for i in range(len(prev_df_sorted_filtered)):
+                for j in range(len(monomers_pdbs)):
+                    template_name = prev_df_sorted_filtered.loc[i, f'template{j + 1}']
+                    if not pd.isna(template_name):
+                        template_pdb = template_name.split()[0]
+                        os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb}.atom.gz .")
+                        os.system(f"gunzip -f {template_pdb}.atom.gz")
 
         os.chdir(cwd)
 

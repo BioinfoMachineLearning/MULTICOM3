@@ -51,7 +51,7 @@ def main(argv):
                                                                 extract_dir="",
                                                                 outdir=N1_outdir,
                                                                 stoichiometry=FLAGS.stoichiometry,
-                                                                model_count=5)
+                                                                model_count=25)
 
 
 if __name__ == '__main__':
