@@ -192,11 +192,13 @@ class Quaternary_structure_evaluation_pipeline_human:
                 continue
             ranking_json = json.loads(open(ranking_json_file).read())
 
-            for i in range(model_count):
-                if not complete_result(model_dir + '/' + method):
-                    continue
-                os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
+            if not complete_result(model_dir + '/' + method):
+                continue
 
+            for i in range(model_count):
+                if i >= len(list(ranking_json["order"])):
+                    break
+                os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
                 model_name = list(ranking_json["order"])[i]
                 os.system(f"cp {model_dir}/{method}/result_{model_name}.pkl {pkldir}/{method}_{i}.pkl")
                 for chain_id in chain_id_map:
