@@ -35,7 +35,7 @@ class Pairwise_MMalign_qa:
                     continue
                 process_list.append([self.mmalign_program, input_dir, pdb1, pdb2])
 
-        pool = Pool(processes=20)
+        pool = Pool(processes=40)
         results = pool.map(run_command, process_list)
         pool.close()
         pool.join()

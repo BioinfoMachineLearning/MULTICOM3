@@ -94,10 +94,7 @@ def main(argv):
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             makedir_if_not_exists(N3_monomer_outdir)
             if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                                run_methods=['default', 'default+seq_template',
-                                                                             'default_uniclust', 'default_uniref_22',
-                                                                             'original', 'original+seq_template',
-                                                                             'colabfold', 'colabfold+seq_template'],
+                                                                run_methods=['default'],
                                                                 fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                                                                 alndir=N1_monomer_outdir,
                                                                 templatedir=N2_monomer_outdir,
@@ -168,23 +165,18 @@ def main(argv):
     N6_outdir = FLAGS.output_dir + '/N6_quaternary_structure_generation'
     makedir_if_not_exists(N6_outdir)
 
-    run_methods_part2 = ['default',
-                         'default_uniclust30',
-                         'default_uniref30_22',
+    run_methods_part1 = ['species_interact_uniref_a3m',
+                         'species_interact_uniref_a3m+sequence_based_template_pdb70',
+                         'species_interact_uniref_a3m+structure_based_template',
+                         'species_interact_uniref_a3m+sequence_based_template_pdb',
+                         'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
+                         'species_interact_uniref_a3m+alphafold_model_templates',
+                         'uniprot_distance_uniref_a3m',
+                         'string_interact_uniref_a3m',
+                         # 'geno_dist_uniref_a3m',
+                         # 'pdb_interact_uniref_sto',
                          'species_interact_uniref_sto',
-                         'uniprot_distance_uniref_sto',
-                         'string_interact_uniref_sto',
-                         'string_interact_uniref_sto+sequence_based_template_pdb70',
-                         'string_interact_uniref_sto+structure_based_template',
-                         'string_interact_uniref_sto+sequence_based_template_pdb',
-                         'string_interact_uniref_sto+sequence_based_template_complex_pdb',
-                         'string_interact_uniref_sto+alphafold_model_templates',
-                         # 'geno_dist_uniref_sto',
-                         # 'pdb_interact_uniprot_sto',
-                         'species_interact_uniprot_sto',
-                         'uniprot_distance_uniprot_sto',
-                         'string_interact_uniprot_sto',
-                         'species_colabfold_interact']
+                         'uniprot_distance_uniref_sto', ]
 
     if not run_quaternary_structure_generation_pipeline_v2(params=params,
                                                            fasta_path=FLAGS.fasta_path,
@@ -194,7 +186,7 @@ def main(argv):
                                                            template_dir=N5_outdir,
                                                            monomer_model_dir=N3_outdir,
                                                            output_dir=N6_outdir,
-                                                           run_methods=run_methods_part2):
+                                                           run_methods=run_methods_part1):
         print("Program failed in step 7")
 
     print("Complex quaternary structure generation has been finished!")
@@ -338,25 +330,25 @@ def main(argv):
 
     print("9. Start to run multimer iterative generation pipeline using top-ranked monomer models")
 
-    pipeline_inputs = []
-    for i in range(2):
-        monomer_pdb_dirs = {}
-        monomer_alphafold_a3ms = {}
-        for chain_id in chain_id_map:
-            monomer_id = chain_id_map[chain_id].description
-            monomer_ranking = pd.read_csv(monomer_qas_res[monomer_id]['apollo_monomer'])
-            pdb_name = monomer_ranking.loc[i, 'model']
-            monomer_pdb_dirs[chain_id] = f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}"
-            monomer_alphafold_a3ms[chain_id] = f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}"
-        pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
-                                                             monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
-
-    if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
-                                                                 chain_id_map=chain_id_map,
-                                                                 pipeline_inputs=pipeline_inputs, outdir=N6_outdir):
-        print("Program failed in step 6 iterative")
-
-    print("Complex quaternary structure generation has been finished!")
+    # pipeline_inputs = []
+    # for i in range(2):
+    #     monomer_pdb_dirs = {}
+    #     monomer_alphafold_a3ms = {}
+    #     for chain_id in chain_id_map:
+    #         monomer_id = chain_id_map[chain_id].description
+    #         monomer_ranking = pd.read_csv(monomer_qas_res[monomer_id]['apollo_monomer'])
+    #         pdb_name = monomer_ranking.loc[i, 'model']
+    #         monomer_pdb_dirs[chain_id] = f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}"
+    #         monomer_alphafold_a3ms[chain_id] = f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}"
+    #     pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
+    #                                                          monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
+    #
+    # if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
+    #                                                              chain_id_map=chain_id_map,
+    #                                                              pipeline_inputs=pipeline_inputs, outdir=N6_outdir):
+    #     print("Program failed in step 6 iterative")
+    #
+    # print("Complex quaternary structure generation has been finished!")
 
     print("#################################################################################################")
 
