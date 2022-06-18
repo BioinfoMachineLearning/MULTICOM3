@@ -17,6 +17,9 @@ flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
 flags.DEFINE_string('targetname', None, 'Path to multimer fastas')
 flags.DEFINE_string('output_dir', None, 'Output directory')
+flags.DEFINE_string('dncon2', None, '')
+flags.DEFINE_string('dncon4', None, '')
+flags.DEFINE_string('distmap', None, '')
 FLAGS = flags.FLAGS
 
 
@@ -43,7 +46,10 @@ def main(argv):
     rerun_monomer_evaluation_pipeline_human(params=params,
                                             targetname=FLAGS.targetname,
                                             fasta_file=FLAGS.fasta_path,
-                                            outputdir=FLAGS.output_dir)
+                                            outputdir=FLAGS.output_dir,
+                                            dncon2_file=FLAGS.dncon2,
+                                            dncon4_file=FLAGS.dncon4,
+                                            distmap=FLAGS.distmap)
 
 
 if __name__ == '__main__':
