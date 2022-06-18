@@ -469,14 +469,15 @@ def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_
     return qa_result
 
 
-def rerun_monomer_evaluation_pipeline_human(params, targetname, fasta_file, outputdir):
+def rerun_monomer_evaluation_pipeline_human(params, targetname, fasta_file, outputdir,
+                                            dncon2_file="", dncon4_file="", distmap=""):
     makedir_if_not_exists(outputdir)
     result = None
     pipeline = Monomer_structure_evaluation_human_pipeline(params=params,
                                                            use_gpu=True)
     try:
         result = pipeline.reprocess(targetname=targetname, fasta_file=fasta_file,
-                                    output_dir=outputdir)
+                                    output_dir=outputdir,  dncon2_file=dncon2_file, dncon4_file=dncon4_file, distmap=distmap)
     except Exception as e:
         print(e)
 
