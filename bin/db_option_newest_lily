@@ -42,6 +42,9 @@ alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 # alphafold program path
 alphafold_program_dir = /home/bml_casp15/tools/alphafold_casp/alphafold_v2.2/alphafold
 
+# alphafold program path
+alphafold_temp_program_dir = /home/bml_casp15/tools/alphafold_casp/alphafold_v2.2_temp/alphafold
+
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom.py
 
