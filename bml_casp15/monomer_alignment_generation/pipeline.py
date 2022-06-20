@@ -31,6 +31,7 @@ class Monomer_alignment_generation_pipeline:
                  colabfold_split_msas_binary,
                  mmseq_binary,
                  uniref90_database_path,
+                 uniref90_database_path_new,
                  mgnify_database_path,
                  small_bfd_database_path,
                  bfd_database_path,
@@ -38,6 +39,7 @@ class Monomer_alignment_generation_pipeline:
                  uniref30_database_path_new,
                  uniclust30_database_path,
                  uniprot_database_path,
+                 uniprot_database_path_new,
                  colabfold_databases,
                  hhfilter_binary_path="",
                  mgnify_max_hits: int = 501,
@@ -62,11 +64,19 @@ class Monomer_alignment_generation_pipeline:
 
         self.hhblits_uniref_runner_new = None
         self.uniref30_bfd_msa_runner_new = None
+        self.jackhmmer_uniprot_runner_new = None
+        self.jackhmmer_uniref90_runner_new = None
 
         if len(uniref90_database_path) > 0:
             self.jackhmmer_uniref90_runner = jackhmmer.Jackhmmer(
                 binary_path=jackhmmer_binary_path,
                 database_path=uniref90_database_path,
+                get_tblout=True)
+
+        if len(uniref90_database_path_new) > 0:
+            self.jackhmmer_uniref90_runner_new = jackhmmer.Jackhmmer(
+                binary_path=jackhmmer_binary_path,
+                database_path=uniref90_database_path_new,
                 get_tblout=True)
 
         if len(bfd_database_path) > 0:
@@ -99,6 +109,12 @@ class Monomer_alignment_generation_pipeline:
             self.jackhmmer_uniprot_runner = jackhmmer.Jackhmmer(
                 binary_path=jackhmmer_binary_path,
                 database_path=uniprot_database_path,
+                get_tblout=True)
+
+        if len(uniprot_database_path_new) > 0:
+            self.jackhmmer_uniprot_runner_new = jackhmmer.Jackhmmer(
+                binary_path=jackhmmer_binary_path,
+                database_path=uniprot_database_path_new,
                 get_tblout=True)
 
         # if os.path.exists(uniclust30_database_path):
@@ -154,6 +170,11 @@ class Monomer_alignment_generation_pipeline:
                 [self.jackhmmer_uniref90_runner, input_fasta_path,
                  msa_output_dir, f'{input_id}_uniref90.sto', 'uniref90_sto'])
 
+        if self.jackhmmer_uniref90_runner_new is not None:
+            msa_process_list.append(
+                [self.jackhmmer_uniref90_runner_new, input_fasta_path,
+                 msa_output_dir, f'{input_id}_uniref90_new.sto', 'uniref90_sto_new'])
+
         if self.jackhmmer_mgnify_runner is not None:
             msa_process_list.append([self.jackhmmer_mgnify_runner, input_fasta_path,
                                      msa_output_dir, f'{input_id}_mgnify.sto', 'mgnify_sto'])
@@ -187,6 +208,10 @@ class Monomer_alignment_generation_pipeline:
         if self.jackhmmer_uniprot_runner is not None:
             msa_process_list.append([self.jackhmmer_uniprot_runner, input_fasta_path,
                                     msa_output_dir, f'{input_id}_uniprot.sto', 'uniprot_sto'])
+
+        if self.jackhmmer_uniprot_runner_new is not None:
+            msa_process_list.append([self.jackhmmer_uniprot_runner_new, input_fasta_path,
+                                     msa_output_dir, f'{input_id}_uniprot_new.sto', 'uniprot_sto_new'])
 
         if self.rosettafold_msa_runner is not None:
             msa_process_list.append(
