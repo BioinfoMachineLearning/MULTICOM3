@@ -16,6 +16,7 @@ import pandas as pd
 flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
 flags.DEFINE_string('output_dir', None, 'Output directory')
+flags.DEFINE_string('chain', 'A', 'Output directory')
 FLAGS = flags.FLAGS
 
 
@@ -46,6 +47,8 @@ def main(argv):
     makedir_if_not_exists(N1_outdir)
     processed_seuqences = {}
     for chain_id in chain_id_map:
+        if chain_id != FLAGS.chain:
+            continue
         monomer_id = chain_id_map[chain_id].description
         monomer_sequence = chain_id_map[chain_id].sequence
         if monomer_sequence not in processed_seuqences:
