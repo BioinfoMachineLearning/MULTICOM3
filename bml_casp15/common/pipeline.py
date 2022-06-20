@@ -58,6 +58,7 @@ def run_monomer_msa_pipeline(fasta, outdir, params):
                                                          colabfold_split_msas_binary=colabfold_split_msas_binary,
                                                          mmseq_binary=mmseq_binary,
                                                          uniref90_database_path=uniref90_fasta,
+                                                         uniref90_database_path_new=params['uniref90_fasta_newest'],
                                                          mgnify_database_path=mgnify,
                                                          small_bfd_database_path=smallbfd,
                                                          bfd_database_path=bfd,
@@ -65,6 +66,7 @@ def run_monomer_msa_pipeline(fasta, outdir, params):
                                                          uniref30_database_path_new=uniref30_new,
                                                          uniclust30_database_path=uniclust30,
                                                          uniprot_database_path=uniprot_fasta,
+                                                         uniprot_database_path_new=params['uniprot_fasta_newest'],
                                                          colabfold_databases=colabfold_databases)
         result = pipeline.process(fasta, outdir)
     except Exception as e:
