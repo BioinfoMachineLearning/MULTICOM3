@@ -30,12 +30,12 @@ from bml_casp15.monomer_structure_refinement.util import cal_tmscore
 from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
 
 
-def run_monomer_msa_pipeline(fasta, outdir, params):
+def run_monomer_msa_pipeline(fasta, outdir, params, only_monomer=False):
     uniref30 = params['uniref_db_dir'] + '/' + params['uniref_db']
     uniref30_new = params['uniref_db_dir_new'] + '/' + params['uniref_db_new']
     uniclust30 = params['uniclust_db_dir'] + '/' + params['uniclust_db']
     uniref90_fasta = params['uniref90_fasta']
-    uniprot_fasta = params['uniprot_fasta']
+
     smallbfd = ""  # params['smallbfd_database']
     bfd = params['bfd_database']
     mgnify = params['mgnify_database']
@@ -48,6 +48,13 @@ def run_monomer_msa_pipeline(fasta, outdir, params):
     colabfold_split_msas_binary = params['colabfold_split_msas_program']
     colabfold_databases = params['colabfold_databases']
     mmseq_binary = params['mmseq_program']
+
+    if only_monomer:
+        uniprot_fasta = ""
+        uniprot_fasta_newest = ""
+    else:
+        uniprot_fasta = params['uniprot_fasta']
+        uniprot_fasta_newest = params['uniprot_fasta_newest']
 
     result = None
     try:
@@ -66,7 +73,7 @@ def run_monomer_msa_pipeline(fasta, outdir, params):
                                                          uniref30_database_path_new=uniref30_new,
                                                          uniclust30_database_path=uniclust30,
                                                          uniprot_database_path=uniprot_fasta,
-                                                         uniprot_database_path_new=params['uniprot_fasta_newest'],
+                                                         uniprot_database_path_new=uniprot_fasta_newest,
                                                          colabfold_databases=colabfold_databases)
         result = pipeline.process(fasta, outdir)
     except Exception as e:
