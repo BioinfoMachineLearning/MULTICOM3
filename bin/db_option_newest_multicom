@@ -129,12 +129,16 @@ uniref_db_new = UniRef30_2022_02
 
 uniref90_fasta = /data/bml_casp15/BML_CASP15/databases/uniref90/uniref90.fasta
 
+uniref90_fasta_newest = /data/bml_casp15/BML_CASP15/databases/uniref90_newest/uniref90.fasta
+
 # uniclust database
 uniclust_db_dir = /data/bml_casp15/BML_CASP15/databases/uniclust30_2018_08
 
 uniclust_db = uniclust30_2018_08
 
 uniprot_fasta = /data/bml_casp15/BML_CASP15/databases/uniprot/uniprot.fasta
+
+uniprot_fasta_newest = /data/bml_casp15/BML_CASP15/databases/uniprot_newest/uniprot.fasta
 
 # uniprot id mapping file
 uniprot_official_mapping_file = /data/bml_casp15/BML_CASP15/databases/idmapping_selected.tab.2021_06
