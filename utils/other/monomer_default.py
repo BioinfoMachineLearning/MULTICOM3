@@ -53,7 +53,7 @@ def main(argv):
     print("#################################################################################################")
     print(f"1. Start to generate alignments for monomers")
 
-    result = run_monomer_msa_pipeline(fasta=FLAGS.fasta_path, outdir=N1_outdir, params=params)
+    result = run_monomer_msa_pipeline(fasta=FLAGS.fasta_path, outdir=N1_outdir, params=params, only_monomer=True)
 
     if result is None:
         raise RuntimeError('The monomer alignment generation has failed!')
@@ -85,7 +85,7 @@ def main(argv):
     N3_outdir = outdir + '/N3_monomer_structure_generation'
     makedir_if_not_exists(N3_outdir)
     if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                        run_methods=['default', 'default_uniref_22'],
+                                                        run_methods=['default', 'default_uniref_22', 'default_newest'],
                                                         fasta_path=FLAGS.fasta_path,
                                                         alndir=N1_outdir, templatedir=N2_outdir, outdir=N3_outdir):
         print("Program failed in step 3: monomer structure generation")
