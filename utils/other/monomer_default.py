@@ -94,7 +94,18 @@ def main(argv):
 
     print("#################################################################################################")
 
-    print("#################################################################################################")
+    print("4. Start to evaluate monomer models")
+
+    N4_outdir = outdir + '/N4_monomer_structure_evaluation'
+
+    makedir_if_not_exists(N4_outdir)
+
+    result = run_monomer_evaluation_pipeline(params=params, targetname=targetname, fasta_file=FLAGS.fasta_path,
+                                             input_monomer_dir=N3_outdir, outputdir=N4_outdir,
+                                             generate_egnn_models=True)
+
+    if result is None:
+        raise RuntimeError("Program failed in step 4: monomer model evaluation")
 
 
 if __name__ == '__main__':
