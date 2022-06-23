@@ -184,7 +184,7 @@ class Monomer_structure_prediction_pipeline_v2:
                         cmd = f"python {self.params['alphafold_default_program']} " \
                               f"--fasta_path {fasta_path} " \
                               f"--env_dir {self.params['alphafold_env_dir']} " \
-                              f"--database_dir {self.params['alphafold_database_dir']} " \
+                              f"--database_dir {self.params['alphafold_database_dir_newest']} " \
                               f"--bfd_uniclust_a3ms {bfd_uniclust30_a3m} " \
                               f"--mgnify_stos {mgnify_sto} " \
                               f"--uniref90_stos {uniref90_sto} " \

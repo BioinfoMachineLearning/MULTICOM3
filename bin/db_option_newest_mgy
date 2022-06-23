@@ -38,6 +38,9 @@ alphafold_env_dir = /home/bml_casp15/anaconda3/envs/bml_casp15/bin/
 # alphafold database directory
 alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
+# alphafold database directory
+alphafold_database_dir_newest = /home/bml_casp15/tools/alphafold_databases_newest/
+
 #########################Customized alphafold program###########################
 # alphafold program path
 alphafold_program_dir = /home/bml_casp15/tools/alphafold_casp/alphafold_v2.2/alphafold

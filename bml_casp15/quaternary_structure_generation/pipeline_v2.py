@@ -264,7 +264,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                           f"--uniprot_stos {','.join(uniprot_stos)} " \
                           f"--num_multimer_predictions_per_model 5 " \
                           f"--env_dir {self.params['alphafold_env_dir']} " \
-                          f"--database_dir {self.params['alphafold_database_dir']} " \
+                          f"--database_dir {self.params['alphafold_database_dir_newest']} " \
                           f"--output_dir {outdir}"
 
                     print(cmd)
