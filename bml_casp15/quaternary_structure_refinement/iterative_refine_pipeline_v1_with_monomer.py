@@ -138,6 +138,7 @@ class Multimer_iterative_refinement_pipeline:
         msa_out_path = outpath  # + '/msas'
         makedir_if_not_exists(msa_out_path)
 
+        print(f"length of complex_templates_df_filtered: {len(complex_templates_df_filtered)}")
         out_multimer_msas = []
         out_monomer_msas = []
         for chain_idx, chain_id in enumerate(chain_id_map):
@@ -264,44 +265,44 @@ class Multimer_iterative_refinement_pipeline:
                 current_work_dir = f"{model_outdir}/iteration{num_iteration + 1}"
                 makedir_if_not_exists(current_work_dir)
 
-                start_pdb = f"{current_work_dir}/start.pdb"
-                start_msa_path = f"{current_work_dir}/start_msas"
-                start_ranking_json_file = f"{current_work_dir}/start_ranking.json"
-
-                os.system(f"cp {current_ref_dir}/{ref_start_pdb} {start_pdb}")
-                os.system(f"cp {current_ref_dir}/{ref_start_ranking_json_file} {start_ranking_json_file}")
-                if os.path.exists(start_msa_path):
-                    os.system(f"rm -rf {start_msa_path}")
-                makedir_if_not_exists(start_msa_path)
-
-                for chain_idx, chain_id in enumerate(chain_id_map):
-                    os.system(f"cp {current_ref_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m "
-                              f"{start_msa_path}/{chain_id_map[chain_id].description}.start.multimer.a3m")
-
-                    os.system(f"cp {current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx]}/monomer_final.a3m "
-                              f"{start_msa_path}/{chain_id_map[chain_id].description}.start.monomer.a3m")
-
-                ranking_json = json.loads(open(start_ranking_json_file).read())
-
-                if num_iteration == 0:
-                    ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[i]]
-                else:
-                    ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
-
-                ref_tmscore = 0
-                ref_tmalign = 0
-                if os.path.exists(native_pdb):
-                    ref_tmscore = cal_tmscore(self.params['mmalign_program'], start_pdb, native_pdb)
-                    ref_tmalign = cal_tmalign(self.params['tmalign_program'], start_pdb, native_pdb,
-                                              current_work_dir + '/tmp')
-
-                model_iteration_scores += [ref_avg_lddt]
-                model_iteration_tmscores += [ref_tmscore]
-                model_iteration_tmaligns += [ref_tmalign]
-
                 out_model_dir = f"{current_work_dir}/alphafold"
 
                 if not complete_result(out_model_dir):
+
+                    start_pdb = f"{current_work_dir}/start.pdb"
+                    start_msa_path = f"{current_work_dir}/start_msas"
+                    start_ranking_json_file = f"{current_work_dir}/start_ranking.json"
+
+                    os.system(f"cp {current_ref_dir}/{ref_start_pdb} {start_pdb}")
+                    os.system(f"cp {current_ref_dir}/{ref_start_ranking_json_file} {start_ranking_json_file}")
+                    if os.path.exists(start_msa_path):
+                        os.system(f"rm -rf {start_msa_path}")
+                    makedir_if_not_exists(start_msa_path)
+
+                    for chain_idx, chain_id in enumerate(chain_id_map):
+                        os.system(f"cp {current_ref_dir}/msas/{chain_id_map[chain_id].description}.paired.a3m "
+                                  f"{start_msa_path}/{chain_id_map[chain_id].description}.start.multimer.a3m")
+
+                        os.system(f"cp {current_ref_dir}/msas/{PDB_CHAIN_IDS[chain_idx]}/monomer_final.a3m "
+                                  f"{start_msa_path}/{chain_id_map[chain_id].description}.start.monomer.a3m")
+
+                    ranking_json = json.loads(open(start_ranking_json_file).read())
+
+                    if num_iteration == 0:
+                        ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[i]]
+                    else:
+                        ref_avg_lddt = ranking_json["iptm+ptm"][list(ranking_json["order"])[0]]
+
+                    ref_tmscore = 0
+                    ref_tmalign = 0
+                    if os.path.exists(native_pdb):
+                        ref_tmscore = cal_tmscore(self.params['mmalign_program'], start_pdb, native_pdb)
+                        ref_tmalign = cal_tmalign(self.params['tmalign_program'], start_pdb, native_pdb,
+                                                  current_work_dir + '/tmp')
+
+                    model_iteration_scores += [ref_avg_lddt]
+                    model_iteration_tmscores += [ref_tmscore]
+                    model_iteration_tmaligns += [ref_tmalign]
 
                     chain_pdbs = split_pdb(start_pdb, current_work_dir)
 

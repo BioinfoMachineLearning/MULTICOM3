@@ -382,7 +382,7 @@ class Quaternary_structure_prediction_homo_pipeline_v2:
             default_alphafold_monomer_a3ms += [default_alphafold_monomer_a3m]
 
         for method in self.run_methods:
-            if method == "default" or method == "default_uniclust30" or method == "default_uniref30_22":
+            if method == "default" or method == "default_uniclust30" or method == "default_uniref30_22" or method == "default_mul_newest":
                 continue
             concatenate_method = ""
             template_method = ""
