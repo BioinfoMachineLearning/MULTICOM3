@@ -165,8 +165,8 @@ def main(argv):
     N6_outdir = FLAGS.output_dir + '/N6_quaternary_structure_generation'
     makedir_if_not_exists(N6_outdir)
 
-    run_methods_part1 = ['species_interact_uniref_a3m',
-                         'species_interact_uniref_a3m+sequence_based_template_pdb70',
+    run_methods_part1 = [# 'species_interact_uniref_a3m',
+                         # 'species_interact_uniref_a3m+sequence_based_template_pdb70',
                          'species_interact_uniref_a3m+structure_based_template',
                          'species_interact_uniref_a3m+sequence_based_template_pdb',
                          'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
