@@ -345,7 +345,7 @@ class Quaternary_structure_prediction_pipeline_v2:
 
                 os.chdir(self.params['alphafold_program_dir'])
 
-                if method == "default" or method == "default_uniclust30" or method == "default_uniref30_22":
+                if method == "default" or method == "default_uniclust30" or method == "default_uniref30_22" or method == "default_mul_newest":
                     continue
                 concatenate_method = ""
                 template_method = ""

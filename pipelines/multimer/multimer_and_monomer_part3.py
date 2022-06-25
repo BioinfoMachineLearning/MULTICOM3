@@ -173,7 +173,7 @@ def main(argv):
                          'string_interact_uniref_sto+alphafold_model_templates',
                          # 'geno_dist_uniref_sto',
                          # 'pdb_interact_uniprot_sto',
-                         'species_interact_uniprot_sto',
+                         # 'species_interact_uniprot_sto',
                          'uniprot_distance_uniprot_sto',
                          'string_interact_uniprot_sto',
                          'species_colabfold_interact']
