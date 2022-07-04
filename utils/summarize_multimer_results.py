@@ -77,11 +77,14 @@ if __name__ == '__main__':
         print("summarizing results for homo-multimers\n")
         is_homomer = True
 
-    monomer_qa_dir = args.workdir + '/N8_monomer_structure_evaluation'
+    monomer_qa_dir = args.workdir + '/N7_monomer_structure_evaluation'
     if not os.path.exists(monomer_qa_dir):
-        monomer_qa_dir = args.workdir + '/N7_monomer_structure_evaluation'
+        monomer_qa_dir = args.workdir + '/N1_monomer_structure_evaluation'
 
     multimer_qa_dir = args.workdir + '/N9_multimer_structure_evaluation'
+    if not os.path.exists(multimer_qa_dir):
+        multimer_qa_dir = args.workdir + '/N1_quaternary_structure_evaluation'
+
     deep_ranking = multimer_qa_dir + '/pairwise_af_avg.ranking'
     qa_ranking = multimer_qa_dir + '/alphafold_ranking.csv'
 
@@ -111,7 +114,10 @@ if __name__ == '__main__':
         for i in range(len(pairwise_ranking_df)):
             model = pairwise_ranking_df.loc[i, 'selected_models']
             msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
-            alignment_depth += [len(open(msa).readlines()) / 2]
+            if os.path.exists(msa):
+                alignment_depth += [len(open(msa).readlines()) / 2]
+            else:
+                alignment_depth += [0]
             ranked_modeles += [model]
             tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
                                   inpdb=chain_qa_dir + '/pdb/' + model,
@@ -132,7 +138,10 @@ if __name__ == '__main__':
             model = refine_ranking_df.loc[i, 'selected_models']
             ranked_modeles += [model]
             msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
-            alignment_depth += [len(open(msa).readlines()) / 2]
+            if os.path.exists(msa):
+                alignment_depth += [len(open(msa).readlines()) / 2]
+            else:
+                alignment_depth += [0]
             tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
                                   inpdb=chain_qa_dir + '/pdb/' + model,
                                   nativepdb=args.refpdb)
@@ -151,7 +160,10 @@ if __name__ == '__main__':
         for i in range(5):
             model = pairwise_ranking_df.loc[i, 'Name'] + '.pdb'
             msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
-            alignment_depth += [len(open(msa).readlines()) / 2]
+            if os.path.exists(msa):
+                alignment_depth += [len(open(msa).readlines()) / 2]
+            else:
+                alignment_depth += [0]
             ranked_modeles += [model]
 
             tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
@@ -173,7 +185,10 @@ if __name__ == '__main__':
             model = qa_ranking_df.loc[i, 'model']
             ranked_modeles += [model]
             msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
-            alignment_depth += [len(open(msa).readlines()) / 2]
+            if os.path.exists(msa):
+                alignment_depth += [len(open(msa).readlines()) / 2]
+            else:
+                alignment_depth += [0]
             tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
                                   inpdb=f"{multimer_qa_dir}/qa{i+1}/{chain_id}_top1.pdb",
                                   nativepdb=args.refpdb)
@@ -231,7 +246,10 @@ if __name__ == '__main__':
             msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.monomer.a3m')
         else:
             msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.paired.a3m')
-        alignment_depth += [len(open(msa).readlines()) / 2]
+        if os.path.exists(msa):
+            alignment_depth += [len(open(msa).readlines()) / 2]
+        else:
+            alignment_depth += [0]
         ranked_modeles += [model]
 
         tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
@@ -257,7 +275,10 @@ if __name__ == '__main__':
             msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.monomer.a3m')
         else:
             msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.paired.a3m')
-        alignment_depth += [len(open(msa).readlines()) / 2]
+        if os.path.exists(msa):
+            alignment_depth += [len(open(msa).readlines()) / 2]
+        else:
+            alignment_depth += [0]
         tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
                               inpdb=multimer_qa_dir + '/pdb/' + model,
                               nativepdb=args.refpdb)

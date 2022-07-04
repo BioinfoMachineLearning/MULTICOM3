@@ -37,8 +37,7 @@ def cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
     return tmscore, gdtscore
 
 
-def convert_ranking_to_df(method, infile, index, pdb_dir, refpdb, tmscore_progarm, tmpdir,
-                          ranked_field="", is_csv=True, ascending=False):
+def convert_ranking_to_df(method, infile, index, ranked_field="", is_csv=True, ascending=False):
     df = None
     # af=plddt_avg, enqa=score, native_scores='gdtscore
     if is_csv:
@@ -48,11 +47,7 @@ def convert_ranking_to_df(method, infile, index, pdb_dir, refpdb, tmscore_progar
         tmscores = []
         for i in range(len(df)):
             model = df.loc[i, 'model']
-            tmscore, _ = cal_tmscore(tmscore_program=tmscore_progarm,
-                                     inpdb=pdb_dir + '/' + model,
-                                     nativepdb=refpdb,
-                                     tmpdir=tmpdir)
-            tmscores += [tmscore]
+            tmscores += [0]
         df['tmscore'] = tmscores
         df = df.sort_values(by=['score'], ascending=ascending)
         df = df.add_suffix(str(index))
@@ -77,17 +72,16 @@ def convert_ranking_to_df(method, infile, index, pdb_dir, refpdb, tmscore_progar
             scores += [float(score)]
         df = pd.DataFrame({f'model{index}': models, f'score{index}': scores})
         tmscores = []
+        models = []
         for i in range(len(df)):
             model = df.loc[i, f'model{index}']
             if method == "SBROD":
-                model = model[model.rindex('/'):]
-
-            tmscore, _ = cal_tmscore(tmscore_program=tmscore_progarm,
-                                     inpdb=pdb_dir + '/' + model,
-                                     nativepdb=refpdb,
-                                     tmpdir=tmpdir)
-            tmscores += [tmscore]
+                model = model[model.rindex('/')+1:]
+                models += [model]
+            tmscores += [0]
         df[f'tmscore{index}'] = tmscores
+        if method == "SBROD":
+            df[f'model{index}'] = models
         df = df.sort_values(by=[f'score{index}'], ascending=False)
         df.reset_index(inplace=True)
         df = df[[f'model{index}', f'score{index}', f'tmscore{index}']]
@@ -100,19 +94,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--option_file', type=is_file, required=True)
     parser.add_argument('--workdirs', type=str, required=True)
-    parser.add_argument('--tmpdir', type=str, required=True)
-    parser.add_argument('--targetname', type=str, required=True)
-    parser.add_argument('--refpdb', type=str, required=True)
+    parser.add_argument('--targetnames', type=str, required=True)
 
     args = parser.parse_args()
-
-    makedir_if_not_exists(args.tmpdir)
 
     params = read_option_file(args.option_file)
 
     all_dfs = {}
 
-    for workdir in args.workdirs.split(','):
+    for workdir, target in zip(args.workdirs.split(','), args.targetnames.split(',')):
 
         ranking_csvs = {'af_apollo_avg': f"{workdir}/pairwise_af_avg.ranking",
                         'af': f"{workdir}/alphafold_ranking.csv",
@@ -149,50 +139,30 @@ if __name__ == '__main__':
                 global_scores = convert_ranking_to_df(method=method,
                                                       infile=find_res[method],
                                                       index=index,
-                                                      pdb_dir=pdb_dir,
-                                                      refpdb=args.refpdb,
-                                                      tmscore_progarm=params['tmscore_program'],
-                                                      tmpdir=args.tmpdir,
                                                       ranked_field='plddt_avg',
                                                       is_csv=True)
             elif method == 'af_apollo_avg':
                 global_scores = convert_ranking_to_df(method=method,
                                                       infile=find_res[method],
                                                       index=index,
-                                                      pdb_dir=pdb_dir,
-                                                      refpdb=args.refpdb,
-                                                      tmscore_progarm=params['tmscore_program'],
-                                                      tmpdir=args.tmpdir,
                                                       ranked_field='avg_score',
                                                       is_csv=True)
             elif method == 'af_apollo_avg_rank':
                 global_scores = convert_ranking_to_df(method=method,
                                                       infile=find_res[method],
                                                       index=index,
-                                                      pdb_dir=pdb_dir,
-                                                      refpdb=args.refpdb,
-                                                      tmscore_progarm=params['tmscore_program'],
-                                                      tmpdir=args.tmpdir,
                                                       ranked_field='avg_rank',
                                                       is_csv=True, ascending=True)
             elif method == 'enqa':
                 global_scores = convert_ranking_to_df(method=method,
                                                       infile=find_res[method],
                                                       index=index,
-                                                      pdb_dir=pdb_dir,
-                                                      refpdb=args.refpdb,
-                                                      tmscore_progarm=params['tmscore_program'],
-                                                      tmpdir=args.tmpdir,
                                                       ranked_field='score',
                                                       is_csv=True)
             else:
                 global_scores = convert_ranking_to_df(method=method,
                                                       infile=find_res[method],
                                                       index=index,
-                                                      pdb_dir=pdb_dir,
-                                                      refpdb=args.refpdb,
-                                                      tmscore_progarm=params['tmscore_program'],
-                                                      tmpdir=args.tmpdir,
                                                       is_csv=False)
 
             if method in all_dfs:
@@ -201,25 +171,35 @@ if __name__ == '__main__':
                 all_dfs[method] = [global_scores]
 
     all_df_avg = []
-    for i, method in enumerate(all_dfs):
+    for index, method in enumerate(all_dfs):
         prev_df = all_dfs[method][0]
+        prev_df = prev_df.add_suffix('0')
+        prev_df[f'model{index}'] = prev_df[f'model{index}0']
+        prev_df = prev_df.drop([f'model{index}0'], axis=1)
+        print(prev_df)
         for j in range(1, len(all_dfs[method])):
-            prev_df = prev_df.merge(all_dfs[method][j], on=f'model{index}', suffixes=(str(j), str(j+1)))
+            curr_df = all_dfs[method][j].add_suffix(str(j))
+            curr_df[f'model{index}'] = curr_df[f'model{index}{j}']
+            curr_df = curr_df.drop([f'model{index}{j}'], axis=1)
+            prev_df = prev_df.merge(curr_df, on=f'model{index}')
 
         avg_scores = []
         for j in range(len(prev_df)):
             sum_score = 0
             for k in range(len(all_dfs[method])):
-                sum_score += prev_df.loc[j, f'score{k}']
+                sum_score += prev_df.loc[j, f'score{index}{k}']
             avg_scores += [sum_score/len(all_dfs[method])]
 
-        models = list(prev_df[f'model{index}1'])
+        models = list(prev_df[f'model{index}'])
 
-        df = pd.DataFrame({f'model{index}': models, f'score{index}': avg_scores})
+        df = pd.DataFrame({f'model{index}': models, f'score{index}': avg_scores, f'tmscore{index}': [0]*len(avg_scores)})
         df = df.sort_values(by=[f'score{index}'], ascending=False)
-        all_df_avg += [df]
+        df.reset_index(inplace=True)
+        print(method)
+        print(df)
+        all_df_avg += [df[[f'model{index}', f'score{index}', f'tmscore{index}']]]
 
-    summary_df = pd.concat(all_dfs, axis=1)
-    summary_df.to_csv(f"{args.workdir}/summary_{target}.csv")
-    summary_df.head(20).to_csv(f"{args.workdir}/summary_20_{target}.csv")
+    summary_df = pd.concat(all_df_avg, axis=1)
+    summary_df.to_csv(f"summary.csv")
+    summary_df.head(20).to_csv(f"summary_20.csv")
     print(summary_df)

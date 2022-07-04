@@ -20,20 +20,21 @@ if __name__ == '__main__':
 
     makedir_if_not_exists(args.outdir)
 
-    pdbdir = args.indir + '/pdb_monomer'
-    pkldir = args.indir + '/pkl_monomer'
+    pdbdir = args.indir + '/pdb_multimer'
+    pkldir = args.indir + '/pkl_multimer'
 
     pdbdir_ori = args.outdir + '/pdb_ext'
     makedir_if_not_exists(pdbdir_ori)
-    outpdbdir = args.outdir + '/pdb_monomer'
+    outpdbdir = args.outdir + '/pdb_multimer'
     makedir_if_not_exists(outpdbdir)
-    outpkldir = args.outdir + '/pkl_monomer'
+    outpkldir = args.outdir + '/pkl_multimer'
     makedir_if_not_exists(outpkldir)
 
     extract_script = '/home/bml_casp15/BML_CASP15/utils/extract_domain.pl'
     reindex_script = '/home/bml_casp15/BML_CASP15/utils/reindex_pdb.pl'
-
+    print(pdbdir)
     for pdb in os.listdir(pdbdir):
+        print(f"perl {extract_script} {pdbdir}/{pdb} {pdbdir_ori}/{pdb} {args.start} {args.end} ")
         os.system(f"perl {extract_script} {pdbdir}/{pdb} {pdbdir_ori}/{pdb} {args.start} {args.end} ")
         os.system(f"perl {reindex_script} {pdbdir_ori}/{pdb} {outpdbdir}/{pdb}")
         extract_pkl(src_pkl=f"{pkldir}/{pdb.replace('.pdb', '.pkl')}",
