@@ -175,8 +175,8 @@ def main(argv):
                          # 'pdb_interact_uniprot_sto',
                          # 'species_interact_uniprot_sto',
                          'uniprot_distance_uniprot_sto',
-                         'string_interact_uniprot_sto',
-                         'species_colabfold_interact']
+                         'string_interact_uniprot_sto']
+                         #'species_colabfold_interact']
 
     if not run_quaternary_structure_generation_pipeline_v2(params=params,
                                                            fasta_path=FLAGS.fasta_path,

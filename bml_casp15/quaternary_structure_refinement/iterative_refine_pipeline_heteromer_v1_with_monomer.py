@@ -650,7 +650,7 @@ class Multimer_iterative_refinement_pipeline:
                 print("Continue to refine")
                 ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
                 model_name = list(new_ranking_json["order"])[0]
-                ref_start_pkl = out_model_dir + '/' + model_name.replace('.pdb', '.pkl')
+                ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
                 ref_start_msa_paths = {}
                 for chain_id in chain_id_map:
                     ref_start_msa_paths[chain_id] = dict(
@@ -666,7 +666,7 @@ class Multimer_iterative_refinement_pipeline:
                 if num_iteration == 0:
                     ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
                     model_name = list(new_ranking_json["order"])[0]
-                    ref_start_pkl = out_model_dir + '/' + model_name.replace('.pdb', '.pkl')
+                    ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
                     ref_start_msa_paths = {}
                     for chain_id in chain_id_map:
                         ref_start_msa_paths[chain_id] = dict(

@@ -166,6 +166,7 @@ def main(argv):
     makedir_if_not_exists(N6_outdir)
 
     run_methods_part1 = ['default',
+                         'default_mul_newest',
                          'default+sequence_based_template_pdb70',
                          'default_uniclust30',
                          'default_uniref30_22',
@@ -173,8 +174,32 @@ def main(argv):
                          'default+sequence_based_template_pdb',
                          'default+sequence_based_template_complex_pdb',
                          'default+alphafold_model_templates',
-                         'uniclust_oxmatch_a3m',
-                         'pdb_interact_uniref_a3m']
+                         # 'uniclust_oxmatch_a3m',
+                         # 'pdb_interact_uniref_a3m',
+                         #'species_interact_uniref_a3m',
+                         #'species_interact_uniref_a3m+sequence_based_template_pdb70',
+                         #'species_interact_uniref_a3m+structure_based_template',
+                         #'species_interact_uniref_a3m+sequence_based_template_pdb',
+                         #'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
+                         'species_interact_uniref_a3m+alphafold_model_templates',
+                         'uniprot_distance_uniref_a3m',
+                         'string_interact_uniref_a3m',
+                         # 'geno_dist_uniref_a3m',
+                         # 'pdb_interact_uniref_sto',
+                         #'species_interact_uniref_sto',
+                         'uniprot_distance_uniref_sto',
+                         'string_interact_uniref_sto',
+                         'string_interact_uniref_sto+sequence_based_template_pdb70',
+                         'string_interact_uniref_sto+structure_based_template',
+                         'string_interact_uniref_sto+sequence_based_template_pdb',
+                         'string_interact_uniref_sto+sequence_based_template_complex_pdb',
+                         'string_interact_uniref_sto+alphafold_model_templates',
+                         # 'geno_dist_uniref_sto',
+                         # 'pdb_interact_uniprot_sto',
+                         #'species_interact_uniprot_sto',
+                         'uniprot_distance_uniprot_sto',
+                         'string_interact_uniprot_sto']
+                         #'species_colabfold_interact']
 
     if not run_quaternary_structure_generation_pipeline_v2(params=params,
                                                            fasta_path=FLAGS.fasta_path,

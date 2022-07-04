@@ -158,7 +158,7 @@ def extract_multimer_pdbs(chain_id_map, complex_pdb, workdir, complex_pkl,
 class Quaternary_structure_evaluation_pipeline_human:
     """Runs the alignment tools and assembles the input features."""
 
-    def __init__(self, params, run_methods=["alphafold", "pairwise", "bfactor", 'multieva']):
+    def __init__(self, params, run_methods=["alphafold", "bfactor", 'multieva']):
         """Initializes the data pipeline."""
 
         self.params = params
