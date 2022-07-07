@@ -20,14 +20,14 @@ if __name__ == '__main__':
 
     makedir_if_not_exists(args.outdir)
 
-    pdbdir = args.indir + '/pdb_monomer'
-    pkldir = args.indir + '/pkl_monomer'
+    pdbdir = args.indir + '/pdb_multimer'
+    pkldir = args.indir + '/pkl_multimer'
 
     pdbdir_ori = args.outdir + '/pdb_ext'
     makedir_if_not_exists(pdbdir_ori)
-    outpdbdir = args.outdir + '/pdb_monomer'
+    outpdbdir = args.outdir + '/pdb_multimer'
     makedir_if_not_exists(outpdbdir)
-    outpkldir = args.outdir + '/pkl_monomer'
+    outpkldir = args.outdir + '/pkl_multimer'
     makedir_if_not_exists(outpkldir)
 
     extract_script = '/home/bml_casp15/BML_CASP15/utils/extract_domain.pl'
