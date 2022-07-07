@@ -44,9 +44,9 @@ class Quaternary_structure_prediction_pipeline_v2:
         if run_methods is None:
             self.run_methods = ['default',
                                 'default_mul_newest',
-                                'default+sequence_based_template_pdb70',
-                                'default_uniclust30',
                                 'default_uniref30_22',
+                                'default_uniclust30',
+                                'default+sequence_based_template_pdb70',
                                 'default+structure_based_template',
                                 'default+sequence_based_template_pdb',
                                 'default+sequence_based_template_complex_pdb',
