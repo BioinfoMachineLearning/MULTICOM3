@@ -214,7 +214,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                           f"--mgnify_stos {','.join(mgnify_stos)} " \
                           f"--uniref90_stos {','.join(uniref90_stos)} " \
                           f"--uniprot_stos {','.join(uniprot_stos)} " \
-                          f"--num_multimer_predictions_per_model 5 " \
+                          f"--num_multimer_predictions_per_model 10 " \
                           f"--env_dir {self.params['alphafold_env_dir']} " \
                           f"--database_dir {self.params['alphafold_database_dir']} " \
                           f"--output_dir {outdir}"
@@ -262,7 +262,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                           f"--mgnify_stos {','.join(mgnify_stos)} " \
                           f"--uniref90_stos {','.join(uniref90_stos)} " \
                           f"--uniprot_stos {','.join(uniprot_stos)} " \
-                          f"--num_multimer_predictions_per_model 5 " \
+                          f"--num_multimer_predictions_per_model 10 " \
                           f"--env_dir {self.params['alphafold_env_dir']} " \
                           f"--database_dir {self.params['alphafold_database_dir_newest']} " \
                           f"--output_dir {outdir}"
