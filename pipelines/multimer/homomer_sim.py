@@ -83,22 +83,22 @@ def main(argv):
                                                               fasta=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                                                               outdir=N1_monomer_outdir_img)
 
-            N2_monomer_outdir = N2_outdir + '/' + monomer_id
-            makedir_if_not_exists(N2_monomer_outdir)
-            template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
-                                                                 a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
-                                                                 outdir=N2_monomer_outdir, params=params)
-            if template_file is None:
-                raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
-
-            N3_monomer_outdir = N3_outdir + '/' + monomer_id
-            makedir_if_not_exists(N3_monomer_outdir)
-            if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                                fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                                alndir=N1_monomer_outdir,
-                                                                templatedir=N2_monomer_outdir,
-                                                                outdir=N3_monomer_outdir):
-                print(f"Program failed in step 3: monomer {monomer_id} structure generation")
+            # N2_monomer_outdir = N2_outdir + '/' + monomer_id
+            # makedir_if_not_exists(N2_monomer_outdir)
+            # template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
+            #                                                      a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
+            #                                                      outdir=N2_monomer_outdir, params=params)
+            # if template_file is None:
+            #     raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
+            #
+            # N3_monomer_outdir = N3_outdir + '/' + monomer_id
+            # makedir_if_not_exists(N3_monomer_outdir)
+            # if not run_monomer_structure_generation_pipeline_v2(params=params,
+            #                                                     fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+            #                                                     alndir=N1_monomer_outdir,
+            #                                                     templatedir=N2_monomer_outdir,
+            #                                                     outdir=N3_monomer_outdir):
+            #     print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
             processed_seuqences[monomer_sequence] = monomer_id
 
@@ -116,14 +116,14 @@ def main(argv):
             N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
             makedir_if_not_exists(N1_monomer_outdir_img)
 
-            N2_monomer_outdir = N2_outdir + '/' + monomer_id
-            makedir_if_not_exists(N2_monomer_outdir)
-
-            # make a copy
-            N3_monomer_outdir = N3_outdir + '/' + monomer_id
-
-            if not os.path.exists(N3_monomer_outdir):
-                os.system(f"cp -r {N3_outdir}/{processed_seuqences[monomer_sequence]} {N3_monomer_outdir}")
+            # N2_monomer_outdir = N2_outdir + '/' + monomer_id
+            # makedir_if_not_exists(N2_monomer_outdir)
+            #
+            # # make a copy
+            # N3_monomer_outdir = N3_outdir + '/' + monomer_id
+            #
+            # if not os.path.exists(N3_monomer_outdir):
+            #     os.system(f"cp -r {N3_outdir}/{processed_seuqences[monomer_sequence]} {N3_monomer_outdir}")
 
     print("#################################################################################################")
 
