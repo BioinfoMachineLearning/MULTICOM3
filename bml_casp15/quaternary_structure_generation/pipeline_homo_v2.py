@@ -88,7 +88,7 @@ class Quaternary_structure_prediction_homo_pipeline_v2:
                                 'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
                                 'species_interact_uniref_a3m+alphafold_model_templates',
                                 'species_interact_uniref_sto',
-                                'species_interact_uniprot_sto'
+                                'species_interact_uniprot_sto']
         else:
             self.run_methods = run_methods
 
