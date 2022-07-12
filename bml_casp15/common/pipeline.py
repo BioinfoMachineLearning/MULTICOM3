@@ -479,10 +479,12 @@ def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_
 
 
 def rerun_monomer_evaluation_pipeline_human(params, targetname, fasta_file, outputdir,
+                                            run_methods=None,
                                             dncon2_file="", dncon4_file="", distmap=""):
     makedir_if_not_exists(outputdir)
     result = None
     pipeline = Monomer_structure_evaluation_human_pipeline(params=params,
+                                                           run_methods=run_methods,
                                                            use_gpu=True)
     try:
         result = pipeline.reprocess(targetname=targetname, fasta_file=fasta_file,
@@ -713,9 +715,9 @@ def run_quaternary_structure_generation_homo_pipeline_img_v2(params, fasta_path,
 
 def run_quaternary_structure_generation_homo_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
                                                          template_dir,
-                                                         monomer_model_dir, output_dir):
+                                                         monomer_model_dir, output_dir, run_methods=None):
     try:
-        pipeline = Quaternary_structure_prediction_homo_pipeline_v2(params)
+        pipeline = Quaternary_structure_prediction_homo_pipeline_v2(params, run_methods)
         result = pipeline.process(fasta_path=fasta_path,
                                   chain_id_map=chain_id_map,
                                   aln_dir=aln_dir,

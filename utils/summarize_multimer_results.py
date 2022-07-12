@@ -90,144 +90,145 @@ if __name__ == '__main__':
 
     processed_seq = []
     first_unit = None
-    for chain_id in chain_id_map:
-        monomer_name = chain_id_map[chain_id].description
-        monomer_seq = chain_id_map[chain_id].sequence
-        if monomer_seq in processed_seq:
-            continue
+    if os.path.exists(monomer_qa_dir):
+        for chain_id in chain_id_map:
+            monomer_name = chain_id_map[chain_id].description
+            monomer_seq = chain_id_map[chain_id].sequence
+            if monomer_seq in processed_seq:
+                continue
 
-        print(f"#################Summarizing result for {monomer_name}#################\n")
-        if first_unit is None:
-            first_unit = monomer_name
+            print(f"#################Summarizing result for {monomer_name}#################\n")
+            if first_unit is None:
+                first_unit = monomer_name
 
-        chain_qa_dir = monomer_qa_dir + '/' + monomer_name
+            chain_qa_dir = monomer_qa_dir + '/' + monomer_name
 
-        all_models = []
-        all_alignments = []
-        all_tmscores = []
+            all_models = []
+            all_alignments = []
+            all_tmscores = []
 
-        egnn_ranking = chain_qa_dir + '/egnn_selected.csv'
-        alignment_depth = []
-        pairwise_ranking_df = pd.read_csv(egnn_ranking)
-        ranked_modeles = []
-        tmscores = []
-        for i in range(len(pairwise_ranking_df)):
-            model = pairwise_ranking_df.loc[i, 'selected_models']
-            msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
-            if os.path.exists(msa):
-                alignment_depth += [len(open(msa).readlines()) / 2]
-            else:
-                alignment_depth += [0]
-            ranked_modeles += [model]
-            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
-                                  inpdb=chain_qa_dir + '/pdb/' + model,
-                                  nativepdb=args.refpdb)
-            tmscores += [tmscore]
+            egnn_ranking = chain_qa_dir + '/egnn_selected.csv'
+            alignment_depth = []
+            pairwise_ranking_df = pd.read_csv(egnn_ranking)
+            ranked_modeles = []
+            tmscores = []
+            for i in range(len(pairwise_ranking_df)):
+                model = pairwise_ranking_df.loc[i, 'selected_models']
+                msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
+                if os.path.exists(msa):
+                    alignment_depth += [len(open(msa).readlines()) / 2]
+                else:
+                    alignment_depth += [0]
+                ranked_modeles += [model]
+                tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
+                                      inpdb=chain_qa_dir + '/pdb/' + model,
+                                      nativepdb=args.refpdb)
+                tmscores += [tmscore]
 
-        print(f"\negnn models: {ranked_modeles}, {alignment_depth}\n")
-        all_models += ranked_modeles
-        all_alignments += alignment_depth
-        all_tmscores += tmscores
+            print(f"\negnn models: {ranked_modeles}, {alignment_depth}\n")
+            all_models += ranked_modeles
+            all_alignments += alignment_depth
+            all_tmscores += tmscores
 
-        refine_ranking = chain_qa_dir + '/refine_selected.csv'
-        refine_ranking_df = pd.read_csv(refine_ranking)
-        ranked_modeles = []
-        alignment_depth = []
-        tmscores = []
-        for i in range(5):
-            model = refine_ranking_df.loc[i, 'selected_models']
-            ranked_modeles += [model]
-            msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
-            if os.path.exists(msa):
-                alignment_depth += [len(open(msa).readlines()) / 2]
-            else:
-                alignment_depth += [0]
-            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
-                                  inpdb=chain_qa_dir + '/pdb/' + model,
-                                  nativepdb=args.refpdb)
-            tmscores += [tmscore]
+            refine_ranking = chain_qa_dir + '/refine_selected.csv'
+            refine_ranking_df = pd.read_csv(refine_ranking)
+            ranked_modeles = []
+            alignment_depth = []
+            tmscores = []
+            for i in range(5):
+                model = refine_ranking_df.loc[i, 'selected_models']
+                ranked_modeles += [model]
+                msa = chain_qa_dir + '/msa/' + model.replace('.pdb', '.a3m')
+                if os.path.exists(msa):
+                    alignment_depth += [len(open(msa).readlines()) / 2]
+                else:
+                    alignment_depth += [0]
+                tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
+                                      inpdb=chain_qa_dir + '/pdb/' + model,
+                                      nativepdb=args.refpdb)
+                tmscores += [tmscore]
 
-        print(f"\nrefine models: {ranked_modeles}\n")
-        all_models += ranked_modeles
-        all_alignments += alignment_depth
-        all_tmscores += tmscores
+            print(f"\nrefine models: {ranked_modeles}\n")
+            all_models += ranked_modeles
+            all_alignments += alignment_depth
+            all_tmscores += tmscores
 
 
-        pairwise_ranking_df = pd.read_csv(deep_ranking)
-        ranked_modeles = []
-        alignment_depth = []
-        tmscores = []
-        for i in range(5):
-            model = pairwise_ranking_df.loc[i, 'Name'] + '.pdb'
-            msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
-            if os.path.exists(msa):
-                alignment_depth += [len(open(msa).readlines()) / 2]
-            else:
-                alignment_depth += [0]
-            ranked_modeles += [model]
+            pairwise_ranking_df = pd.read_csv(deep_ranking)
+            ranked_modeles = []
+            alignment_depth = []
+            tmscores = []
+            for i in range(5):
+                model = pairwise_ranking_df.loc[i, 'Name'] + '.pdb'
+                msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
+                if os.path.exists(msa):
+                    alignment_depth += [len(open(msa).readlines()) / 2]
+                else:
+                    alignment_depth += [0]
+                ranked_modeles += [model]
 
-            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
-                                  inpdb=f"{multimer_qa_dir}/deep{i+1}/{chain_id}_top1.pdb",
-                                  nativepdb=args.refpdb)
+                tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
+                                      inpdb=f"{multimer_qa_dir}/deep{i+1}/{chain_id}_top1.pdb",
+                                      nativepdb=args.refpdb)
 
-            tmscores += [tmscore]
+                tmscores += [tmscore]
 
-        print(f"\ndeep models: {ranked_modeles}\n")
-        all_models += ranked_modeles
-        all_alignments += alignment_depth
-        all_tmscores += tmscores
+            print(f"\ndeep models: {ranked_modeles}\n")
+            all_models += ranked_modeles
+            all_alignments += alignment_depth
+            all_tmscores += tmscores
 
-        qa_ranking_df = pd.read_csv(qa_ranking)
-        ranked_modeles = []
-        alignment_depth = []
-        tmscores = []
-        for i in range(5):
-            model = qa_ranking_df.loc[i, 'model']
-            ranked_modeles += [model]
-            msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
-            if os.path.exists(msa):
-                alignment_depth += [len(open(msa).readlines()) / 2]
-            else:
-                alignment_depth += [0]
-            tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
-                                  inpdb=f"{multimer_qa_dir}/qa{i+1}/{chain_id}_top1.pdb",
-                                  nativepdb=args.refpdb)
+            qa_ranking_df = pd.read_csv(qa_ranking)
+            ranked_modeles = []
+            alignment_depth = []
+            tmscores = []
+            for i in range(5):
+                model = qa_ranking_df.loc[i, 'model']
+                ranked_modeles += [model]
+                msa = multimer_qa_dir + '/msa/' + monomer_name + '/' + model.replace('.pdb', '.monomer.a3m')
+                if os.path.exists(msa):
+                    alignment_depth += [len(open(msa).readlines()) / 2]
+                else:
+                    alignment_depth += [0]
+                tmscore = cal_mmalign(mmalign_program=params['mmalign_program'],
+                                      inpdb=f"{multimer_qa_dir}/qa{i+1}/{chain_id}_top1.pdb",
+                                      nativepdb=args.refpdb)
 
-            tmscores += [tmscore]
-        print(f"\nqa models: {ranked_modeles}\n")
-        all_models += ranked_modeles
-        all_alignments += alignment_depth
-        all_tmscores += tmscores
+                tmscores += [tmscore]
+            print(f"\nqa models: {ranked_modeles}\n")
+            all_models += ranked_modeles
+            all_alignments += alignment_depth
+            all_tmscores += tmscores
 
-        df = pd.DataFrame({'model': all_models, 'alignment_depth': all_alignments, 'ref_tmscore': all_tmscores})
-        print(df)
-        df.to_csv(f"{args.workdir}/summary_{monomer_name}_monomer.csv")
+            df = pd.DataFrame({'model': all_models, 'alignment_depth': all_alignments, 'ref_tmscore': all_tmscores})
+            print(df)
+            df.to_csv(f"{args.workdir}/summary_{monomer_name}_monomer.csv")
 
-        pdb70_hit_file = f"{args.workdir}/N3_monomer_structure_generation/{monomer_name}/default/msas/pdb_hits.hhr"
-        if os.path.exists(pdb70_hit_file):
-            start = False
-            contents = open(pdb70_hit_file).readlines()
-            for i, line in enumerate(contents):
-                line = line.rstrip('\n')
-                if line == "No 1":
-                    template_name = contents[i + 1].split()[0].lstrip('>')
-                    evalue = contents[i + 2].split()[1].split('=')[1]
-                    print(f"\nPDB70 Template: {template_name}, e-value: {evalue}")
-                    break
+            pdb70_hit_file = f"{args.workdir}/N3_monomer_structure_generation/{monomer_name}/default/msas/pdb_hits.hhr"
+            if os.path.exists(pdb70_hit_file):
+                start = False
+                contents = open(pdb70_hit_file).readlines()
+                for i, line in enumerate(contents):
+                    line = line.rstrip('\n')
+                    if line == "No 1":
+                        template_name = contents[i + 1].split()[0].lstrip('>')
+                        evalue = contents[i + 2].split()[1].split('=')[1]
+                        print(f"\nPDB70 Template: {template_name}, e-value: {evalue}")
+                        break
 
-        pdb_hit_file = f"{args.workdir}/N2_monomer_template_search/{monomer_name}/output.hhr"
-        if os.path.exists(pdb_hit_file):
-            start = False
-            contents = open(pdb_hit_file).readlines()
-            for i, line in enumerate(contents):
-                line = line.rstrip('\n')
-                if line == "No 1":
-                    template_name = contents[i + 1].split()[0].lstrip('>')
-                    evalue = contents[i + 2].split()[1].split('=')[1]
-                    print(f"\nIn house PDB Template: {template_name}, e-value: {evalue}")
-                    break
+            pdb_hit_file = f"{args.workdir}/N2_monomer_template_search/{monomer_name}/output.hhr"
+            if os.path.exists(pdb_hit_file):
+                start = False
+                contents = open(pdb_hit_file).readlines()
+                for i, line in enumerate(contents):
+                    line = line.rstrip('\n')
+                    if line == "No 1":
+                        template_name = contents[i + 1].split()[0].lstrip('>')
+                        evalue = contents[i + 2].split()[1].split('=')[1]
+                        print(f"\nIn house PDB Template: {template_name}, e-value: {evalue}")
+                        break
 
-        processed_seq += [monomer_seq]
+            processed_seq += [monomer_seq]
 
     print(f"#################Summarizing result for the multimer##################\n")
 
@@ -242,10 +243,13 @@ if __name__ == '__main__':
     tmscores = []
     for i in range(5):
         model = pairwise_ranking_df.loc[i, 'Name'] + '.pdb'
-        if is_homomer:
-            msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.monomer.a3m')
+        if first_unit is None:
+            msa = ""
         else:
-            msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.paired.a3m')
+            if is_homomer:
+                msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.monomer.a3m')
+            else:
+                msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.paired.a3m')
         if os.path.exists(msa):
             alignment_depth += [len(open(msa).readlines()) / 2]
         else:
@@ -271,10 +275,13 @@ if __name__ == '__main__':
     for i in range(5):
         model = qa_ranking_df.loc[i, 'model']
         ranked_modeles += [model]
-        if is_homomer:
-            msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.monomer.a3m')
+        if first_unit is None:
+            msa = ""
         else:
-            msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.paired.a3m')
+            if is_homomer:
+                msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.monomer.a3m')
+            else:
+                msa = multimer_qa_dir + '/msa/' + first_unit + '/' + model.replace('.pdb', '.paired.a3m')
         if os.path.exists(msa):
             alignment_depth += [len(open(msa).readlines()) / 2]
         else:

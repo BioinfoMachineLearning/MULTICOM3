@@ -37,7 +37,7 @@ def get_complex_alignments_by_method(monomers, concatenate_method, aln_dir):
 
 class Quaternary_structure_prediction_pipeline_v2:
 
-    def __init__(self, params, run_methods = None):
+    def __init__(self, params, run_methods=None):
 
         self.params = params
 
@@ -190,7 +190,8 @@ class Quaternary_structure_prediction_pipeline_v2:
                         monomer = chain_id_map[chain_id].description
                         monomer_bfd_uniclust_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref30_22_bfd.a3m"
                         if not os.path.exists(monomer_bfd_uniclust_a3m):
-                            raise Exception(f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
+                            raise Exception(
+                                f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
                         bfd_uniclust_a3ms += [monomer_bfd_uniclust_a3m]
 
                         monomer_mgnify_sto = f"{aln_dir}/{monomer}/{monomer}_mgnify.sto"
@@ -238,7 +239,8 @@ class Quaternary_structure_prediction_pipeline_v2:
                         monomer = chain_id_map[chain_id].description
                         monomer_bfd_uniclust_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref30_22_bfd.a3m"
                         if not os.path.exists(monomer_bfd_uniclust_a3m):
-                            raise Exception(f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
+                            raise Exception(
+                                f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
                         bfd_uniclust_a3ms += [monomer_bfd_uniclust_a3m]
 
                         monomer_mgnify_sto = f"{aln_dir}/{monomer}/{monomer}_mgnify.sto"
@@ -286,7 +288,8 @@ class Quaternary_structure_prediction_pipeline_v2:
                         monomer = chain_id_map[chain_id].description
                         monomer_bfd_uniclust_a3m = f"{aln_dir}/{monomer}/{monomer}_uniclust30_bfd.a3m"
                         if not os.path.exists(monomer_bfd_uniclust_a3m):
-                            raise Exception(f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
+                            raise Exception(
+                                f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniclust_a3m}")
                         bfd_uniclust_a3ms += [monomer_bfd_uniclust_a3m]
 
                         monomer_mgnify_sto = f"{aln_dir}/{monomer}/{monomer}_mgnify.sto"
@@ -317,7 +320,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                     print(cmd)
                     os.system(cmd)
                 result_dirs += [outdir]
-            
+
             # Customized complex alignment pipelines using original template search pipeline in alphafold
             default_alphafold_monomer_a3ms = []
             default_alphafold_multimer_a3ms = []
@@ -383,10 +386,10 @@ class Quaternary_structure_prediction_pipeline_v2:
                     if len(pd.read_csv(msa_pair_file)) <= 1:
                         continue
                     a3m_paths = [f"{complex_aln_dir}/{concatenate_method}/{monomer}_con.a3m" for monomer in monomers]
-                        # get_complex_alignments_by_method(
-                        # monomers=monomers,
-                        # concatenate_method=concatenate_method,
-                        # aln_dir=aln_dir)
+                    # get_complex_alignments_by_method(
+                    # monomers=monomers,
+                    # concatenate_method=concatenate_method,
+                    # aln_dir=aln_dir)
 
                 outdir = f"{output_dir}/{self.method2dir[method]}"
 
@@ -454,7 +457,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                         template_hits_files += [template_hits_file]
                     base_cmd += f"--temp_seq_pair_file {template_file} "
                     base_cmd += f"--template_hits_files {','.join(template_hits_files)} "
-                    
+
                 elif template_method == "alphafold_model_templates":
                     monomer_paths = []
                     for monomer in monomers:

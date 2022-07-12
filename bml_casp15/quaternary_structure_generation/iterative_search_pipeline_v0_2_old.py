@@ -42,10 +42,13 @@ class Multimer_iterative_generation_pipeline_monomer_old:
         for i, chain_id in enumerate(chain_id_map):
             templates = template_results[i]['all_alignment']
             curr_df = create_template_df(templates)
+            curr_df = curr_df.add_suffix(f"{i + 1}")
+            curr_df['tpdbcode'] = curr_df[f'tpdbcode{i + 1}']
+            curr_df = curr_df.drop([f'tpdbcode{i + 1}'], axis=1)
             if prev_df is None:
                 prev_df = curr_df
             else:
-                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode', suffixes=(str(i), str(i + 1)))
+                prev_df = prev_df.merge(curr_df, how="inner", on='tpdbcode')
 
         keep_indices = []
         chain_template_multimer_msas = {}
@@ -443,10 +446,13 @@ class Multimer_iterative_generation_pipeline_monomer_old:
         for i, chain_id in enumerate(chain_id_map):
             templates = template_results[i]['all_alignment']
             curr_df = create_template_df_with_index(templates)
+            curr_df = curr_df.add_suffix(f"{i + 1}")
+            curr_df['index'] = curr_df[f'index{i + 1}']
+            curr_df = curr_df.drop([f'index{i + 1}'], axis=1)
             if prev_df is None:
                 prev_df = curr_df
             else:
-                prev_df = prev_df.merge(curr_df, how="inner", on='index', suffixes=(str(i), str(i + 1)))
+                prev_df = prev_df.merge(curr_df, how="inner", on='index')
 
         keep_indices = []
         chain_template_multimer_msas = {}

@@ -44,14 +44,15 @@ class Quaternary_structure_evaluation_pipeline:
         makedir_if_not_exists(msadir)
 
         for method in os.listdir(model_dir):
+            print(method)
             ranking_json_file = f"{model_dir}/{method}/ranking_debug.json"
             if not os.path.exists(ranking_json_file):
                 continue
             ranking_json = json.loads(open(ranking_json_file).read())
 
             for i in range(model_count):
-                if not complete_result(model_dir + '/' + method):
-                    continue
+                # if not complete_result(model_dir + '/' + method):
+                #     continue
                 os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
 
                 model_name = list(ranking_json["order"])[i]

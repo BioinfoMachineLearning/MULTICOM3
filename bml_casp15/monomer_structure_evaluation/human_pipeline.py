@@ -20,11 +20,14 @@ def run_cmd(inparams):
 class Monomer_structure_evaluation_human_pipeline:
     """Runs the alignment tools and assembles the input features."""
 
-    def __init__(self, params, run_methods=["alphafold", "apollo", "bfactor", "enQA", "human"], use_gpu=True):
+    def __init__(self, params, run_methods=None, use_gpu=True):
         """Initializes the data pipeline."""
 
         self.params = params
-        self.run_methods = run_methods
+        if run_methods is None:
+            self.run_methods = ["alphafold", "apollo", "bfactor", "enQA", "human"]
+        else:
+            self.run_methods = run_methods
         self.alphafold_qa = Alphafold_pkl_qa(ranking_methods=['plddt_avg'])
         self.parwise_qa = params['qscore_program']
         self.tmscore = params['tmscore_program']
