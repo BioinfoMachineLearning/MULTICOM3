@@ -830,9 +830,9 @@ def rerun_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
-        multimer_qa_result = pipeline.process(fasta_path=fasta_path,
-                                              chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
-                                              output_dir=outdir, stoichiometry=stoichiometry)
+        multimer_qa_result = pipeline.reprocess(fasta_path=fasta_path,
+                                                chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
+                                                output_dir=outdir, stoichiometry=stoichiometry)
     except Exception as e:
         print(e)
 
@@ -843,10 +843,10 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
-        multimer_qa_result = pipeline.reprocess(fasta_path=fasta_path,
-                                                chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
-                                                model_dir=indir,
-                                                output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
+        multimer_qa_result = pipeline.process(fasta_path=fasta_path,
+                                              chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
+                                              model_dir=indir,
+                                              output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
     except Exception as e:
         print(e)
 
