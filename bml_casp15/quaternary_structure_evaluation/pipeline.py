@@ -195,6 +195,8 @@ class Quaternary_structure_evaluation_pipeline:
 
     def reprocess(self, fasta_path, chain_id_map, output_dir, monomer_model_dir="", stoichiometry=""):
 
+        self.alphafold_qa = Alphafold_pkl_qa(sort_field='plddt_avg', ranking_methods=['plddt_avg'])
+
         makedir_if_not_exists(output_dir)
 
         pdbdir = output_dir + '/pdb/'
@@ -286,7 +288,7 @@ class Quaternary_structure_evaluation_pipeline:
             print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
                 pairwise_score = float(avg_ranking_df.loc[i, 'MMalign score'])
-                alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
                 avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
