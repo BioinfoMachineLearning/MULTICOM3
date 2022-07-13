@@ -192,3 +192,144 @@ class Quaternary_structure_evaluation_pipeline:
             result_dict["pairwise_bfactor_avg"] = output_dir + '/pairwise_bfactor_avg.ranking'
 
         return result_dict
+
+    def reprocess(self, fasta_path, chain_id_map, output_dir, monomer_model_dir="", stoichiometry=""):
+
+        makedir_if_not_exists(output_dir)
+
+        pdbdir = output_dir + '/pdb/'
+        makedir_if_not_exists(pdbdir)
+
+        pkldir = output_dir + '/pkl/'
+        makedir_if_not_exists(pkldir)
+
+        msadir = output_dir + '/msa/'
+        makedir_if_not_exists(msadir)
+
+        result_dict = {}
+
+        # if "pairwise" in self.run_methods:
+        #     if not os.path.exists(output_dir + '/pairwise_ranking.csv'):
+        #         pairwise_ranking = self.pairwise_qa.run(pdbdir)
+        #         pairwise_ranking.to_csv(output_dir + '/pairwise_ranking.csv')
+        #     result_dict["pairwise"] = output_dir + '/pairwise_ranking.csv'
+
+        if "alphafold" in self.run_methods:
+            if not os.path.exists(output_dir + '/alphafold_ranking.csv'):
+                alphafold_ranking = self.alphafold_qa.run(pkldir)
+                alphafold_ranking.to_csv(output_dir + '/alphafold_ranking.csv')
+            result_dict["alphafold"] = output_dir + '/alphafold_ranking.csv'
+
+        if "dproq" in self.run_methods:
+            if not os.path.exists(output_dir + '/DOCKQ_ranking.csv'):
+                dproq_ranking_dockq, dproq_ranking_evalue = self.dproq.run(indir=pdbdir, outdir=output_dir + '/dproq')
+                dproq_ranking_dockq.to_csv(output_dir + '/dproq_ranking_dockq.csv')
+                dproq_ranking_evalue.to_csv(output_dir + '/dproq_ranking_evalue.csv')
+            result_dict["dproq_ranking_dockq"] = output_dir + '/dproq_ranking_dockq.csv'
+            result_dict["dproq_ranking_evalue"] = output_dir + '/dproq_ranking_evalue.csv'
+
+        if "enqa" in self.run_methods:
+            if not os.path.exists(output_dir + '/enqa_ranking.csv'):
+                enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
+                                                                   pkl_dir=pkldir,
+                                                                   pairwise_ranking_file=output_dir + '/pairwise_ranking.csv',
+                                                                   outputdir=output_dir + '/enqa')
+                enqa_ranking.to_csv(output_dir + '/enqa_ranking.csv')
+            result_dict["enQA"] = output_dir + '/enqa_ranking.csv'
+
+        if "bfactor" in self.run_methods:
+            if not os.path.exists(output_dir + '/bfactor_ranking.csv'):
+                bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
+                bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
+            result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
+
+        if "multieva" in self.run_methods:
+            if not os.path.exists(f"{output_dir}/multieva.csv"):
+                workdir = output_dir + '/multieva'
+                makedir_if_not_exists(workdir)
+                refdir = workdir + '/monomer_af/'
+                makedir_if_not_exists(refdir)
+
+                for chain_id in chain_id_map:
+                    default_chain_model = monomer_model_dir + '/' + chain_id_map[
+                        chain_id].description + '/pdb/default_0.pdb'
+                    os.system(f"cp {default_chain_model} {refdir}/{chain_id_map[chain_id].description}.pdb")
+
+                multieva_csv = self.multieva.run(chain_id_map=chain_id_map,
+                                                 fasta_path=fasta_path,
+                                                 input_dir=pdbdir, stoichiometry=stoichiometry,
+                                                 alphafold_prediction_dir=refdir, outputdir=workdir)
+
+                os.system(f"cp {multieva_csv} {output_dir}/multieva.csv")
+            result_dict["multieva"] = output_dir + '/multieva.csv'
+
+        if "foldseek" in self.run_methods:
+            if not os.path.exists(f"{output_dir}/foldseek_qa.csv"):
+                foldseek_qa_df = self.foldseek_qa.run(chain_id_map=chain_id_map, input_dir=pdbdir,
+                                                      outputdir=output_dir + '/foldseek')
+                foldseek_qa_df.to_csv(f"{output_dir}/foldseek_qa.csv")
+            result_dict["foldseek"] = output_dir + '/foldseek_qa.csv'
+
+        if "multieva" in self.run_methods and "alphafold" in self.run_methods:
+            pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
+            ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
+            pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
+            print(ranks)
+            pairwise_ranking_df['pairwise_rank'] = ranks
+            print(pairwise_ranking_df)
+            alphafold_ranking_df = pd.read_csv(result_dict['alphafold'])
+            ranks = [i + 1 for i in range(len(alphafold_ranking_df))]
+            alphafold_ranking_df['alphafold_rank'] = ranks
+            avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
+            avg_scores = []
+            avg_rankings = []
+            print(avg_ranking_df)
+            for i in range(len(avg_ranking_df)):
+                pairwise_score = float(avg_ranking_df.loc[i, 'MMalign score'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
+                avg_score = (pairwise_score + alphafold_score) / 2
+                avg_scores += [avg_score]
+                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
+                    avg_ranking_df.loc[i, 'alphafold_rank'])) / 2
+                avg_rankings += [avg_rank]
+            avg_ranking_df['avg_score'] = avg_scores
+            avg_ranking_df['avg_rank'] = avg_rankings
+            avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
+            avg_ranking_df.reset_index(inplace=True, drop=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
+            avg_ranking_df.to_csv(output_dir + '/pairwise_af_avg.ranking')
+            result_dict["pairwise_af_avg"] = output_dir + '/pairwise_af_avg.ranking'
+
+        if "multieva" in self.run_methods and "bfactor" in self.run_methods:
+            pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
+            ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
+            pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
+            print(ranks)
+            pairwise_ranking_df['pairwise_rank'] = ranks
+            print(pairwise_ranking_df)
+            bfactor_ranking_df = pd.read_csv(result_dict['bfactor'])
+            ranks = [i + 1 for i in range(len(bfactor_ranking_df))]
+            bfactor_ranking_df['bfactor_rank'] = ranks
+            avg_ranking_df = pairwise_ranking_df.merge(bfactor_ranking_df, how="inner", on='model')
+            avg_scores = []
+            avg_rankings = []
+            print(avg_ranking_df)
+            for i in range(len(avg_ranking_df)):
+                pairwise_score = float(avg_ranking_df.loc[i, 'MMalign score'])
+                alphafold_score = float(avg_ranking_df.loc[i, 'bfactor'])
+                avg_score = (pairwise_score + alphafold_score) / 2
+                avg_scores += [avg_score]
+                avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
+                    avg_ranking_df.loc[i, 'bfactor_rank'])) / 2
+                avg_rankings += [avg_rank]
+            avg_ranking_df['avg_score'] = avg_scores
+            avg_ranking_df['avg_rank'] = avg_rankings
+            avg_ranking_df = avg_ranking_df.sort_values(by=['avg_score'], ascending=False)
+            avg_ranking_df.reset_index(inplace=True, drop=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
+            avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
+            avg_ranking_df.to_csv(output_dir + '/pairwise_bfactor_avg.ranking')
+            result_dict["pairwise_bfactor_avg"] = output_dir + '/pairwise_bfactor_avg.ranking'
+
+        return result_dict

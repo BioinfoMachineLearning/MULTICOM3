@@ -488,7 +488,8 @@ def rerun_monomer_evaluation_pipeline_human(params, targetname, fasta_file, outp
                                                            use_gpu=True)
     try:
         result = pipeline.reprocess(targetname=targetname, fasta_file=fasta_file,
-                                    output_dir=outputdir,  dncon2_file=dncon2_file, dncon4_file=dncon4_file, distmap=distmap)
+                                    output_dir=outputdir, dncon2_file=dncon2_file, dncon4_file=dncon4_file,
+                                    distmap=distmap)
     except Exception as e:
         print(e)
 
@@ -823,16 +824,29 @@ def extract_monomer_models_from_complex(complex_pdb, complex_pkl, chain_id_map, 
     return chain_group
 
 
-def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir,
-                                     indir, outdir, stoichiometry, is_homomer=False, model_count=5):
+def rerun_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir,
+                                       outdir, stoichiometry):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
         multimer_qa_result = pipeline.process(fasta_path=fasta_path,
                                               chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
-                                              model_dir=indir,
-                                              output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
+                                              output_dir=outdir, stoichiometry=stoichiometry)
+    except Exception as e:
+        print(e)
+
+
+def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir,
+                                     indir, outdir, stoichiometry, is_homomer=False, model_count=5):
+    makedir_if_not_exists(outdir)
+    pipeline = Quaternary_structure_evaluation_pipeline(params=params)
+    multimer_qa_result = None
+    try:
+        multimer_qa_result = pipeline.reprocess(fasta_path=fasta_path,
+                                                chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
+                                                model_dir=indir,
+                                                output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
     except Exception as e:
         print(e)
 
