@@ -108,6 +108,8 @@ if __name__ == '__main__':
             all_tmscores = []
 
             egnn_ranking = chain_qa_dir + '/egnn_selected.csv'
+            if not os.path.exists(egnn_ranking):
+                continue
             alignment_depth = []
             pairwise_ranking_df = pd.read_csv(egnn_ranking)
             ranked_modeles = []
