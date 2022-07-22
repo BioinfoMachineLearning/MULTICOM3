@@ -7,6 +7,15 @@ from scipy.stats import pearsonr
 from bml_casp15.common.util import is_file, is_dir, makedir_if_not_exists, clean_dir
 
 
+def run_command(inparams):
+    mmalign_program, pdb1, pdb2 = inparams
+    cmd = mmalign_program + ' ' + pdb1 + ' ' +  pdb2 + " | grep TM-score | awk '{print $2}' "
+    print(cmd)
+    tmscore_contents = os.popen(cmd).read().split('\n')
+    tmscore = float(tmscore_contents[1].rstrip('\n'))
+    return pdb1, pdb2, tmscore
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -18,11 +27,19 @@ if __name__ == '__main__':
 
     models = []
     scores = []
-
+    process_list = []
     for model in os.listdir(args.indir):
-        ref_tmscore = cal_tmscore(args.mmalign_program, args.indir + '/' + model, args.native_pdb)
-        models += [model]
-        scores += [ref_tmscore]
+        process_list.append([args.mmalign_program, args.native_pdb, args.indir + '/' + model])
+
+    pool = Pool(processes=40)
+    results = pool.map(run_command, process_list)
+    pool.close()
+    pool.join()
+
+    for result in results:
+        pdb1, pdb2, tmscore = result
+        models += [pdb2]
+        scores += [tmscore]
 
     df = pd.DataFrame({'model': models, 'score': scores})
 

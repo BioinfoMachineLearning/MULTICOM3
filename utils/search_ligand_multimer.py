@@ -174,6 +174,8 @@ if __name__ == '__main__':
     flags.mark_flags_as_required([
         'option_file',
         'indir',
-        'outdir'
+        'outdir',
+        'fasta_path',
+        'tmpdir'
     ])
     app.run(main)

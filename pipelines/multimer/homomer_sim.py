@@ -83,22 +83,23 @@ def main(argv):
                                                               fasta=f"{FLAGS.output_dir}/{monomer_id}.fasta",
                                                               outdir=N1_monomer_outdir_img)
 
-            # N2_monomer_outdir = N2_outdir + '/' + monomer_id
-            # makedir_if_not_exists(N2_monomer_outdir)
-            # template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
-            #                                                      a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
-            #                                                      outdir=N2_monomer_outdir, params=params)
-            # if template_file is None:
-            #     raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
-            #
-            # N3_monomer_outdir = N3_outdir + '/' + monomer_id
-            # makedir_if_not_exists(N3_monomer_outdir)
-            # if not run_monomer_structure_generation_pipeline_v2(params=params,
-            #                                                     fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-            #                                                     alndir=N1_monomer_outdir,
-            #                                                     templatedir=N2_monomer_outdir,
-            #                                                     outdir=N3_monomer_outdir):
-            #     print(f"Program failed in step 3: monomer {monomer_id} structure generation")
+            N2_monomer_outdir = N2_outdir + '/' + monomer_id
+            makedir_if_not_exists(N2_monomer_outdir)
+            template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
+                                                                 a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
+                                                                 outdir=N2_monomer_outdir, params=params)
+            if template_file is None:
+                raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
+
+            N3_monomer_outdir = N3_outdir + '/' + monomer_id
+            makedir_if_not_exists(N3_monomer_outdir)
+            if not run_monomer_structure_generation_pipeline_v2(params=params,
+                                                                run_methods=['default', 'default_newest', 'default_uniref_22'],
+                                                                fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                alndir=N1_monomer_outdir,
+                                                                templatedir=N2_monomer_outdir,
+                                                                outdir=N3_monomer_outdir):
+                print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
             processed_seuqences[monomer_sequence] = monomer_id
 
@@ -167,6 +168,10 @@ def main(argv):
     N6_outdir = FLAGS.output_dir + '/N6_quaternary_structure_generation'
     makedir_if_not_exists(N6_outdir)
 
+    run_methods_part1 = ['default',
+                        'default_mul_newest',
+                        'default_uniref30_22']
+
     if not run_quaternary_structure_generation_homo_pipeline_v2(params=params,
                                                                 fasta_path=FLAGS.fasta_path,
                                                                 chain_id_map=chain_id_map,
@@ -174,7 +179,8 @@ def main(argv):
                                                                 complex_aln_dir=N4_outdir,
                                                                 template_dir=N5_outdir,
                                                                 monomer_model_dir=N3_outdir,
-                                                                output_dir=N6_outdir):
+                                                                output_dir=N6_outdir,
+                                                                run_methods=run_methods_part1):
         print("Program failed in step 6")
 
     print("Complex quaternary structure generation has been finished!")
