@@ -347,7 +347,7 @@ def main(argv):
                                                                      is_homomers=True):
         print("Program failed in step 6 iterative")
 
-    if len(chain_id_map) <= 5:
+    if len(chain_id_map) <= 6:
         if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
                                                                      chain_id_map=chain_id_map,
                                                                      pipeline_inputs=[pipeline_inputs[0]],
