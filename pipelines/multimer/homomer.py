@@ -192,7 +192,7 @@ def main(argv):
         if monomer_sequence not in processed_seuqences:
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             default_alphafold_msa = N3_monomer_outdir + '/default/msas/monomer_final.a3m'
-            if len(open(default_alphafold_msa).readlines()) < 500 * 2:
+            if len(open(default_alphafold_msa).readlines()) < 100 * 2:
                 while not os.path.exists(img_msas[chain_id]):
                     # sleep for 5 mins
                     print("waiting for img alignment")
@@ -341,13 +341,13 @@ def main(argv):
         pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
                                                              monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
 
-    if not run_quaternary_structure_generation_pipeline_foldseek_old(params=params, fasta_path=FLAGS.fasta_path,
-                                                                     chain_id_map=chain_id_map,
-                                                                     pipeline_inputs=pipeline_inputs, outdir=N6_outdir,
-                                                                     is_homomers=True):
-        print("Program failed in step 6 iterative")
+    #if not run_quaternary_structure_generation_pipeline_foldseek_old(params=params, fasta_path=FLAGS.fasta_path,
+    #                                                                 chain_id_map=chain_id_map,
+    #                                                                 pipeline_inputs=pipeline_inputs, outdir=N6_outdir,
+    #                                                                 is_homomers=True):
+    #    print("Program failed in step 6 iterative")
 
-    if len(chain_id_map) <= 5:
+    if len(chain_id_map) <= 1:
         if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
                                                                      chain_id_map=chain_id_map,
                                                                      pipeline_inputs=[pipeline_inputs[0]],

@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('--seq', type=str, required=True)
     args = parser.parse_args()
 
-    pdb2seq = '/home/bml_casp15/BML_CASP15/utils/pdb2seq.pl'
+    pdb2seq = '/bmlfast/bml_casp15/BML_CASP15/utils/pdb2seq.pl'
 
     for pdb in os.listdir(args.indir):
         cmd = f"perl {pdb2seq} {args.indir}/{pdb}"

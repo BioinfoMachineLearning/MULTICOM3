@@ -31,10 +31,12 @@ def main(argv):
     chain_id_map, chain_id_seq_map = make_chain_id_map(sequences=input_seqs,
                                                        descriptions=input_descs)
 
+    print("1111111111111111111111111111111111111")
     refine_inputs = []
     for pdb_name in os.listdir(FLAGS.indir):
-        if pdb_name.find('.pdb') <= 0:
+        if pdb_name.find('.pdb') < 0:
             continue
+        print(pdb_name)
         msa_paths = {}
         for chain_id in chain_id_map:
             msa_paths[chain_id] = dict(

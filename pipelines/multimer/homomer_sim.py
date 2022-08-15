@@ -93,13 +93,13 @@ def main(argv):
 
             N3_monomer_outdir = N3_outdir + '/' + monomer_id
             makedir_if_not_exists(N3_monomer_outdir)
-            if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                                run_methods=['default', 'default_newest', 'default_uniref_22'],
-                                                                fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                                alndir=N1_monomer_outdir,
-                                                                templatedir=N2_monomer_outdir,
-                                                                outdir=N3_monomer_outdir):
-                print(f"Program failed in step 3: monomer {monomer_id} structure generation")
+            #if not run_monomer_structure_generation_pipeline_v2(params=params,
+            #                                                    run_methods=['default', 'default_newest', 'default_uniref_22'],
+            #                                                    fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+            #                                                    alndir=N1_monomer_outdir,
+            #                                                    templatedir=N2_monomer_outdir,
+            #                                                    outdir=N3_monomer_outdir):
+            #    print(f"Program failed in step 3: monomer {monomer_id} structure generation")
 
             processed_seuqences[monomer_sequence] = monomer_id
 

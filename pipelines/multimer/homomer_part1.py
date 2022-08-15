@@ -174,7 +174,10 @@ def main(argv):
                         'default+structure_based_template',
                         'default+sequence_based_template_pdb',
                         'default+sequence_based_template_complex_pdb',
-                        'default+alphafold_model_templates']
+                        'default+alphafold_model_templates',
+                         'species_interact_uniref_a3m+alphafold_model_templates',
+                         'species_interact_uniref_sto',
+                         'species_interact_uniprot_sto']
 
     if not run_quaternary_structure_generation_homo_pipeline_v2(params=params,
                                                                 fasta_path=FLAGS.fasta_path,
