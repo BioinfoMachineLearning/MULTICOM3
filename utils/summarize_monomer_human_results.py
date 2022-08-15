@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     params = read_option_file(args.option_file)
 
-    qa_dir = args.workdir + '/N1'
+    qa_dir = args.workdir# + '/N1'
     pdb_dir = qa_dir + '/' + target + '/pdb'
 
     ranking_csvs = {'af_apollo_avg': f"{qa_dir}/{target}/pairwise_af_avg.ranking",

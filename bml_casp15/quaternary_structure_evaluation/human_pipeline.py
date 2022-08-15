@@ -192,8 +192,8 @@ class Quaternary_structure_evaluation_pipeline_human:
                 continue
             ranking_json = json.loads(open(ranking_json_file).read())
 
-            if not complete_result(model_dir + '/' + method):
-                continue
+            # if not complete_result(model_dir + '/' + method):
+            #     continue
 
             for i in range(model_count):
                 if i >= len(list(ranking_json["order"])):

@@ -10,6 +10,8 @@ from bml_casp15.common.util import check_file, check_dir, check_dirs, makedir_if
 
 
 def cal_mmalign(mmalign_program, inpdb, nativepdb):
+    if nativepdb is None:
+        return 0
     cmd = mmalign_program + ' ' + inpdb + ' ' + nativepdb + " | grep TM-score | awk '{print $2}' "
     tmscore_contents = os.popen(cmd).read().split('\n')
     tmscore = float(tmscore_contents[1].rstrip('\n'))
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--option_file', type=is_file, required=True)
     parser.add_argument('--workdir', type=is_file, required=True)
-    parser.add_argument('--refpdb', type=str, required=True)
+    parser.add_argument('--refpdb', type=str, required=False)
 
     args = parser.parse_args()
 

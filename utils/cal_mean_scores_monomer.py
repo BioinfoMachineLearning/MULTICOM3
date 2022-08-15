@@ -184,6 +184,6 @@ if __name__ == '__main__':
         all_df_avg += [df[[f'model{index}', f'score{index}', f'tmscore{index}']]]
 
     summary_df = pd.concat(all_df_avg, axis=1)
-    summary_df.to_csv(f"summary.csv")
-    summary_df.head(20).to_csv(f"summary_20.csv")
+    summary_df.to_csv(f"summary_mean.csv")
+    summary_df.head(20).to_csv(f"summary_mean_20.csv")
     print(summary_df)
