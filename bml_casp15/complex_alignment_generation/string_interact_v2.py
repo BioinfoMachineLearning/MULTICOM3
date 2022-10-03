@@ -45,7 +45,8 @@ class STRING_interact_v2:
                 if id2 == id1 or id2 in interact_ids:
                     id_1 += [id1]
                     id_2 += [id2]
-        return pd.DataFrame({f"id_{suffix}": id_1, f"id_{suffix + 1}": id_2})
+        return pd.DataFrame({f"id_{suffix}": id_1, f"id_{suffix + 1}": id_2}).astype(dtype= {f"id_{suffix}":"object",
+        f"id_{suffix+1}":"object"})
 
     def get_interactions(self, alignments):
         prev_df = None

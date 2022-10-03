@@ -1,9 +1,10 @@
+from itertools import chain
 import os, sys, argparse, time
 from multiprocessing import Pool
 from bml_casp15.common.util import check_file, check_dir, check_dirs, makedir_if_not_exists, check_contents, \
     read_option_file
 from bml_casp15.monomer_alignment_generation.alignment import write_fasta
-from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_result, make_chain_id_map
+from bml_casp15.common.protein import read_qa_txt_as_df, parse_fasta, complete_result, make_chain_id_map, get_stoichiometry_from_fasta
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
 from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_template_search_pipeline, \
@@ -39,6 +40,9 @@ def main(argv):
     makedir_if_not_exists(FLAGS.output_dir)
 
     for fasta_file in os.listdir(FLAGS.fastadir):
+
+        print(f"Processing {fasta_file}")
+
         outputdir = FLAGS.output_dir + pathlib.Path(FLAGS.fastadir + '/' + fasta_file).stem
         makedir_if_not_exists(outputdir)
 
@@ -49,6 +53,10 @@ def main(argv):
         input_seqs, input_descs = parse_fasta(input_fasta_str)
         chain_id_map, chain_id_seq_map = make_chain_id_map(sequences=input_seqs,
                                                            descriptions=input_descs)
+
+        stoichiometry = get_stoichiometry_from_fasta(chain_id_map=chain_id_map, sequences=input_seqs)
+        print(stoichiometry)
+
 
         processed_seuqences = {}
         for chain_id in chain_id_map:
@@ -95,21 +103,21 @@ def main(argv):
         N6_outdir = outputdir + '/N6_quaternary_structure_generation'
         makedir_if_not_exists(N6_outdir)
 
-        run_methods_part1 = ['default_uniclust30',
+        run_methods_part1 = [# 'default_uniclust30',
                              'uniclust_oxmatch_a3m',
                              'pdb_interact_uniref_a3m',
                              'species_interact_uniref_a3m',
-                             'uniprot_distance_uniref_a3m',
+                             # 'uniprot_distance_uniref_a3m',
                              'string_interact_uniref_a3m',
                              # 'geno_dist_uniref_a3m',
                              'pdb_interact_uniref_sto',
                              'species_interact_uniref_sto',
-                             'uniprot_distance_uniref_sto',
+                             # 'uniprot_distance_uniref_sto',
                              'string_interact_uniref_sto',
                              # 'geno_dist_uniref_sto',
                              'pdb_interact_uniprot_sto',
                              'species_interact_uniprot_sto',
-                             'uniprot_distance_uniprot_sto',
+                             # 'uniprot_distance_uniprot_sto',
                              'string_interact_uniprot_sto']
 
         if not run_quaternary_structure_generation_pipeline_v2(params=params,
@@ -128,6 +136,17 @@ def main(argv):
         print("#################################################################################################")
 
         print("#################################################################################################")
+
+
+        N9_outdir = outputdir + '/N9_multimer_structure_evaluation'
+        multimer_qa_result = run_multimer_evaluation_pipeline(fasta_path=FLAGS.fastadir + '/' + fasta_file,
+                                                                params=params, monomer_model_dir="",
+                                                                chain_id_map=chain_id_map,
+                                                                indir=N6_outdir, outdir=N9_outdir,
+                                                                stoichiometry=stoichiometry)
+
+        print(multimer_qa_result)
+
 
 
 if __name__ == '__main__':

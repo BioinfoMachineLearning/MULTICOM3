@@ -221,7 +221,7 @@ class Species_interact_v2:
         annotation_table_2, most_similar_in_species_2 = Species_interact_v2.load_monomer_info(alignment2)
 
         if annotation_table_1 is None or annotation_table_2 is None:
-            species_intersection = pd.DataFrame({'id_1': [], 'id_2': []})
+            species_intersection = pd.DataFrame({f'id_{suffix}': [], f'id_{suffix+1}': []})
         else:
             species_intersection = most_similar_in_species_1.merge(
                 most_similar_in_species_2,

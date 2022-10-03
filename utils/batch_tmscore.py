@@ -21,7 +21,7 @@ if __name__ == '__main__':
     tmscores = []
     gdtscores = []
     for model in os.listdir(args.indir):
-        if model.find('.pdb') > 0:
+        if model.find('.pdb') < 0:
             ref_tmscore, ref_gdtscore = cal_tmscore(args.tmscore_program, args.indir + '/' + model, args.native_pdb,
                                                     args.tmpdir)
             models += [model]

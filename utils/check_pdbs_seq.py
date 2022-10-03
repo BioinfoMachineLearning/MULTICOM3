@@ -23,4 +23,4 @@ if __name__ == '__main__':
         seq = os.popen(cmd).read().strip()
         print(seq)
         if seq != args.seq:
-            raise Exception(f"sequence for {pdb} is wrong")
+            print(f"sequence for {pdb} is wrong")
