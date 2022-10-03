@@ -239,6 +239,8 @@ class Monomer_structure_evaluation_human_pipeline:
                 ranking_json_file = f"{monomer_model_dir}/{method}/ranking_debug.json"
                 ranking_json = json.loads(open(ranking_json_file).read())
                 for i in range(model_count):
+                    if not os.path.exists(f"{monomer_model_dir}/{method}/ranked_{i}.pdb"):
+                        break
                     os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir_monomer}/{method}_{i}.pdb")
 
                     model_name = list(ranking_json["order"])[i]
