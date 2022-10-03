@@ -152,3 +152,19 @@ def extract_pdb(pdb, newpdb, start, end):
                   line[17:17 + 3] + " " + " " + rnum_string + " " + line[27:]
             f.write(row)
         f.write("END\n")
+
+def get_stoichiometry_from_fasta(chain_id_map, sequences):
+    stoichiometry_counts = []
+    processed_sequences = []
+    for chain_id in chain_id_map:
+        chain_sequence = chain_id_map[chain_id].sequence
+        if chain_sequence in processed_sequences:
+            continue
+        stoichiometry_counts += [len([index for index, sequence in enumerate(sequences) if sequence == chain_sequence])]
+        processed_sequences += [chain_sequence]
+    
+    stoichiometry = ""
+    for chain_id, count in zip(PDB_CHAIN_IDS, stoichiometry_counts):
+        stoichiometry += f"{chain_id}{count}"
+    return stoichiometry
+

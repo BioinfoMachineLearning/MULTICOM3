@@ -6,7 +6,7 @@ import pandas as pd
 from bml_casp15.monomer_alignment_generation.alignment import *
 
 
-class UNIPROT_distance_v2:
+class UNIPROT_distance_v3:
     ### ColabFold
     def uni_num(ids):
         ########################################
@@ -86,14 +86,14 @@ class UNIPROT_distance_v2:
 
     def get_interactions_from_two_alignment(alignment1, alignment2, suffix):
 
-        ids1 = UNIPROT_distance_v2.filter_ids(alignment1.ids)
-        ids2 = UNIPROT_distance_v2.filter_ids(alignment2.ids)
+        ids1 = UNIPROT_distance_v3.filter_ids(alignment1.ids)
+        ids2 = UNIPROT_distance_v3.filter_ids(alignment2.ids)
 
         if len(ids1) == 0 or len(ids2) == 0:
             return pd.DataFrame({"id_1": [], "id_2": []})
 
-        hash1 = UNIPROT_distance_v2.uni2idx(ids1)
-        hash2 = UNIPROT_distance_v2.uni2idx(ids2)
+        hash1 = UNIPROT_distance_v3.uni2idx(ids1)
+        hash2 = UNIPROT_distance_v3.uni2idx(ids2)
 
         df_dict = {f"id_{suffix}": [], f"id_{suffix + 1}": []}
         for i in range(len(hash1)):
@@ -109,7 +109,7 @@ class UNIPROT_distance_v2:
     def get_interactions(alignments):
         prev_df = None
         for i in range(0, len(alignments) - 1):
-            curr_df = UNIPROT_distance_v2.get_interactions_from_two_alignment(alignments[i], alignments[i+1], suffix=i+1)
+            curr_df = UNIPROT_distance_v3.get_interactions_from_two_alignment(alignments[i], alignments[i+1], suffix=i+1)
             if prev_df is None:
                 prev_df = curr_df
             else:

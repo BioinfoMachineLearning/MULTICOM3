@@ -81,8 +81,9 @@ def main(argv):
         makedir_if_not_exists(N4_outdir)
 
         try:
-            concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch',
-                              'string_interact', 'uniprot_distance', 'species_colabfold_interact']
+            concat_methods = ['uniprot_distance']
+            # concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch',
+            #                   'string_interact']#', 'uniprot_distance', 'species_colabfold_interact']
             run_concatenate_dimer_msas_pipeline(
                 multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
                 run_methods=concat_methods,

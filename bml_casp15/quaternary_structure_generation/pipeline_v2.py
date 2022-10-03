@@ -115,7 +115,11 @@ class Quaternary_structure_prediction_pipeline_v2:
                            'uniprot_distance_uniprot_sto': 'unidist_uniprot_sto',
                            'string_interact_uniprot_sto': 'str_iter_uniprot_sto',
 
-                           'species_colabfold_interact': 'spec_colab_iter'}
+                           'species_colabfold_interact': 'spec_colab_iter',
+                           
+                           'pdb_interact_uniref_sto': 'pdb_iter_uniref_sto',
+                           'pdb_interact_uniprot_sto': 'pdb_iter_uniprot_sto',
+                           }
 
     def process(self,
                 fasta_path,

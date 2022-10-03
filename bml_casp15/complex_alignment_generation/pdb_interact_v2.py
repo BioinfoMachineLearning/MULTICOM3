@@ -26,10 +26,10 @@ class PDB_interact_v2:
                     self.uniprot2pdb_map[uniprot_id] = pdbcode
 
     def get_interactions_from_ids(self, ids, is_homomers):
-        pdbcodes = self.uniprot2pdb_map[ids[0]]
+        pdbcodes = self.uniprot2pdb_map[ids[0]].split(',')
         prev_df = pd.DataFrame({'pdbcode': [pdbcode[0:4] for pdbcode in pdbcodes]})
         for i in range(1, len(ids)):
-            pdbcodes = self.uniprot2pdb_map[ids[i]]
+            pdbcodes = self.uniprot2pdb_map[ids[i]].split(',')
             curr_df = pd.DataFrame({'pdbcode': [pdbcode[0:4] for pdbcode in pdbcodes]})
             prev_df = prev_df.merge(curr_df, on="pdbcode")
 
@@ -57,7 +57,8 @@ class PDB_interact_v2:
                     if len(self.get_interactions_from_ids([id1, id2], is_homomers)) > 0:
                         id_1 += [id1]
                         id_2 += [id2]
-        return pd.DataFrame({f"id_{suffix}": id_1, f"id_{suffix + 1}": id_2})
+        return pd.DataFrame({f"id_{suffix}": id_1, f"id_{suffix + 1}": id_2}).astype(dtype= {f"id_{suffix}":"object",
+        f"id_{suffix+1}":"object"})
 
     def get_interactions(self, alignments, is_homomers=False):
         prev_df = None
