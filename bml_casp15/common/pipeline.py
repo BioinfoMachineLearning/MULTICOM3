@@ -11,7 +11,7 @@ from bml_casp15.monomer_structure_evaluation.human_pipeline import *
 from bml_casp15.monomer_templates_search.sequence_based_pipeline_pdb import *
 from bml_casp15.monomer_structure_refinement import iterative_refine_pipeline
 from bml_casp15.quaternary_structure_refinement import iterative_refine_pipeline_multimer
-from bml_casp15.complex_alignment_generation.pipeline_v2 import *
+from bml_casp15.complex_alignment_generation.pipeline_v3 import *
 from bml_casp15.complex_templates_search import sequence_based_pipeline_complex_pdb, \
     sequence_based_pipeline_pdb, sequence_based_pipeline, structure_based_pipeline_v2
 # from bml_casp15.quaternary_structure_generation.pipeline import *

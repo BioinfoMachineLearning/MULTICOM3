@@ -82,8 +82,8 @@ def extract_header_annotation(alignment):
     regex = re.compile("\s({})=".format("|".join(col_to_descr.keys())))
 
     res = []
-    for seq_id in alignment.ids:
-        full_header = alignment.headers[seq_id][0]
+    for seq_idx, seq_id in enumerate(alignment.ids):
+        full_header = alignment.headers[seq_idx]
         anno = None
         if ("GS" in alignment.annotation and
                     seq_id in alignment.annotation["GS"] and

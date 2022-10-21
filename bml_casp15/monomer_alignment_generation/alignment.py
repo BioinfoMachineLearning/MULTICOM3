@@ -81,6 +81,7 @@ def retrieve_sequence_ids(ids, regex=None):
         regex = ID_EXTRACTION_REGEX
 
     sequence_ids = []
+    headers = []
     id_to_full_header = defaultdict(list)
 
     for current_id in ids:
@@ -91,9 +92,10 @@ def retrieve_sequence_ids(ids, regex=None):
                 # this extracts the parenthesized match
                 sequence_ids.append(m.group(1))
                 id_to_full_header[m.group(1)].append(current_id)
+                headers += [current_id]
                 break
 
-    return sequence_ids, id_to_full_header
+    return sequence_ids, id_to_full_header, headers
 
 
 # Holds information of a parsed Stockholm alignment file
@@ -296,12 +298,13 @@ class Alignment:
         self.main_seq = seqs[0]
         self.L = len(seqs[0])
 
-        self.ids, self.headers = retrieve_sequence_ids(ids[1:])
+        self.ids, self.headers_dict, self.headers = retrieve_sequence_ids(ids[1:])
         if len(self.ids) == 0:
             self.ids = ids[1:]
             self.headers = defaultdict(list)
             for id in self.ids:
-                self.headers[id].append(id)
+                self.headers_dict[id].append(id)
+                self.headers += [id]
 
         self.seqs = seqs[1:]
         self.N = len(self.seqs)

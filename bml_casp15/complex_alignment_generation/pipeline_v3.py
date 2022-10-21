@@ -93,9 +93,9 @@ def write_concatenated_alignment(paired_rows, alignments):
     seen_seqs = {'full': []}
     filter_pair_ids = {}
     for i in range(len(alignments)):
-        filter_pair_ids[f"id_{i + 1}"] = []
-        filter_pair_ids[f"index_{i + 1}"] = []
-        seen_seqs[alignments[i].main_id] = []
+        filter_pair_ids[f"id_{i + 1}"] = [alignments[i].main_id]
+        filter_pair_ids[f"index_{i + 1}"] = [0]
+        seen_seqs[alignments[i].main_id] = [alignments[i].main_seq]
 
     pair_id_count = 0
     for pair_index in range(1, len(list(paired_rows[:, 0]))):
@@ -109,14 +109,15 @@ def write_concatenated_alignment(paired_rows, alignments):
             if index == -1:
                 header = f'placeholder{pair_id_count}'
                 seq = '-' * len(alignments[j].main_seq)
+                headers += [header]
             else:
                 seq = alignments[j].seqs[index]
-                header, _, _ = parse_header(alignments[j].headers[alignments[j].ids[index]][0])
+                header, start, end = parse_header(alignments[j].headers[index])
+                headers += [f"{header}_{start}-{end}"]
 
             seqs += [seq]
-            headers += [header]
-
-            filter_pair_ids[f'id_{j + 1}'] += [header]
+            
+            filter_pair_ids[f'id_{j + 1}'] += [alignments[j].ids[index]]
             filter_pair_ids[f'index_{j + 1}'] += [pair_id_count + 1]
 
         concatenated_header = _prepare_header(headers)

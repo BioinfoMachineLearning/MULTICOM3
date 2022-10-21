@@ -83,7 +83,7 @@ def make_msa_df(alignment):
         ox = -1
         gap_fraction = alignment[id].count('-') / float(len(alignment[id]))
         if gap_fraction <= 0.9:  # Only use the lines with less than 90 % gaps
-            header = alignment.headers[id][0]
+            header = alignment.headers[i]
             if 'OX=' in header:
                 OX = header.split('OX=')[1]
                 if len(OX) > 0:

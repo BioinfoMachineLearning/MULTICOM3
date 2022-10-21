@@ -211,8 +211,8 @@ class STRING_interact_v3:
                 if index == -1:
                     continue
                 else:
-                    header, _, _ = parse_header(alignments[j].headers[alignments[j].ids[index]][0])
-                    if header in seen_ids[j]:
+                    header, start, end = parse_header(alignments[j].headers[index])
+                    if f"{header}_{start}-{end}" in seen_ids[j]:
                         pass_filter = False
                         break
             
@@ -223,7 +223,7 @@ class STRING_interact_v3:
                     if index == -1:
                         continue
                     else:
-                        header, _, _ = parse_header(alignments[j].headers[alignments[j].ids[index]][0])
-                        seen_ids[j] += [header]
+                        header, start, end = parse_header(alignments[j].headers[index])
+                        seen_ids[j] += [f"{header}_{start}-{end}"]
 
         return np.array(paired_rows_filtered)
