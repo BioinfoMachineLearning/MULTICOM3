@@ -106,18 +106,18 @@ def write_concatenated_alignment(paired_rows, alignments):
 
         for j in range(len(alignments)):
             index = row_indices[j]
+            header = ""
             if index == -1:
                 header = f'placeholder{pair_id_count}'
                 seq = '-' * len(alignments[j].main_seq)
-                headers += [header]
             else:
                 seq = alignments[j].seqs[index]
                 header, start, end = parse_header(alignments[j].headers[index])
-                headers += [f"{header}_{start}-{end}"]
-
-            seqs += [seq]
+                header = f"{header}_{start}-{end}"
             
-            filter_pair_ids[f'id_{j + 1}'] += [alignments[j].ids[index]]
+            headers += [header]
+            seqs += [seq]            
+            filter_pair_ids[f'id_{j + 1}'] += [header]
             filter_pair_ids[f'index_{j + 1}'] += [pair_id_count + 1]
 
         concatenated_header = _prepare_header(headers)
@@ -315,7 +315,7 @@ def concatenate_alignments(inparams):
 
             elif method == "uniprot_distance":
                 if len(uniref_a3m_alignments) > 0:
-                    pair_ids = UNIPROT_distance_v3.get_interactions(uniref_a3m_alignments)
+                    pair_ids = UNIPROT_distance_v3.get_interactions_v2(uniref_a3m_alignments)
                     alignment["uniprot_distance_uniref_a3m"] = write_multimer_a3ms(pair_ids, uniref_a3m_alignments,
                                                                                    outdir,
                                                                                    'uniprot_distance_uniref_a3m',
@@ -323,7 +323,7 @@ def concatenate_alignments(inparams):
                     print(f"uniprot_distance_uniref_a3m: {len(pair_ids)} pairs")
 
                 if len(uniref_sto_alignments) > 0:
-                    pair_ids = UNIPROT_distance_v3.get_interactions(uniref_sto_alignments)
+                    pair_ids = UNIPROT_distance_v3.get_interactions_v2(uniref_sto_alignments)
                     alignment["uniprot_distance_uniref_sto"] = write_multimer_a3ms(pair_ids, uniref_sto_alignments,
                                                                                    outdir,
                                                                                    'uniprot_distance_uniref_sto',
@@ -331,7 +331,7 @@ def concatenate_alignments(inparams):
                     print(f"uniprot_distance_uniref_sto: {len(pair_ids)} pairs")
 
                 if len(uniprot_sto_alignments) > 0:
-                    pair_ids = UNIPROT_distance_v3.get_interactions(uniprot_sto_alignments)
+                    pair_ids = UNIPROT_distance_v3.get_interactions_v2(uniprot_sto_alignments)
                     alignment["uniprot_distance_uniprot_sto"] = write_multimer_a3ms(pair_ids, uniprot_sto_alignments,
                                                                                     outdir,
                                                                                     'uniprot_distance_uniprot_sto',

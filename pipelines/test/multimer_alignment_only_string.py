@@ -13,6 +13,7 @@ from bml_casp15.common.pipeline import run_monomer_msa_pipeline, run_monomer_tem
     run_quaternary_structure_generation_pipeline_foldseek, run_multimer_refinement_pipeline, \
     run_multimer_evaluation_pipeline, run_monomer_msa_pipeline_img, foldseek_iterative_monomer_input, \
     copy_same_sequence_msas
+from bml_casp15.complex_alignment_generation.pipeline_v3 import *
 
 from absl import flags
 from absl import app
@@ -38,7 +39,10 @@ def main(argv):
 
     makedir_if_not_exists(FLAGS.output_dir)
 
+    alignments = []
+
     for fasta_file in os.listdir(FLAGS.fastadir):
+
         outputdir = FLAGS.output_dir + pathlib.Path(FLAGS.fastadir + '/' + fasta_file).stem
         makedir_if_not_exists(outputdir)
 
@@ -80,17 +84,54 @@ def main(argv):
         N4_outdir = outputdir + '/N4_complex_alignments_concatenation'
         makedir_if_not_exists(N4_outdir)
 
-        try:
-            # concat_methods = ['string_interact']
-            concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch', 'uniprot_distance']
-            #', 'uniprot_distance', 'species_colabfold_interact']
-            run_concatenate_dimer_msas_pipeline(
-                multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
-                run_methods=concat_methods,
-                monomer_aln_dir=N1_outdir, outputdir=N4_outdir, params=params)
-        except Exception as e:
-            print(e)
-            print("Program failed in step 5")
+        chains = [chain_id_map[chain_id].description for chain_id in chain_id_map]
+        # alignment = {'outdir': f"{outputdir}/{'_'.join(chains)}"}
+        alignment = {'outdir': N4_outdir}
+        for i in range(len(chains)):
+            chain = chains[i]
+            chain_aln_dir = N1_outdir + '/' + chain
+            if os.path.exists(chain_aln_dir):
+                chain_a3ms = {'name': chain,
+                            'colabfold_a3m': f"{chain_aln_dir}/{chain}_colabfold.a3m",
+                            'uniref30_a3m': f"{chain_aln_dir}/{chain}_uniref30.a3m",
+                            'uniref90_sto': f"{chain_aln_dir}/{chain}_uniref90.sto",
+                            'uniprot_sto': f"{chain_aln_dir}/{chain}_uniprot.sto",
+                            'uniclust30_a3m': f"{chain_aln_dir}/{chain}_uniclust30.a3m"}
+            else:
+                chain_a3ms = {'name': chain}
+            alignment[f"chain{i + 1}"] = chain_a3ms
+
+        complete = True
+        for name in alignment:
+            if name == 'outdir':
+                continue
+            a3ms = alignment[name]
+            if len(a3ms) == 1:
+                complete = False
+            for key in a3ms:
+                if key.find('uni') >= 0:
+                    if not os.path.exists(a3ms[key]):
+                        complete = False
+                    else:
+                        contents = open(a3ms[key]).readlines()
+                        if len(contents) == 0:
+                            print(f"File: {a3ms[key]} is empty!")
+                            complete = False
+                            os.system(f"rm {a3ms[key]}")
+
+        if complete:
+            alignments += [alignment]
+        else:
+            print("The a3ms for dimers are not complete!")
+
+    print(f"Total {len(alignments)} pairs can be concatenated")
+
+    print("Start to concatenate alignments for dimers")
+
+    concat_methods = ['string_interact']
+
+    complex_alignment_concatenation_pipeline = Complex_alignment_concatenation_pipeline(params=params, run_methods=concat_methods)
+    alignments = complex_alignment_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'], is_homomers=False)
 
 
 if __name__ == '__main__':

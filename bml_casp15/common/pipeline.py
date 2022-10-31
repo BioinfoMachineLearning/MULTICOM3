@@ -654,7 +654,7 @@ def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_mod
 
 def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
                                                     template_dir,
-                                                    monomer_model_dir, output_dir, run_methods=None):
+                                                    monomer_model_dir, output_dir, run_methods=None, notemplates=False):
     try:
         pipeline = Quaternary_structure_prediction_pipeline_v2(params, run_methods)
         result = pipeline.process(fasta_path=fasta_path,
@@ -663,7 +663,8 @@ def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id
                                   complex_aln_dir=complex_aln_dir,
                                   template_dir=template_dir,
                                   monomer_model_dir=monomer_model_dir,
-                                  output_dir=output_dir)
+                                  output_dir=output_dir,
+                                  notemplates=notemplates)
     except Exception as e:
         print(e)
         return False

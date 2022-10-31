@@ -40,7 +40,6 @@ class Quaternary_structure_prediction_pipeline_v2:
     def __init__(self, params, run_methods=None):
 
         self.params = params
-
         if run_methods is None:
             self.run_methods = ['default',
                                 'default_mul_newest',
@@ -128,7 +127,8 @@ class Quaternary_structure_prediction_pipeline_v2:
                 complex_aln_dir,
                 template_dir,
                 monomer_model_dir,
-                output_dir):
+                output_dir,
+                notemplates=False):
 
         makedir_if_not_exists(output_dir)
 
@@ -174,7 +174,10 @@ class Quaternary_structure_prediction_pipeline_v2:
                       f"--uniprot_stos {','.join(uniprot_stos)} " \
                       f"--env_dir {self.params['alphafold_env_dir']} " \
                       f"--database_dir {self.params['alphafold_database_dir']} " \
-                      f"--output_dir {outdir}"
+                      f"--output_dir {outdir} "
+
+                if notemplates:
+                    cmd += "--notemplates=true"
 
                 print(cmd)
                 os.system(cmd)
@@ -224,6 +227,8 @@ class Quaternary_structure_prediction_pipeline_v2:
                           f"--database_dir {self.params['alphafold_database_dir']} " \
                           f"--output_dir {outdir}"
 
+                    if notemplates:
+                        cmd += "--notemplates=true"                
                     print(cmd)
                     os.system(cmd)
 
@@ -273,6 +278,9 @@ class Quaternary_structure_prediction_pipeline_v2:
                           f"--database_dir {self.params['alphafold_database_dir_newest']} " \
                           f"--output_dir {outdir}"
 
+                    if notemplates:
+                        cmd += "--notemplates=true"  
+
                     print(cmd)
                     os.system(cmd)
 
@@ -320,6 +328,9 @@ class Quaternary_structure_prediction_pipeline_v2:
                           f"--env_dir {self.params['alphafold_env_dir']} " \
                           f"--database_dir {self.params['alphafold_database_dir']} " \
                           f"--output_dir {outdir}"
+
+                    if notemplates:
+                        cmd += "--notemplates=true"
 
                     print(cmd)
                     os.system(cmd)
@@ -472,6 +483,10 @@ class Quaternary_structure_prediction_pipeline_v2:
                     base_cmd += f"--monomer_model_paths {','.join(monomer_paths)} "
 
                 base_cmd += f"--output_dir {outdir} "
+
+                if notemplates:
+                    base_cmd += "--notemplates=true"  
+
                 if complete_result(outdir):
                     continue
 
