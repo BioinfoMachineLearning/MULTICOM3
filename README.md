@@ -1,5 +1,5 @@
-# BML_CASP15
-The software system of predicting protein tertiary and quaternary structures. It is prepared for CASP15 by  BMLab.
+# MULTICOM
+The system of improving AlphaFold2- and AlphaFold-multimer-based predition of protein tertiary and quaternary structures by multiple sequene alignment sampling, template identification, model evaluation and model refinement.
 
 (1) The Google directory of the design and results of this project: https://drive.google.com/drive/u/2/folders/1tBRoalU3LhpGwiOvf-Bt9fpkEYYgTgpE
 
