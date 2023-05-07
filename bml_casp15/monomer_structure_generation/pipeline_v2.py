@@ -25,8 +25,7 @@ class Monomer_structure_prediction_pipeline_v2:
         self.params = params
 
         if run_methods is None:
-            self.run_methods = ['default', 'default_newest', 'default+seq_template',
-                                'default_uniclust', 'default_uniref_22',
+            self.run_methods = ['default', 'default+seq_template',
                                 'original', 'original+seq_template',
                                 'colabfold', 'colabfold+seq_template']
         else:
@@ -72,123 +71,6 @@ class Monomer_structure_prediction_pipeline_v2:
                               f"--mgnify_stos {mgnify_sto} " \
                               f"--uniref90_stos {uniref90_sto} " \
                               f"--output_dir {outdir}/default"
-                        print(cmd)
-                        os.system(cmd)
-                    except Exception as e:
-                        print(e)
-            else:
-                print(errormsg)
-
-        if "default_uniclust" in self.run_methods:
-
-            os.chdir(self.params['alphafold_default_program_dir'])
-
-            errormsg = ""
-
-            if not os.path.exists(alndir):
-                errormsg = errormsg + f"Cannot find alignment directory for {targetname}: {alndir}\n"
-
-            bfd_uniclust30_a3m = alndir + '/' + targetname + '_uniclust30_bfd.a3m'
-            if not os.path.exists(bfd_uniclust30_a3m):
-                errormsg = errormsg + f"Cannot find uniclust30 alignment for {targetname}: {bfd_uniclust30_a3m}\n"
-
-            mgnify_sto = alndir + '/' + targetname + '_mgnify.sto'
-            if not os.path.exists(mgnify_sto):
-                errormsg = errormsg + f"Cannot find mgnify alignment for {targetname}: {mgnify_sto}\n"
-
-            uniref90_sto = alndir + '/' + targetname + '_uniref90.sto'
-            if not os.path.exists(uniref90_sto):
-                errormsg = errormsg + f"Cannot find uniref90 alignment for {targetname}: {uniref90_sto}\n"
-
-            if len(errormsg) == 0:
-                if not complete_result(f"{outdir}/default_uniclust"):
-                    try:
-                        cmd = f"python {self.params['alphafold_default_program']} " \
-                              f"--fasta_path {fasta_path} " \
-                              f"--env_dir {self.params['alphafold_env_dir']} " \
-                              f"--database_dir {self.params['alphafold_database_dir']} " \
-                              f"--bfd_uniclust_a3ms {bfd_uniclust30_a3m} " \
-                              f"--mgnify_stos {mgnify_sto} " \
-                              f"--uniref90_stos {uniref90_sto} " \
-                              f"--output_dir {outdir}/default_uniclust"
-                        print(cmd)
-                        os.system(cmd)
-                    except Exception as e:
-                        print(e)
-            else:
-                print(errormsg)
-
-        if "default_uniref_22" in self.run_methods:
-
-            os.chdir(self.params['alphafold_default_program_dir'])
-
-            errormsg = ""
-
-            if not os.path.exists(alndir):
-                errormsg = errormsg + f"Cannot find alignment directory for {targetname}: {alndir}\n"
-
-            bfd_uniclust30_a3m = alndir + '/' + targetname + '_uniref30_22_bfd.a3m'
-            if not os.path.exists(bfd_uniclust30_a3m):
-                errormsg = errormsg + f"Cannot find uniclust30 alignment for {targetname}: {bfd_uniclust30_a3m}\n"
-
-            mgnify_sto = alndir + '/' + targetname + '_mgnify.sto'
-            if not os.path.exists(mgnify_sto):
-                errormsg = errormsg + f"Cannot find mgnify alignment for {targetname}: {mgnify_sto}\n"
-
-            uniref90_sto = alndir + '/' + targetname + '_uniref90.sto'
-            if not os.path.exists(uniref90_sto):
-                errormsg = errormsg + f"Cannot find uniref90 alignment for {targetname}: {uniref90_sto}\n"
-
-            if len(errormsg) == 0:
-                if not complete_result(f"{outdir}/default_uniref_22"):
-                    try:
-                        cmd = f"python {self.params['alphafold_default_program']} " \
-                              f"--fasta_path {fasta_path} " \
-                              f"--env_dir {self.params['alphafold_env_dir']} " \
-                              f"--database_dir {self.params['alphafold_database_dir']} " \
-                              f"--bfd_uniclust_a3ms {bfd_uniclust30_a3m} " \
-                              f"--mgnify_stos {mgnify_sto} " \
-                              f"--uniref90_stos {uniref90_sto} " \
-                              f"--output_dir {outdir}/default_uniref_22"
-                        print(cmd)
-                        os.system(cmd)
-                    except Exception as e:
-                        print(e)
-            else:
-                print(errormsg)
-
-        if "default_newest" in self.run_methods:
-
-            os.chdir(self.params['alphafold_default_program_dir'])
-
-            errormsg = ""
-
-            if not os.path.exists(alndir):
-                errormsg = errormsg + f"Cannot find alignment directory for {targetname}: {alndir}\n"
-
-            bfd_uniclust30_a3m = alndir + '/' + targetname + '_uniref30_22_bfd.a3m'
-            if not os.path.exists(bfd_uniclust30_a3m):
-                errormsg = errormsg + f"Cannot find uniclust30 alignment for {targetname}: {bfd_uniclust30_a3m}\n"
-
-            mgnify_sto = alndir + '/' + targetname + '_mgnify.sto'
-            if not os.path.exists(mgnify_sto):
-                errormsg = errormsg + f"Cannot find mgnify alignment for {targetname}: {mgnify_sto}\n"
-
-            uniref90_sto = alndir + '/' + targetname + '_uniref90_new.sto'
-            if not os.path.exists(uniref90_sto):
-                errormsg = errormsg + f"Cannot find uniref90 alignment for {targetname}: {uniref90_sto}\n"
-
-            if len(errormsg) == 0:
-                if not complete_result(f"{outdir}/default_newest"):
-                    try:
-                        cmd = f"python {self.params['alphafold_default_program']} " \
-                              f"--fasta_path {fasta_path} " \
-                              f"--env_dir {self.params['alphafold_env_dir']} " \
-                              f"--database_dir {self.params['alphafold_database_dir_newest']} " \
-                              f"--bfd_uniclust_a3ms {bfd_uniclust30_a3m} " \
-                              f"--mgnify_stos {mgnify_sto} " \
-                              f"--uniref90_stos {uniref90_sto} " \
-                              f"--output_dir {outdir}/default_newest"
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:

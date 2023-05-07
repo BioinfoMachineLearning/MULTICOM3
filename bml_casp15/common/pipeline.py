@@ -4,7 +4,6 @@ from bml_casp15.common.util import check_file, check_dir, check_dirs, makedir_if
     read_option_file
 from bml_casp15.monomer_alignment_generation.alignment import read_fasta, write_fasta
 from bml_casp15.monomer_alignment_generation.pipeline import *
-from bml_casp15.monomer_structure_generation.pipeline import *
 from bml_casp15.monomer_structure_generation.pipeline_v2 import *
 from bml_casp15.monomer_structure_evaluation.pipeline_sep import *
 from bml_casp15.monomer_structure_evaluation.human_pipeline import *
@@ -16,7 +15,6 @@ from bml_casp15.complex_templates_search import sequence_based_pipeline_complex_
     sequence_based_pipeline_pdb, sequence_based_pipeline, structure_based_pipeline_v2
 # from bml_casp15.quaternary_structure_generation.pipeline import *
 from bml_casp15.quaternary_structure_generation.pipeline_v2 import *
-from bml_casp15.quaternary_structure_generation.pipeline_default import *
 # from bml_casp15.quaternary_structure_generation.pipeline_homo import *
 from bml_casp15.quaternary_structure_generation.pipeline_homo_v2 import *
 from bml_casp15.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
@@ -32,7 +30,6 @@ from bml_casp15.monomer_structure_evaluation.alphafold_ranking import Alphafold_
 
 def run_monomer_msa_pipeline(fasta, outdir, params, only_monomer=False):
     uniref30 = params['uniref_db_dir'] + '/' + params['uniref_db']
-    uniref30_new = params['uniref_db_dir_new'] + '/' + params['uniref_db_new']
     uniclust30 = params['uniclust_db_dir'] + '/' + params['uniclust_db']
     uniref90_fasta = params['uniref90_fasta']
 
@@ -51,10 +48,8 @@ def run_monomer_msa_pipeline(fasta, outdir, params, only_monomer=False):
 
     if only_monomer:
         uniprot_fasta = ""
-        uniprot_fasta_newest = ""
     else:
         uniprot_fasta = params['uniprot_fasta']
-        uniprot_fasta_newest = params['uniprot_fasta_newest']
 
     result = None
     try:
@@ -65,15 +60,12 @@ def run_monomer_msa_pipeline(fasta, outdir, params, only_monomer=False):
                                                          colabfold_split_msas_binary=colabfold_split_msas_binary,
                                                          mmseq_binary=mmseq_binary,
                                                          uniref90_database_path=uniref90_fasta,
-                                                         uniref90_database_path_new=params['uniref90_fasta_newest'],
                                                          mgnify_database_path=mgnify,
                                                          small_bfd_database_path=smallbfd,
                                                          bfd_database_path=bfd,
                                                          uniref30_database_path=uniref30,
-                                                         uniref30_database_path_new=uniref30_new,
                                                          uniclust30_database_path=uniclust30,
                                                          uniprot_database_path=uniprot_fasta,
-                                                         uniprot_database_path_new=uniprot_fasta_newest,
                                                          colabfold_databases=colabfold_databases)
         result = pipeline.process(fasta, outdir)
     except Exception as e:
@@ -671,17 +663,17 @@ def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id
     return True
 
 
-def run_quaternary_structure_generation_pipeline_default(params, fasta_path, chain_id_map, aln_dir, output_dir):
-    try:
-        pipeline = Quaternary_structure_prediction_pipeline_default(params)
-        result = pipeline.process(fasta_path=fasta_path,
-                                  chain_id_map=chain_id_map,
-                                  aln_dir=aln_dir,
-                                  output_dir=output_dir)
-    except Exception as e:
-        print(e)
-        return False
-    return True
+# def run_quaternary_structure_generation_pipeline_default(params, fasta_path, chain_id_map, aln_dir, output_dir):
+#     try:
+#         pipeline = Quaternary_structure_prediction_pipeline_default(params)
+#         result = pipeline.process(fasta_path=fasta_path,
+#                                   chain_id_map=chain_id_map,
+#                                   aln_dir=aln_dir,
+#                                   output_dir=output_dir)
+#     except Exception as e:
+#         print(e)
+#         return False
+#     return True
 
 
 # def run_quaternary_structure_generation_homo_pipeline(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
