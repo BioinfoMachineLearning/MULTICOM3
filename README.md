@@ -1,5 +1,5 @@
 # MULTICOM3
-The system of improving AlphaFold2- and AlphaFold-Multimer-based predition of protein tertiary and quaternary structures by multiple sequene alignment sampling, template identification, model evaluation and model refinement. In CASP15, we used AlphaFold v2.2 as the engine to generate models, for this release, we switched to AlphaFold v2.3 for easier installation.
+The system of improving AlphaFold2- and AlphaFold-Multimer-based predition of protein tertiary and quaternary structures by multiple sequene alignment sampling, template identification, model evaluation and model refinement. In CASP15, we used AlphaFold v2.2 as the engine to generate models. For this release, we switched to AlphaFold v2.3 (https://github.com/deepmind/alphafold/releases/tag/v2.3.2) for easier installation.
 
 ## Overall workflow
 ![CASP15 pipeline](imgs/pipeline.png)
