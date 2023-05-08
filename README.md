@@ -11,17 +11,29 @@ The system of improving AlphaFold2- and AlphaFold-Multimer-based predition of pr
 
 # Installation
 
+## Python virtual environment
 
-# Genetic databases
+Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the installation guide here: https://github.com/kalininalab/alphafold_non_docker to install the required python packages to run AlphaFold2/AlphaFold-Multimer, then run the following commands to install the additional packages required in our system.
 
+```
+conda install tqdm
+```
+
+## Genetic databases
+
+Databases that can be downloaded in the AlphaFold2/AlphaFold-Multimer
 *   [BFD](https://bfd.mmseqs.com/),
 *   [MGnify](https://www.ebi.ac.uk/metagenomics/),
 *   [PDB70](http://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/),
 *   [PDB](https://www.rcsb.org/) (structures in the mmCIF format),
-*   [PDB seqres](https://www.rcsb.org/) – only for AlphaFold-Multimer,
+*   [PDB seqres](https://www.rcsb.org/)
 *   [Uniclust30](https://uniclust.mmseqs.com/),
-*   [UniProt](https://www.uniprot.org/uniprot/) – only for AlphaFold-Multimer,
+*   [UniProt](https://www.uniprot.org/uniprot/),
 *   [UniRef90](https://www.uniprot.org/help/uniref).
+
+Additional databases in our system:
+*   [Metaclust](https://metaclust.mmseqs.org/current_release/),
+*   [STRING](https://string-db.org/cgi/download?sessionId=bgV6D67b9gi2).
 
 # Running the monomer/teritary structure prediction pipeline
 ```bash
