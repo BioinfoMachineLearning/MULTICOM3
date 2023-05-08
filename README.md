@@ -21,7 +21,7 @@ conda install tqdm
 
 ## Genetic databases
 
-Databases that can be downloaded in the AlphaFold2/AlphaFold-Multimer
+Assume the following databases have been installed as a part of the AlphaFold2/AlphaFold-Multimer
 *   [BFD](https://bfd.mmseqs.com/),
 *   [MGnify](https://www.ebi.ac.uk/metagenomics/),
 *   [PDB70](http://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/),
@@ -31,7 +31,7 @@ Databases that can be downloaded in the AlphaFold2/AlphaFold-Multimer
 *   [UniProt](https://www.uniprot.org/uniprot/),
 *   [UniRef90](https://www.uniprot.org/help/uniref).
 
-Additional databases in our system:
+Additional databases to be installed for the MULTICOM system:
 *   [Metaclust](https://metaclust.mmseqs.org/current_release/),
 *   [STRING](https://string-db.org/cgi/download?sessionId=bgV6D67b9gi2).
 
