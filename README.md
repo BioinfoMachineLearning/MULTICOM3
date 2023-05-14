@@ -1,13 +1,9 @@
 # MULTICOM3
-The system of improving AlphaFold2- and AlphaFold-Multimer-based predition of protein tertiary and quaternary structures by multiple sequene alignment sampling, template identification, model evaluation and model refinement. In CASP15, we used AlphaFold v2.2 as the engine to generate models. For this release, we switched to AlphaFold v2.3 (https://github.com/deepmind/alphafold/releases/tag/v2.3.2) for easier installation.
+MULTICOM3 is an addon package to improve AlphaFold2- and AlphaFold-Multimer-based predition of protein tertiary and quaternary structures by diverse multiple sequene alignment sampling, template identification, model evaluation and model refinement. In CASP15, we used AlphaFold v2.2 as the engine to generate models. For this release, we upgraded it to AlphaFold v2.3 (https://github.com/deepmind/alphafold/releases/tag/v2.3.2) to leverage the latest improvement on AlphaFold2.
 
 ## Overall workflow
 ![CASP15 pipeline](imgs/pipeline.png)
 
-## Examples
-
-![CASP15 pipeline](imgs/CASP15_good_examples1.png)
-![CASP15 pipeline](imgs/CASP15_good_examples2.png)
 
 # Installation
 
@@ -153,6 +149,12 @@ python bin/heteromer.py \
 * The refined multimer models are saved in *N10_multimer_structure_refinement_final*.
 
 * The monomer structures and ranking files are saved in *N7_monomer_structure_evaluation* if you want to check the models and rankings for the monomer structures.
+
+## Some CASP15 Prediction Examples
+
+![CASP15 pipeline](imgs/CASP15_good_examples1.png)
+![CASP15 pipeline](imgs/CASP15_good_examples2.png)
+
 
 # Citing this work
 
