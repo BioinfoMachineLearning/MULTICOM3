@@ -158,7 +158,7 @@ python bin/heteromer.py \
 
 # Citing this work
 
-**If you use the code or data for tertiary or quaternary structure prediction method in this package, please cite:**
+**If you use the code or data in this package for tertiary or quaternary structure prediction, please cite:**
 
 Jumper, J., Evans, R., Pritzel, A., Green, T., Figurnov, M., Ronneberger, O., ... & Hassabis, D. (2021). Highly accurate protein structure prediction with AlphaFold. Nature, 596(7873), 583-589.
 
