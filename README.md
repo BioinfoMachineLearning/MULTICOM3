@@ -158,12 +158,15 @@ python bin/heteromer.py \
 
 # Citing this work
 
-**If you use the code or data for monomer/tertiary structure prediction method in this package, please cite:**
+**If you use the code or data for tertiary or quaternary structure prediction method in this package, please cite:**
 
 Jumper, J., Evans, R., Pritzel, A., Green, T., Figurnov, M., Ronneberger, O., ... & Hassabis, D. (2021). Highly accurate protein structure prediction with AlphaFold. Nature, 596(7873), 583-589.
+
+Evans, R., O’Neill, M., Pritzel, A., Antropova, N., Senior, A., Green, T., ... & Hassabis, D. (2021). Protein complex prediction with AlphaFold-Multimer. BioRxiv, 2021-10.
  
 Liu, J., Guo, Z., Wu, T., Roy, R. S., Chen, C., & Cheng, J. (2023). Improving AlphaFold2-based Protein Tertiary Structure Prediction with MULTICOM in CASP15. bioRxiv, 2023-05.
 
-**In addition, if you use the multimer/quaternary structure prediction method, please cite:**
+Liu, J., Guo, Z., Wu, T., Roy, R. S., Quadir, F., Chen, C., & Cheng, J. (2023). Enhancing AlphaFold-Multimer-based Protein Assembly Structure Prediction with MULTICOM  in CASP15. bioRxiv, to be submitted. 
 
-Evans, R., O’Neill, M., Pritzel, A., Antropova, N., Senior, A., Green, T., ... & Hassabis, D. (2021). Protein complex prediction with AlphaFold-Multimer. BioRxiv, 2021-10.
+
+
