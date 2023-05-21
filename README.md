@@ -140,7 +140,7 @@ python bin/heteromer.py \
 
 ### Monomer
 
-* The models and ranking files are saved in *N5_monomer_structure_refinement_avg* folder. You can check the alphafold pLDDT score ranking file (alphafold_ranking.csv) to look for the structure with the highest pLDDT score. The *pairwise_ranking.tm* and *pairwise_af_avg.ranking* are the other two ranking files. 
+* The models and ranking files are saved in *N4_monomer_structure_evaluation* folder. You can check the alphafold pLDDT score ranking file (alphafold_ranking.csv) to look for the structure with the highest pLDDT score. The *pairwise_ranking.tm* and *pairwise_af_avg.ranking* are the other two ranking files. 
 
 * The refined monomer models are saved in *N5_monomer_structure_refinement_avg_final*.
 
@@ -168,7 +168,7 @@ Evans, R., O’Neill, M., Pritzel, A., Antropova, N., Senior, A., Green, T., ...
  
 Liu, J., Guo, Z., Wu, T., Roy, R. S., Chen, C., & Cheng, J. (2023). Improving AlphaFold2-based Protein Tertiary Structure Prediction with MULTICOM in CASP15. bioRxiv, 2023-05.
 
-Liu, J., Guo, Z., Wu, T., Roy, R. S., Quadir, F., Chen, C., & Cheng, J. (2023). Enhancing AlphaFold-Multimer-based Protein Complex Structure Prediction with MULTICOM  in CASP15. bioRxiv, to be submitted. 
+Liu, J., Guo, Z., Wu, T., Roy, R. S., Quadir, F., Chen, C., & Cheng, J. (2023). Enhancing AlphaFold-Multimer-based Protein Complex Structure Prediction with MULTICOM  in CASP15. bioRxiv, 2023-05. 
 
 
 
