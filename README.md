@@ -150,7 +150,7 @@ python bin/heteromer.py \
 
 * The monomer structures and ranking files are saved in *N7_monomer_structure_evaluation* if you want to check the models and rankings for the monomer structures.
 
-## Some CASP15 Prediction Examples
+## Some CASP15 Prediction Examples (MULTICOM versus the Standard AlphaFold method: NIBS-AF2-multimer)
 
 ![CASP15 pipeline](imgs/CASP15_good_examples1.png)
 ![CASP15 pipeline](imgs/CASP15_good_examples2.png)
