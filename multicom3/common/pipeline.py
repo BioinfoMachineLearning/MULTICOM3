@@ -29,8 +29,8 @@ from multicom3.monomer_structure_evaluation.alphafold_ranking import Alphafold_p
 
 
 def run_monomer_msa_pipeline(fasta, outdir, params, only_monomer=False):
-    uniref30 = params['uniref_db_dir'] + '/' + params['uniref_db']
-    uniclust30 = params['uniclust_db_dir'] + '/' + params['uniclust_db']
+    uniref30 = params['uniref_db']
+    uniclust30 = params['uniclust_db']
     uniref90_fasta = params['uniref90_fasta']
 
     smallbfd = ""  # params['smallbfd_database']

@@ -2,9 +2,6 @@
 
 ################################tools option#########################################
 
-# clustalo program path
-clustalo_program_dir = SOFTWARE_PATH/tools/clustalo/
-
 # hhblits program path
 hhblits_program = YOUR_ENV/bin/hhblits
 
@@ -20,42 +17,26 @@ hhalign_program = YOUR_ENV/bin/hhalign
 # jackhmmer program path
 jackhmmer_program = YOUR_ENV/bin/jackhmmer
 
-# tmalign program path
-tmalign_program = SOFTWARE_PATH/tools/tmalign/TMalign
-
-# mmalign program path
-mmalign_program = SOFTWARE_PATH/tools/MMalign
-
 # hhsearch program path
 hhsearch_program = YOUR_ENV/bin/hhsearch
 
 # deepmsa2 program path
-deepmsa2_program = SOFTWARE_PATH/tools/deepmsa/hhsuite2/scripts/build_MSA2.py
+deepmsa2_program = INSTALLDIR_TOOLS/deepmsa/hhsuite2/scripts/build_MSA2.py
 
-# alphafold environment directory
-alphafold_env_dir = YOUR_ALPHAFOLD_ENV/bin/
+# tmalign program path
+tmalign_program = INSTALLDIR_TOOLS/tmalign/TMalign
 
-# alphafold database directory
-alphafold_database_dir = SOFTWARE_PATH/tools/alphafold_databases/
+# mmalign program path
+mmalign_program = INSTALLDIR_TOOLS/MMalign
 
-#########################Customized alphafold program###########################
+# dockq program
+dockq_program = INSTALLDIR_TOOLS/DockQ/DockQ.py
 
-# alphafold program path
-alphafold_program_dir = SOFTWARE_PATH/tools/alphafold
+# qscore program
+qscore_program = INSTALLDIR_TOOLS/pairwiseQA/q_score
 
-# alphafold tertiary structure prediction script
-alphafold_program = run_alphafold_custom.py
-
-# alphafold tertiary structure prediction script
-alphafold_multimer_program = run_alphafold_multimer_custom_sim.py
-
-#########################Original alphafold program###########################
-
-# alphafold program path
-alphafold_default_program_dir = SOFTWARE_PATH/tools/alphafold_default/alphafold
-
-# alphafold tertiary structure prediction script
-alphafold_default_program = run_alphafold_pre_sim.py
+# tmscore program
+tmscore_program = INSTALLDIR_TOOLS/tmscore/TMscore
 
 ################################MSA generation tool###########################
 
@@ -63,152 +44,105 @@ colabfold_search_program = YOUR_ENV/bin/colabfold_search
 
 colabfold_split_msas_program = YOUR_ENV/bin/colabfold_split_msas
 
-colabfold_databases = SOFTWARE_PATH/tools/ColabFold/databases/
+colabfold_databases = INSTALLDIR_DATABASES/colabfold
 
-mmseq_program = SOFTWARE_PATH/tools/mmseqs/bin/mmseqs
+mmseq_program = INSTALLDIR_TOOLS/mmseqs/bin/mmseqs
 
 ################################QA option#####################################
 
-# dockq program
-dockq_program = SOFTWARE_PATH/tools/DockQ/DockQ.py
+#########################Customized alphafold program###########################
 
-# qscore program
-qscore_program = SOFTWARE_PATH/tools/pairwiseQA/q_score
+# alphafold environment directory
+alphafold_env_dir = YOUR_ENV/bin/
 
-# tmscore program
-tmscore_program = SOFTWARE_PATH/tools/TMscore
+# alphafold database directory
+alphafold_database_dir = AFDB_DIR
 
-# enqa_program_python
-enqa_program_python = YOUR_ENQA_ENV_PATH/bin/python
+# alphafold program path
+alphafold_program_dir = AF_DIR
 
-# enqa_program_path
-enqa_program_path = YOUR_ENQA_PATH
+# alphafold tertiary structure prediction script
+alphafold_program = run_alphafold_custom.py
 
-# enqa_program_script
-enqa_program_script = predict_batch.py
+# alphafold tertiary structure prediction script
+alphafold_multimer_program = run_alphafold_multimer_custom.py
+
+# alphafold tertiary structure prediction script
+alphafold_default_program = run_alphafold_pre.py
 
 ######################Monomer template search option#################################
 
-foldseek_program = SOFTWARE_PATH/tools/foldseek/bin/foldseek
+foldseek_program = INSTALLDIR_TOOLS/foldseek/bin/foldseek
 
-foldseek_pdb_database = SOFTWARE_PATH/tools/foldseek/databases/complex
+foldseek_pdb_database = INSTALLDIR_TOOLS/foldseek/databases/complex
 
-foldseek_pdb_database_dir = SOFTWARE_PATH/tools/foldseek/databases/complex_pdb
+foldseek_pdb_database_dir = INSTALLDIR_DATABASES/pdb_complex/pdb
 
-foldseek_af_database = SOFTWARE_PATH/tools/foldseek/databases/af_db
+foldseek_af_database = INSTALLDIR_TOOLS/foldseek/databases/af_db
 
-foldseek_af_database_dir = SOFTWARE_PATH/tools/foldseek/databases/af_pdbs
-
-foldseek_complex_comb_database = SOFTWARE_PATH/tools/foldseek/databases/complex_comb
-
-foldseek_complex_comb_database_dir = SOFTWARE_PATH/tools/foldseek/databases/complex_atom_comb
+foldseek_af_database_dir = INSTALLDIR_DATABASES/af_pdbs
 
 ################################databases option#####################################
 
-smallbfd_database = SOFTWARE_PATH/databases/smallbfd/bfd-first_non_consensus_sequences.fasta
+bfd_database = AFDB_DIR/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
 
-bfd_database = SOFTWARE_PATH/databases/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
+mgnify_database = AFDB_DIR/mgnify/mgy_clusters_2022_05.fa
 
-mgnify_database = SOFTWARE_PATH/databases/mgnify/mgy_clusters_2018_12.fa
+metaclust_database = INSTALLDIR_DATABASES/Metaclust_2018_06/metaclust_50
 
-metaclust_database = SOFTWARE_PATH/databases/Metaclust_2018_06/metaclust_50
-
-img_database_path = SOFTWARE_PATH/databases/img/img_new.fasta
+img_database = INSTALLDIR_DATABASES/img/img_new.fasta
 
 ###########################Complex alignment generation option#######################
 
 ###########################UNIPROT TO PDB database option############################
 
-# uniref database
-uniref_db_dir = SOFTWARE_PATH/databases/UniRef30_2021_03
-
-uniref_db = UniRef30_2021_03
-
-uniref90_fasta = SOFTWARE_PATH/databases/uniref90/uniref90_2021_03.fasta
-
 # uniclust database
-uniclust_db_dir = SOFTWARE_PATH/databases/uniclust30_2018_08
+uniclust_db = INSTALLDIR_DATABASES/uniclust30_2018_08/uniclust30_2018_08
 
-uniclust_db = uniclust30_2018_08
+# uniref database
+uniref_db = AFDB_DIR/uniref30/UniRef30_2021_03
 
-uniprot_fasta = SOFTWARE_PATH/databases/uniprot/uniprot.fasta
+uniref90_fasta = AFDB_DIR/uniref90/uniref90.fasta
 
-# uniprot id mapping file
-uniprot_official_mapping_file = SOFTWARE_PATH/databases/idmapping_selected.tab.2021_06
-
-# complex alignments concatenation method
-concatenate_methods = pdb_interact,species_interact,uniclust_oxmatch,uniprot_distance,string_interact
+uniprot_fasta = AFDB_DIR/uniprot/uniprot.fasta
 
 ###########################UNIPROT TO PDB database option############################
 
-uniprot2pdb_dir = SOFTWARE_PATH/databases/uniprot2pdb
+uniprot2pdb_mapping_file = INSTALLDIR_DATABASES/uniprot2pdb/uniprot2pdb.map
 
-uniprot2pdb_mapping_file = SOFTWARE_PATH/databases/uniprot2pdb/uniprot2pdb.map
-
-dimers_list = SOFTWARE_PATH/databases/uniprot2pdb/dimers_cm.list
+complexes_list = INSTALLDIR_DATABASES/uniprot2pdb/complexes_cm.list
 
 ###########################STRING database option####################################
 
-string_dir = SOFTWARE_PATH/databases/STRING
-
-string_links_file = SOFTWARE_PATH/databases/string/protein.links.v11.5.txt
-
-string_aliases_file = SOFTWARE_PATH/databases/string/protein.aliases.v11.5.txt
-
-string2uniprot_map = SOFTWARE_PATH/databases/string/string2uniprot.map
-
-###########################GENO DISTANCE database option############################
-
-geno_dir = SOFTWARE_PATH/databases/geno_distance
-
-uniprot_to_embl_table = SOFTWARE_PATH/databases/geno_distance/idmapping_uniprot_embl.txt
-
-con_pro_cds_dir = SOFTWARE_PATH/databases/geno_distance/con_pro
-
-ena_genome_location_table = SOFTWARE_PATH/databases/geno_distance/cds_pro.txt
-
-genome_distance_threshold = 10000
+string2uniprot_map = INSTALLDIR_DATABASES/string/string2uniprot.map
 
 #######################End of Complex alignment generation option###################
 
 
-
 ###########################Complex template search option###########################
 
-template_atom_dir = SOFTWARE_PATH/databases/Complex/atom
+###########################Sequence and structure based template search option####################
 
-template_count = 20
+pdb70_hhsuite_database = AFDB_DIR/pdb70/pdb70
 
-###########################Structure based template search option###################
+pdb70_hhsuite_cluster_tsv = AFDB_DIR/pdb70/pdb70_clu.tsv
 
-template_heterodimer_list = SOFTWARE_PATH/databases/Complex/work/heterodimers_0.4.list
+pdb_seqs_dir = AFDB_DIR/pdb_seqres/pdb_seqs
 
-template_homodimer_list = SOFTWARE_PATH/databases/Complex/work/homodimers_0.4.list
+pdb_sort90_hhsuite_database = INSTALLDIR_DATABASES/pdb_sort90/hhsuitedb3
 
-tmalign_threshold = 0.3
+pdb_sort90_hhsuite_cluster_tsv = INSTALLDIR_DATABASES/pdb_sort90/sort90_clust
 
-###########################Sequence based template search option####################
+pdb_sort90_atom_dir = INSTALLDIR_DATABASES/pdb_sort90/pdb
 
-pdb70_hhsuite_database = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70
+pdb_sort90_hmm_dir =INSTALLDIR_DATABASES/pdb_sort90/hmm
 
-pdb70_hhsuite_cluster_tsv = /home/bml_casp15/tools/alphafold_databases/pdb70/pdb70_clu.tsv
+complex_sort90_hhsuite_database = INSTALLDIR_DATABASES/pdb_complex/hhsuitedb3
 
-pdb_seqs_dir = /home/bml_casp15/tools/alphafold_databases/pdb_seqres/pdb_seqs
+complex_sort90_hhsuite_cluster_tsv = INSTALLDIR_DATABASES/pdb_complex/sort90_clust
 
-pdb_sort90_hhsuite_database = /home/bml_casp15/update_complex_dbs/databases/hhsuite_pdb/hhsuitedb3
+complex_sort90_atom_dir = INSTALLDIR_DATABASES/pdb_complex/pdb
 
-pdb_sort90_hhsuite_cluster_tsv = /home/bml_casp15/update_complex_dbs/databases/RCSB_PDB/fr_lib/sort90_clust
-
-pdb_sort90_atom_dir = /home/bml_casp15/update_complex_dbs/databases/RCSB_PDB/atom
-
-pdb_sort90_hmm_dir = /home/bml_casp15/update_complex_dbs/databases/RCSB_PDB/msa/hmm
-
-complex_sort90_hhsuite_database = /home/bml_casp15/update_complex_dbs/databases/hhsuite_complex/hhsuitedb3
-
-complex_sort90_hhsuite_cluster_tsv = /home/bml_casp15/update_complex_dbs/databases/Complex/fr_lib/sort90_clust
-
-complex_sort90_atom_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/atom
-
-complex_sort90_hmm_dir = /home/bml_casp15/update_complex_dbs/databases/Complex/msa/hmm
+complex_sort90_hmm_dir = INSTALLDIR_DATABASES/pdb_complex/hmm
 
 #######################End of Complex alignment generation option###################

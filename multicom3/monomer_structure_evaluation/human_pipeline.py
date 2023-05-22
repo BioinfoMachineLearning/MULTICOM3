@@ -4,7 +4,6 @@ from tqdm import tqdm
 from multicom3.common.util import is_file, is_dir, makedir_if_not_exists, check_contents, read_option_file, clean_dir
 import pandas as pd
 from multicom3.monomer_structure_evaluation.alphafold_ranking import Alphafold_pkl_qa
-from multicom3.monomer_structure_evaluation.enqa_ranking import En_qa
 from multicom3.monomer_structure_evaluation.bfactor_ranking import Bfactor_qa
 from multicom3.common.protein import read_qa_txt_as_df
 from multicom3.monomer_structure_evaluation.pipeline_sep import get_sequence, extract_monomer_pdbs, extract_pkl

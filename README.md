@@ -15,9 +15,18 @@ Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the i
 
 ```
 conda install tqdm
+
+# install ColabFold
+pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
+
+```
+## Download databases and tools in MULTICOM3
+
+```
+python setup.py
 ```
 
-## Genetic databases
+### Genetic databases
 
 Assume the following databases have been installed as a part of the AlphaFold2/AlphaFold-Multimer
 *   [BFD](https://bfd.mmseqs.com/),
@@ -25,13 +34,20 @@ Assume the following databases have been installed as a part of the AlphaFold2/A
 *   [PDB70](http://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/),
 *   [PDB](https://www.rcsb.org/) (structures in the mmCIF format),
 *   [PDB seqres](https://www.rcsb.org/)
-*   [Uniclust30](https://uniclust.mmseqs.com/),
+*   [UniRef30](https://uniclust.mmseqs.com/),
 *   [UniProt](https://www.uniprot.org/uniprot/),
 *   [UniRef90](https://www.uniprot.org/help/uniref).
 
-Additional databases to be installed for the MULTICOM system:
+Additional databases will be installed for the MULTICOM system:
+*   [AlphaFoldDB](https://alphafold.ebi.ac.uk/),
+*   [ColabFold database](https://colabfold.mmseqs.com/),
+*   [Integrated Microbial Genomes (IMG)](https://img.jgi.doe.gov/),
 *   [Metaclust](https://metaclust.mmseqs.org/current_release/),
-*   [STRING](https://string-db.org/cgi/download?sessionId=bgV6D67b9gi2).
+*   [STRING](https://string-db.org/cgi/download?sessionId=bgV6D67b9gi2),
+*   [pdb_complex](https://www.biorxiv.org/content/10.1101/2023.05.16.541055v1),
+*   [pdb_sort90](https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1),
+*   [Uniclust30](https://uniclust.mmseqs.com/).
+
 
 # Running the monomer/teritary structure prediction pipeline
 ```bash
