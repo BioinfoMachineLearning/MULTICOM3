@@ -17,6 +17,8 @@ conda install tqdm
 # install ColabFold
 pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
 
+# install mmseq2
+conda install -c conda-forge -c bioconda mmseqs2
 ```
 ## Download databases and tools in MULTICOM3
 
