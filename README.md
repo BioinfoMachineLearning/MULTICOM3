@@ -18,7 +18,7 @@ conda install tqdm
 pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
 
 # install mmseqs2
-conda install -c conda-forge -c bioconda mmseqs2
+conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
 ```
 ## Configuration for the system
 The python script will 
