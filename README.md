@@ -262,12 +262,16 @@ $OUTPUT_DIR/                                   # Your output directory
 
 **If you use the code or data in this package for tertiary or quaternary structure prediction, please cite:**
 
+**Tertiary (monomer) structure prediction**
+
 Jumper, J., Evans, R., Pritzel, A., Green, T., Figurnov, M., Ronneberger, O., ... & Hassabis, D. (2021). Highly accurate protein structure prediction with AlphaFold. Nature, 596(7873), 583-589.
+
+Liu, J., Guo, Z., Wu, T., Roy, R. S., Chen, C., & Cheng, J. (2023). Improving AlphaFold2-based Protein Tertiary Structure Prediction with MULTICOM in CASP15. bioRxiv, 2023-05-01. (https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1) 
+
+**Quaternary (multimer) structure prediction**
 
 Evans, R., O’Neill, M., Pritzel, A., Antropova, N., Senior, A., Green, T., ... & Hassabis, D. (2021). Protein complex prediction with AlphaFold-Multimer. BioRxiv, 2021-10.
  
-Liu, J., Guo, Z., Wu, T., Roy, R. S., Chen, C., & Cheng, J. (2023). Improving AlphaFold2-based Protein Tertiary Structure Prediction with MULTICOM in CASP15. bioRxiv, 2023-05-01. (https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1) 
-
 Liu, J., Guo, Z., Wu, T., Roy, R. S., Quadir, F., Chen, C., & Cheng, J. (2023). Enhancing AlphaFold-Multimer-based Protein Complex Structure Prediction with MULTICOM  in CASP15. bioRxiv, 2023-05-16. (https://www.biorxiv.org/content/10.1101/2023.05.16.541055v1)
 
 
