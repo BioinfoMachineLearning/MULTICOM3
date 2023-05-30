@@ -22,7 +22,7 @@ class Quaternary_structure_evaluation_pipeline:
         self.alphafold_qa = Alphafold_pkl_qa(sort_field='confidence')
         self.bfactorqa = Bfactor_qa()
 
-    def process(self, fasta_path, chain_id_map, model_dir, output_dir, monomer_model_dir="", stoichiometry="", model_count=5):
+    def process(self, fasta_path, chain_id_map, model_dir, output_dir, model_count=5):
 
         makedir_if_not_exists(output_dir)
 
@@ -76,7 +76,7 @@ class Quaternary_structure_evaluation_pipeline:
                 workdir = output_dir + '/multieva'
                 makedir_if_not_exists(workdir)
         
-                multieva_pd = self.multieva.run(input_dir=pdbdir)
+                multieva_pd = self.multieva_qa.run(input_dir=pdbdir)
                 multieva_pd.to_csv(f"{output_dir}/multieva.csv")
 
             result_dict["multieva"] = output_dir + '/multieva.csv'
@@ -84,7 +84,7 @@ class Quaternary_structure_evaluation_pipeline:
         if "multieva" in self.run_methods and "alphafold" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
             ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
-            pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
+            pairwise_ranking_df['model'] = pairwise_ranking_df['Name']
             print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
             print(pairwise_ranking_df)
@@ -115,7 +115,7 @@ class Quaternary_structure_evaluation_pipeline:
         if "multieva" in self.run_methods and "bfactor" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
             ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
-            pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
+            pairwise_ranking_df['model'] = pairwise_ranking_df['Name']
             print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
             print(pairwise_ranking_df)
@@ -145,7 +145,7 @@ class Quaternary_structure_evaluation_pipeline:
 
         return result_dict
 
-    def reprocess(self, fasta_path, chain_id_map, output_dir, monomer_model_dir="", stoichiometry=""):
+    def reprocess(self, fasta_path, chain_id_map, output_dir):
 
         self.alphafold_qa = Alphafold_pkl_qa(sort_field='plddt_avg', ranking_methods=['plddt_avg'])
 

@@ -348,7 +348,9 @@ class Complex_sequence_based_template_search_pipeline:
             concatenated_pd = concatenated_pd.append(prev_pd)
             concatenated_pd_v2 = concatenated_pd_v2.append(prev_pd_v2)
 
+        concatenated_pd.reset_index(inplace=True, drop=True)
         concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
+        concatenated_pd_v2.reset_index(inplace=True, drop=True)
         concatenated_pd_v2.to_csv(outdir + '/sequence_templates_v2.csv')
 
         concatenated_pd_nocheck = self.concatenate_templates(monomer_inputs, monomer_template_results, outdir, False)

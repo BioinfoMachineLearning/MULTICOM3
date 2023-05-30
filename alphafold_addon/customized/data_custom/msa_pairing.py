@@ -20,7 +20,7 @@ import string
 from typing import Any, Dict, Iterable, List, Sequence
 
 from alphafold.common import residue_constants
-from alphafold.common import custom_params
+from alphafold.data_custom import custom_params
 from alphafold.data_custom import pipeline
 import numpy as np
 import pandas as pd
@@ -76,7 +76,7 @@ def create_paired_features(
         return chains
     else:
         updated_chains = []
-        if os.path.exists(custom_inputs.msa_pair_file):
+        if custom_inputs is not None and os.path.exists(custom_inputs.msa_pair_file):
             paired_chains_to_paired_row_indices = pair_sequences_precomputed(chains, custom_inputs, max_msa_hits)
         else:
             paired_chains_to_paired_row_indices = pair_sequences(chains)

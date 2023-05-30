@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     ### (1) Download basic tools
     os.chdir(tools_dir)
-    tools_lst = ["DockQ", "foldseek", "mmalign", "mmseqs", "pairwiseQA", "tmalign", "tmscore", "deepmsa", "ColabFold"]
+    tools_lst = ["DockQ", "foldseek", "mmalign", "pairwiseQA", "tmalign", "tmscore", "deepmsa", "ColabFold", "hhsuite-3.2.0"]
     for tool in tools_lst:
         if os.path.exists(log_dir+"/"+tool+".done"):
             print(log_dir+"/"+tool+" installed....skip")
@@ -96,9 +96,9 @@ if __name__ == '__main__':
     #### Download ColabFold database
     print("Download ColabFold database\n")
     if not os.path.exists(database_dir + '/colabfold'):
-        os.system(f"sh {tools_dir}/ColabFold/setup_databases.sh {database_dir}/colabfold")
+        os.system(f"sh {tools_dir}/ColabFold-1.5.2/setup_databases.sh {database_dir}/colabfold")
 
-    ### (3) setup databases
+    ### (3) copy the alphafold-addon scripts
     alphafold_addon_dir = install_dir + '/alphafold_addon'
     if not os.path.exists(alphafold_addon_dir):
         raise Exception(f"Cannot find alphafold_addon_dir: {alphafold_addon_dir}")

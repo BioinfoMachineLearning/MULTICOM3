@@ -17,7 +17,7 @@
 from typing import Iterable, MutableMapping, List
 
 from alphafold.common import residue_constants
-from alphafold.common import custom_params
+from alphafold.data_custom import custom_params
 from alphafold.data_custom import msa_pairing
 from alphafold.data_custom import pipeline
 import numpy as np

@@ -33,7 +33,7 @@ class ColabFold_Msa_runner:
 
 
     def query(self, input_fasta_path: str, output_a3m_path: str) -> Mapping[str, Any]:
-        """Queries the database using HHblits."""
+        """Queries the database using Colabfold."""
 
 
         targetname = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
@@ -46,14 +46,14 @@ class ColabFold_Msa_runner:
             os.makedirs(tmp_dir)
 
         cmd = [
+            'python',
             self.colabfold_search_binary_path,
             input_fasta_path,
             self.colabfold_databases,
-            tmp_dir + '/search_result',
-            '--mmseqs', self.mmseq_binary_path
+            tmp_dir + '/search_result'
         ]
 
-        logging.info('Launching subprocess "%s"', ' '.join(cmd))
+        logging.info('Colabfold subprocess "%s"', ' '.join(cmd))
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -63,19 +63,21 @@ class ColabFold_Msa_runner:
 
         if retcode:
             # Logs have a 15k character limit, so log HHblits error line by line.
-            logging.error('HHblits failed. HHblits stderr begin:')
+            logging.error('HHblits failed. Colabfold stderr begin:')
             for error_line in stderr.decode('utf-8').splitlines():
                 if error_line.strip():
                     logging.error(error_line.strip())
-            logging.error('HHblits stderr end')
-            raise RuntimeError('HHblits failed\nstdout:\n%s\n\nstderr:\n%s\n' % (
+            logging.error('Colabfold stderr end')
+            raise RuntimeError('Colabfold failed\nstdout:\n%s\n\nstderr:\n%s\n' % (
                 stdout.decode('utf-8'), stderr[:500_000].decode('utf-8')))
 
-        os.system(f"{self.colabfold_split_msas_binary_path} {tmp_dir}/search_result {tmp_dir}/msas")
+        os.system(f"python {self.colabfold_split_msas_binary_path} {tmp_dir}/search_result {tmp_dir}/msas")
 
-        if not os.path.exists(f"{tmp_dir}/{targetname}.a3m"):
+        if not os.path.exists(f"{tmp_dir}/msas/{targetname}.a3m"):
             raise RuntimeError(f"Cannot find the generated a3m file for {targetname}")
 
-        os.system(f"cp {tmp_dir}/{targetname}.a3m {output_a3m_path}")
+        # need to remove the first line
+        open(output_a3m_path, 'w').writelines(open(f"{tmp_dir}/msas/{targetname}.a3m").readlines()[1:])
+        # os.system(f"cp {tmp_dir}/msas/{targetname}.a3m {output_a3m_path}")
         os.system(f"rm -rf {tmp_dir}")
         return dict(a3m=output_a3m_path)

@@ -12,7 +12,7 @@ import numpy as np
 from multicom3.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
 from multicom3.complex_templates_search.parsers import TemplateHit
 from multicom3.monomer_structure_refinement.util import *
-
+from multicom3.common.protein import complete_result
 
 class Monomer_iterative_refinement_pipeline:
 
@@ -186,293 +186,6 @@ class Monomer_iterative_refinement_pipeline:
                 os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb} {outdir}")
             os.system(f"gunzip -f {template_pdb}")
 
-    def search(self, fasta_file, input_pdb_dir, outdir, native_pdb=""):
-
-        input_pdb_dir = os.path.abspath(input_pdb_dir)
-
-        fasta_file = os.path.abspath(fasta_file)
-
-        query_sequence = ""
-        for line in open(fasta_file):
-            line = line.rstrip('\n')
-            if line.startswith('>'):
-                continue
-            else:
-                query_sequence = line
-
-        targetname = pathlib.Path(fasta_file).stem
-
-        outdir = os.path.abspath(outdir) + "/"
-
-        makedir_if_not_exists(outdir)
-
-        iteration_scores = {}
-
-        true_tm_scores = {}
-
-        iteration_result_all = {'targetname': [],
-                                'model': [],
-                                'start_lddt': [],
-                                'end_lddt': [],
-                                'start_tmscore': [],
-                                'end_tmscore': []}
-
-        iteration_result_avg = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
-                                'end_tmscore': []}
-
-        iteration_result_max = {'targetname': [targetname], 'start_lddt': [], 'end_lddt': [], 'start_tmscore': [],
-                                'end_tmscore': []}
-
-        cwd = os.getcwd()
-
-        finaldir = outdir + '/final'
-        makedir_if_not_exists(finaldir)
-
-        for i in range(0, 5):
-            model_outdir = f"{outdir}/ranked_{i}"
-            makedir_if_not_exists(model_outdir)
-
-            current_ref_dir = input_pdb_dir
-            ref_start_pdb = f"ranked_{i}.pdb"
-            ref_start_ranking_json_file = f"ranking_debug.json"
-
-            new_ranking_json = json.loads(open(current_ref_dir + '/' + ref_start_ranking_json_file).read())
-            model_num = list(new_ranking_json["order"])[i].split('_')[1]
-            ref_start_pkl = f"result_model_{model_num}.pkl"
-
-            model_iteration_scores = []
-            model_iteration_tmscores = []
-
-            print(f"Start to refine {ref_start_pdb}")
-
-            os.system(f"cp {current_ref_dir}/{ref_start_pdb} {finaldir}/ranked_{i}_start.pdb")
-            os.system(f"cp {current_ref_dir}/{ref_start_pkl} {finaldir}/ranked_{i}_start.pkl")
-
-            for num_iteration in range(self.max_iteration):
-                os.chdir(cwd)
-                current_work_dir = f"{model_outdir}/iteration{num_iteration + 1}"
-                makedir_if_not_exists(current_work_dir)
-
-                start_pdb = f"{current_work_dir}/start.pdb"
-                start_msa = f"{current_work_dir}/start.a3m"
-                start_pkl = f"{current_work_dir}/start.pkl"
-
-                os.system(f"cp {current_ref_dir}/{ref_start_pdb} {start_pdb}")
-                os.system(f"cp {current_ref_dir}/{ref_start_pkl} {start_pkl}")
-                os.system(f"cp {current_ref_dir}/msas/final.a3m {start_msa}")
-
-                with open(start_pkl, 'rb') as f:
-                    ref_avg_lddt = np.mean(pickle.load(f)['plddt'])
-
-                ref_tmscore = 0
-                if os.path.exists(native_pdb):
-                    ref_tmscore, _ = cal_tmscore(self.params['tmscore_program'], start_pdb, native_pdb,
-                                                 current_work_dir + '/tmp')
-
-                model_iteration_scores += [ref_avg_lddt]
-                model_iteration_tmscores += [ref_tmscore]
-
-                out_model_dir = f"{current_work_dir}/alphafold"
-                if not complete_result(out_model_dir):
-
-                    foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
-
-                    if not self.check_and_rank_templates(foldseek_res, f"{current_work_dir}/structure_templates.csv",
-                                                         query_sequence):
-                        print(f"Cannot find any templates in iteration {num_iteration + 1}")
-                        break
-
-                    self.generate_msa_from_templates(fasta_file=fasta_file,
-                                                     template_file=f"{current_work_dir}/structure_templates.csv",
-                                                     start_msa=start_msa,
-                                                     outfile=f"{current_work_dir}/iteration{num_iteration + 1}.a3m")
-
-                    out_template_dir = f"{current_work_dir}/template_pdbs"
-                    makedir_if_not_exists(out_template_dir)
-                    self.copy_atoms_and_unzip(template_csv=f"{current_work_dir}/structure_templates.csv",
-                                              outdir=out_template_dir)
-
-                    makedir_if_not_exists(out_model_dir)
-                    cmd = f"python run_alphafold_custom_sim.py " \
-                          f"--fasta_path {fasta_file} " \
-                          f"--env_dir {self.params['alphafold_env_dir']} " \
-                          f"--database_dir {self.params['alphafold_database_dir']} " \
-                          f"--custom_msa {current_work_dir}/iteration{num_iteration + 1}.a3m " \
-                          f"--temp_struct_csv {current_work_dir}/structure_templates.csv " \
-                          f"--struct_atom_dir {out_template_dir} " \
-                          f"--output_dir {out_model_dir}"
-
-                    try:
-                        os.chdir(self.params['alphafold_program_dir'])
-                        os.system(cmd)
-                    except Exception as e:
-                        print(e)
-
-                new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
-                new_ranking_json = json.loads(open(new_ranking_json_file).read())
-                max_lddt_score = new_ranking_json["plddts"][list(new_ranking_json["order"])[0]]
-
-                print(f'#########Iteration: {num_iteration + 1}#############')
-                print(f"plddt before: {ref_avg_lddt}")
-                print(f"plddt after: {max_lddt_score}")
-                if max_lddt_score > ref_avg_lddt:
-                    print("Continue to refine")
-                    current_ref_dir = out_model_dir
-                    ref_start_pdb = f"ranked_0.pdb"
-                    model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                    ref_start_pkl = f"result_model_{model_num}.pkl"
-                    print('##################################################')
-                    if num_iteration + 1 >= self.max_iteration:
-                        print("Reach maximum iteration")
-                        ref_tmscore = 0
-                        if os.path.exists(native_pdb):
-                            ref_tmscore, _ = cal_tmscore(self.params['tmscore_program'],
-                                                         out_model_dir + '/' + ref_start_pdb, native_pdb,
-                                                         current_work_dir + '/tmp')
-                        model_iteration_scores += [max_lddt_score]
-                        model_iteration_tmscores += [ref_tmscore]
-                else:
-                    # keep the models in iteration 1 even through the plddt score decreases
-                    if num_iteration == 0:
-                        current_ref_dir = out_model_dir
-                        ref_start_pdb = f"ranked_0.pdb"
-                        model_num = list(new_ranking_json["order"])[0].split('_')[1]
-                        ref_start_pkl = f"result_model_{model_num}.pkl"
-
-                        ref_tmscore = 0
-                        if os.path.exists(native_pdb):
-                            ref_tmscore, _ = cal_tmscore(self.params['tmscore_program'],
-                                                         out_model_dir + '/' + ref_start_pdb, native_pdb,
-                                                         current_work_dir + '/tmp')
-                        model_iteration_scores += [max_lddt_score]
-                        model_iteration_tmscores += [ref_tmscore]
-                    break
-
-            # model_iteration_scores += [max_lddt_score]
-
-            if len(model_iteration_scores) > 0:
-                iteration_result_all['targetname'] += [targetname]
-                iteration_result_all['model'] += [i]
-                iteration_result_all['start_lddt'] += [model_iteration_scores[0]]
-                iteration_result_all['end_lddt'] += [model_iteration_scores[len(model_iteration_scores) - 1]]
-                iteration_result_all['start_tmscore'] += [model_iteration_tmscores[0]]
-                iteration_result_all['end_tmscore'] += [model_iteration_tmscores[len(model_iteration_tmscores) - 1]]
-
-            while len(model_iteration_scores) <= self.max_iteration:
-                model_iteration_scores += [0]
-
-            while len(model_iteration_tmscores) <= self.max_iteration:
-                model_iteration_tmscores += [0]
-
-            iteration_scores[f'model{i + 1}'] = model_iteration_scores
-            true_tm_scores[f'model{i + 1}'] = model_iteration_tmscores
-
-            os.system(f"cp {current_ref_dir}/{ref_start_pdb} {finaldir}/ranked_{i}_ref.pdb")
-            os.system(f"cp {current_ref_dir}/{ref_start_pkl} {finaldir}/ranked_{i}_ref.pkl")
-
-        iteration_result_avg['start_lddt'] = [np.mean(np.array(iteration_result_all['start_lddt']))]
-        iteration_result_avg['end_lddt'] = [np.mean(np.array(iteration_result_all['end_lddt']))]
-        iteration_result_avg['start_tmscore'] = [np.mean(np.array(iteration_result_all['start_tmscore']))]
-        iteration_result_avg['end_tmscore'] = [np.mean(np.array(iteration_result_all['end_tmscore']))]
-
-        iteration_result_max['start_lddt'] = [np.max(np.array(iteration_result_all['start_lddt']))]
-        iteration_result_max['end_lddt'] = [np.max(np.array(iteration_result_all['end_lddt']))]
-        iteration_result_max['start_tmscore'] = [np.max(np.array(iteration_result_all['start_tmscore']))]
-        iteration_result_max['end_tmscore'] = [np.max(np.array(iteration_result_all['end_tmscore']))]
-
-        print(iteration_scores)
-        df = pd.DataFrame(iteration_scores)
-        df.to_csv(outdir + '/summary.csv')
-
-        df = pd.DataFrame(true_tm_scores)
-        df.to_csv(outdir + '/tmscores.csv')
-
-        df = pd.DataFrame(iteration_result_avg)
-        df.to_csv(outdir + '/iteration_result_avg.csv')
-
-        df = pd.DataFrame(iteration_result_all)
-        df.to_csv(outdir + '/iteration_result_all.csv')
-
-        df = pd.DataFrame(iteration_result_max)
-        df.to_csv(outdir + '/iteration_result_max.csv')
-
-        pdbs = []
-        plddts = []
-        for pkl in os.listdir(finaldir):
-            if pkl.find('.pkl') > 0:
-                with open(finaldir + '/' + pkl, 'rb') as f:
-                    prediction_result = pickle.load(f)
-                    pdbs += [pkl.replace('.pkl', '.pdb')]
-                    plddts += [np.mean(prediction_result['plddt'])]
-
-        df = pd.DataFrame({'model': pdbs, 'plddt': plddts})
-        df = df.sort_values(by=['plddt'], ascending=False)
-        df.reset_index(inplace=True, drop=True)
-        df.to_csv(outdir + '/final_ranking_v1.csv')
-
-        v1_scores_all = []
-        v1_scores_avg = 0
-        v1_scores_max = 0
-        for i in range(5):
-            pdb_name = df.loc[i, 'model']
-            ref_tmscore, _ = cal_tmscore(self.params['tmscore_program'],
-                                         finaldir + '/' + pdb_name, native_pdb, finaldir + '/tmp')
-            v1_scores_all += [ref_tmscore]
-
-        v1_scores_avg = np.mean(np.array(v1_scores_all))
-        v1_scores_max = np.max(np.array(v1_scores_all))
-
-        v2_scores_all = []
-        v2_scores_avg = 0
-        v2_scores_max = 0
-        for i in range(5):
-            start_pdb = f"{finaldir}/ranked_{i}_start.pdb"
-            start_pkl = f"{finaldir}/ranked_{i}_start.pkl"
-
-            with open(start_pkl, 'rb') as f:
-                plddt_start = np.mean(pickle.load(f)['plddt'])
-
-            refine_pdb = f"{finaldir}/ranked_{i}_ref.pdb"
-            refine_pkl = f"{finaldir}/ranked_{i}_ref.pkl"
-
-            with open(refine_pkl, 'rb') as f:
-                plddt_ref = np.mean(pickle.load(f)['plddt'])
-
-            select_pdb = refine_pdb
-            if plddt_start > plddt_ref:
-                select_pdb = start_pdb
-
-            ref_tmscore, _ = cal_tmscore(self.params['tmscore_program'],
-                                         select_pdb, native_pdb, finaldir + '/tmp')
-            v2_scores_all += [ref_tmscore]
-
-        v2_scores_avg = np.mean(np.array(v2_scores_all))
-        v2_scores_max = np.max(np.array(v2_scores_all))
-
-        select_result_all_v1 = {'targetname': [targetname] * 5,
-                                'model': [i + 1 for i in range(5)],
-                                'tmscore': v1_scores_all}
-
-        select_result_avg_v1 = {'targetname': [targetname], 'tmscore': [v1_scores_avg]}
-
-        select_result_max_v1 = {'targetname': [targetname], 'tmscore': [v1_scores_max]}
-
-        select_result_all_v2 = {'targetname': [targetname] * 5,
-                                'model': [i + 1 for i in range(5)],
-                                'tmscore': v2_scores_all}
-
-        select_result_avg_v2 = {'targetname': [targetname], 'tmscore': [v2_scores_avg]}
-
-        select_result_max_v2 = {'targetname': [targetname], 'tmscore': [v2_scores_max]}
-
-        os.chdir(cwd)
-
-        print(select_result_all_v1)
-
-        return iteration_result_all, iteration_result_avg, iteration_result_max, \
-               select_result_all_v1, select_result_avg_v1, select_result_max_v1, \
-               select_result_all_v2, select_result_avg_v2, select_result_max_v2
-
     def search_single(self, fasta_path, pdb_path, pkl_path, msa_path, outdir):
 
         query_sequence = ""
@@ -514,7 +227,7 @@ class Monomer_iterative_refinement_pipeline:
             model_iteration_scores += [ref_avg_lddt]
 
             out_model_dir = f"{current_work_dir}/alphafold"
-            if not complete_result(out_model_dir):
+            if not complete_result(out_model_dir, 5 * int(self.params['num_monomer_predictions_per_model'])):
 
                 foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
 
@@ -534,13 +247,16 @@ class Monomer_iterative_refinement_pipeline:
                                           outdir=out_template_dir)
 
                 makedir_if_not_exists(out_model_dir)
-                cmd = f"python run_alphafold_custom.py " \
+                cmd = f"python {self.params['alphafold_program']} " \
                       f"--fasta_path {fasta_path} " \
                       f"--env_dir {self.params['alphafold_env_dir']} " \
                       f"--database_dir {self.params['alphafold_database_dir']} " \
                       f"--custom_msa {current_work_dir}/iteration{num_iteration + 1}.a3m " \
                       f"--temp_struct_csv {current_work_dir}/structure_templates.csv " \
                       f"--struct_atom_dir {out_template_dir} " \
+                      f"--monomer_num_ensemble {self.params['monomer_num_ensemble']} " \
+                      f"--monomer_num_recycle {self.params['monomer_num_recycle']} " \
+                      f"--num_monomer_predictions_per_model {self.params['num_monomer_predictions_per_model']} " \
                       f"--output_dir {out_model_dir}"
 
                 try:

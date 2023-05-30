@@ -180,7 +180,6 @@ class Complex_structure_based_template_search_pipeline:
                 for j in range(len(monomer_template_results[i])):
                     if row_index > 50:
                         break
-                    print(monomer_template_results[i])
                     if f"{monomer_template_results[i].loc[j, 'template']}_{monomer_template_results[i].loc[j, 'aln_temp']}" \
                             not in seen_templates_sequences:
 
@@ -366,7 +365,6 @@ class Complex_structure_based_template_search_pipeline:
                 for j in range(len(monomer_template_results[i])):
                     if row_index > 50:
                         break
-                    print(monomer_template_results[i])
                     if f"{monomer_template_results[i].loc[j, 'template']}_{monomer_template_results[i].loc[j, 'aln_temp']}" \
                             not in seen_templates_sequences:
 

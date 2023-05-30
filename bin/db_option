@@ -18,7 +18,7 @@ hhalign_program = /home/bml_casp15/anaconda3/envs/MULTICOM_dev//bin/hhalign
 jackhmmer_program = /home/bml_casp15/anaconda3/envs/MULTICOM_dev//bin/jackhmmer
 
 # hhsearch program path
-hhsearch_program = /home/bml_casp15/anaconda3/envs/MULTICOM_dev//bin/hhsearch
+hhsearch_program = /home/bml_casp15/MULTICOM3/tools//hhsuite-3.2.0/bin/hhsearch
 
 # deepmsa2 program path
 deepmsa2_program = /home/bml_casp15/MULTICOM3/tools//deepmsa/hhsuite2/scripts/build_MSA2.py
@@ -27,7 +27,7 @@ deepmsa2_program = /home/bml_casp15/MULTICOM3/tools//deepmsa/hhsuite2/scripts/bu
 tmalign_program = /home/bml_casp15/MULTICOM3/tools//tmalign/TMalign
 
 # mmalign program path
-mmalign_program = /home/bml_casp15/MULTICOM3/tools//MMalign
+mmalign_program = /home/bml_casp15/MULTICOM3/tools//mmalign/MMalign
 
 # dockq program
 dockq_program = /home/bml_casp15/MULTICOM3/tools//DockQ/DockQ.py
@@ -40,13 +40,13 @@ tmscore_program = /home/bml_casp15/MULTICOM3/tools//tmscore/TMscore
 
 ################################MSA generation tool###########################
 
-colabfold_search_program = /home/bml_casp15/anaconda3/envs/MULTICOM_dev//bin/colabfold_search
+colabfold_search_program = /home/bml_casp15/MULTICOM3/tools//ColabFold-1.5.2/colabfold/mmseqs/search.py
 
-colabfold_split_msas_program = /home/bml_casp15/anaconda3/envs/MULTICOM_dev//bin/colabfold_split_msas
+colabfold_split_msas_program = /home/bml_casp15/MULTICOM3/tools//ColabFold-1.5.2/colabfold/mmseqs/split_msas.py
 
-colabfold_databases = /home/bml_casp15/BML_CASP15/tools/ColabFold/databases
+colabfold_databases = /home/bml_casp15/MULTICOM3/databases//colabfold
 
-mmseq_program = /home/bml_casp15/MULTICOM3/tools//mmseqs/bin/mmseqs
+mmseq_program = /home/bml_casp15/anaconda3/envs/MULTICOM_dev//bin/mmseqs
 
 ################################QA option#####################################
 
@@ -59,7 +59,7 @@ alphafold_env_dir = /home/bml_casp15/anaconda3/envs/MULTICOM_dev//bin/
 alphafold_database_dir = /home/bml_casp15/tools/alphafold_databases/
 
 # alphafold program path
-alphafold_program_dir = /home/bml_casp15/tools/alphafold_v2.3.2/alphafold-2.3.2_test/
+alphafold_program_dir = /home/bml_casp15/tools/alphafold_multicom3/alphafold-2.3.2/
 
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom.py
@@ -69,6 +69,14 @@ alphafold_multimer_program = run_alphafold_multimer_custom.py
 
 # alphafold tertiary structure prediction script
 alphafold_default_program = run_alphafold_pre.py
+
+# alphafold parameters
+monomer_num_ensemble = 1
+monomer_num_recycle = 3
+multimer_num_ensemble = 1
+multimer_num_recycle = 3
+num_multimer_predictions_per_model = 10
+num_monomer_predictions_per_model = 5
 
 ######################Monomer template search option#################################
 

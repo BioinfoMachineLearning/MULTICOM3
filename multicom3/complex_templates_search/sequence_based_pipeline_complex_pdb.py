@@ -112,7 +112,7 @@ class Complex_sequence_based_template_search_pipeline:
         self.params = params
 
         self.template_searcher = hhsearch.HHSearch(
-            binary_path='/home/multicom3/BML_CASP15/tools/hhsuite-3.2.0/bin/hhsearch',
+            binary_path=params['hhsearch_program'],
             databases=[params['complex_sort90_hhsuite_database']],
             input_format='hmm')
 
@@ -349,7 +349,6 @@ class Complex_sequence_based_template_search_pipeline:
                     in range(len(concatenated_pd))]
                 monomer_template_hits = []
                 for hit in monomer_template_results[i]:
-                    print(f"{hit.name}_{hit.hit_sequence}")
                     if f"{hit.name}_{hit.hit_sequence}" in seen_templates_sequences:
                         continue
                     try:
@@ -374,7 +373,9 @@ class Complex_sequence_based_template_search_pipeline:
             concatenated_pd = concatenated_pd.append(prev_pd, ignore_index=True)
             concatenated_pd_v2 = concatenated_pd_v2.append(prev_pd_v2)
 
+        concatenated_pd.reset_index(inplace=True, drop=True)
         concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
+        concatenated_pd_v2.reset_index(inplace=True, drop=True)
         concatenated_pd_v2.to_csv(outdir + '/sequence_templates_v2.csv')
 
         cwd = os.getcwd()
@@ -411,7 +412,6 @@ class Complex_sequence_based_template_search_pipeline:
                     in range(len(concatenated_pd_nocheck))]
                 monomer_template_hits = []
                 for hit in monomer_template_results[i]:
-                    print(f"{hit.name}_{hit.hit_sequence}")
                     if f"{hit.name}_{hit.hit_sequence}" in seen_templates_sequences:
                         continue
                     try:

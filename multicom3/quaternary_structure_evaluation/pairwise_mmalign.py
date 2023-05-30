@@ -8,7 +8,7 @@ import pandas as pd
 def run_command(inparams):
     mmalign_program, input_dir, pdb1, pdb2 = inparams
     cmd = mmalign_program + ' ' + input_dir + '/' + pdb1 + ' ' + input_dir + '/' + pdb2 + " | grep TM-score | awk '{print $2}' "
-    print(cmd)
+    # print(cmd)
     tmscore_contents = os.popen(cmd).read().split('\n')
     tmscore = float(tmscore_contents[1].rstrip('\n'))
     return pdb1, pdb2, tmscore
@@ -22,7 +22,7 @@ class Pairwise_MMalign_qa:
 
     def run(self, input_dir):
 
-        ranking_pd = pd.DataFrame(columns=['model', 'pairwise_score'])
+        ranking_pd = pd.DataFrame(columns=['Name', 'MMalign score'])
 
         pdbs = os.listdir(input_dir)
 
@@ -47,7 +47,7 @@ class Pairwise_MMalign_qa:
 
         for i in range(len(pdbs)):
             pdb1 = pdbs[i]
-            ranking = {'model': pdb1}
+            ranking = {'Name': pdb1}
             scores = []
             for pdb2 in pdbs:
                 if pdb1 == pdb2:

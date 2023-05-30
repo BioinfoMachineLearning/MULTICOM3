@@ -37,10 +37,8 @@ HHBLITS_AA_TO_ID = {
 
 def create_species_dict(msa_df):
     species_lookup = {}
-    #print(msa_df)
     for species, species_df in msa_df.groupby('prefix'):
         species_lookup[species] = species_df
-        #print(species_df)
     return species_lookup
 
 def match_rows_by_sequence_similarity(this_species_msa_dfs):
@@ -64,10 +62,7 @@ def reorder_paired_rows(all_paired_msa_rows_dict):
 
     for num_pairings in sorted(all_paired_msa_rows_dict, reverse=True):
         paired_rows = all_paired_msa_rows_dict[num_pairings]
-        print(paired_rows)
         paired_rows_product = abs(np.array([np.prod(rows) for rows in paired_rows]))
-        print("test")
-        print(paired_rows_product)
         paired_rows_sort_index = np.argsort(paired_rows_product)
         all_paired_msa_rows.extend(paired_rows[paired_rows_sort_index])
 
@@ -89,7 +84,6 @@ def parse_header(header):
         return header, None, None
 
 def make_msa_df(alignment):
-    print("make msa df111")
     regex = re.compile("^[A-Za-z0-9]+$")
     ids = []
     prefixes = []
@@ -106,16 +100,13 @@ def make_msa_df(alignment):
         msa_similarity += [per_seq_similarity]
         msa_row += [i]
 
-    print("make msa df222")
     return pd.DataFrame({'id': ids, 'prefix': prefixes, 'msa_similarity': msa_similarity, 'msa_row': msa_row})
 
 
 class UNIPROT_distance_v3:
 
     def get_interactions_v2(alignments, is_homomers=False):
-        print("111111111111111111111111111")
         num_examples = len(alignments)
-        print(len(alignments))
 
         all_chain_species_dict = []
         common_species = set()
@@ -131,9 +122,6 @@ class UNIPROT_distance_v3:
         all_paired_msa_rows_dict = {k: [] for k in range(num_examples)}
         all_paired_msa_rows_dict[num_examples] = [np.zeros(num_examples, int)]
 
-        print(common_species)
-
-        print("22222222222222222222222222222")
         for species in common_species:
             if not species:
                 continue
@@ -159,11 +147,7 @@ class UNIPROT_distance_v3:
             num_examples, paired_msa_rows in all_paired_msa_rows_dict.items()
         }
         
-        print(all_paired_msa_rows_dict)
-
         paired_rows = reorder_paired_rows(all_paired_msa_rows_dict)
-
-        print(paired_rows)
 
         # make sure each id only apprears once in the concatenated alignment
         seen_ids = {k: [] for k in range(num_examples)}
@@ -172,7 +156,7 @@ class UNIPROT_distance_v3:
             if pair_index == 0:
                 paired_rows_filtered += [paired_rows[pair_index, :]]
                 continue
-            print('test222222222222222222')
+        
             row_indices = list(paired_rows[pair_index, :])
             pass_filter = True
             for j in range(len(alignments)):

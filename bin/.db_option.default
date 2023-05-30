@@ -18,7 +18,7 @@ hhalign_program = YOUR_ENV/bin/hhalign
 jackhmmer_program = YOUR_ENV/bin/jackhmmer
 
 # hhsearch program path
-hhsearch_program = YOUR_ENV/bin/hhsearch
+hhsearch_program = INSTALLDIR_TOOLS/hhsuite-3.2.0/bin/hhsearch
 
 # deepmsa2 program path
 deepmsa2_program = INSTALLDIR_TOOLS/deepmsa/hhsuite2/scripts/build_MSA2.py
@@ -27,7 +27,7 @@ deepmsa2_program = INSTALLDIR_TOOLS/deepmsa/hhsuite2/scripts/build_MSA2.py
 tmalign_program = INSTALLDIR_TOOLS/tmalign/TMalign
 
 # mmalign program path
-mmalign_program = INSTALLDIR_TOOLS/MMalign
+mmalign_program = INSTALLDIR_TOOLS/mmalign/MMalign
 
 # dockq program
 dockq_program = INSTALLDIR_TOOLS/DockQ/DockQ.py
@@ -40,13 +40,13 @@ tmscore_program = INSTALLDIR_TOOLS/tmscore/TMscore
 
 ################################MSA generation tool###########################
 
-colabfold_search_program = YOUR_ENV/bin/colabfold_search
+colabfold_search_program = INSTALLDIR_TOOLS/ColabFold-1.5.2/colabfold/mmseqs/search.py
 
-colabfold_split_msas_program = YOUR_ENV/bin/colabfold_split_msas
+colabfold_split_msas_program = INSTALLDIR_TOOLS/ColabFold-1.5.2/colabfold/mmseqs/split_msas.py
 
 colabfold_databases = INSTALLDIR_DATABASES/colabfold
 
-mmseq_program = INSTALLDIR_TOOLS/mmseqs/bin/mmseqs
+mmseq_program = YOUR_ENV/bin/mmseqs
 
 ################################QA option#####################################
 
@@ -69,6 +69,14 @@ alphafold_multimer_program = run_alphafold_multimer_custom.py
 
 # alphafold tertiary structure prediction script
 alphafold_default_program = run_alphafold_pre.py
+
+# alphafold parameters
+monomer_num_ensemble = 1
+monomer_num_recycle = 3
+multimer_num_ensemble = 1
+multimer_num_recycle = 3
+num_multimer_predictions_per_model = 5
+num_monomer_predictions_per_model = 1
 
 ######################Monomer template search option#################################
 

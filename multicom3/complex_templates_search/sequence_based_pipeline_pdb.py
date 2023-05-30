@@ -112,7 +112,7 @@ class Complex_sequence_based_template_search_pipeline:
         self.params = params
 
         self.template_searcher = hhsearch.HHSearch(
-            binary_path='/home/multicom3/BML_CASP15/tools/hhsuite-3.2.0/bin/hhsearch',
+            binary_path=params['hhsearch_program'],
             databases=[params['pdb_sort90_hhsuite_database']],
             input_format='hmm')
 
@@ -372,7 +372,9 @@ class Complex_sequence_based_template_search_pipeline:
             concatenated_pd = concatenated_pd.append(prev_pd, ignore_index=True)
             concatenated_pd_v2 = concatenated_pd_v2.append(prev_pd_v2)
 
+        concatenated_pd.reset_index(inplace=True, drop=True)
         concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
+        concatenated_pd_v2.reset_index(inplace=True, drop=True)
         concatenated_pd_v2.to_csv(outdir + '/sequence_templates_v2.csv')
 
         cwd = os.getcwd()
@@ -388,7 +390,6 @@ class Complex_sequence_based_template_search_pipeline:
         for i in range(len(concatenated_pd_v2)):
             for j in range(len(monomer_inputs)):
                 template_name = concatenated_pd_v2.loc[i, f'template{j + 1}']
-                print(pd.isna(template_name))
                 if not pd.isna(template_name):
                     template_pdb = template_name.split()[0]
                     os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")

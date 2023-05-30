@@ -155,6 +155,51 @@ def add_assembly_features(
   return new_all_chain_features
 
 
+def save_paired_msas(chain_id_map, all_chain_features, msa_output_dir):
+    # all_chain_features keys and pair rows order: A_1, A_2, B_1, B_2 ....
+    # chain_id_map: keys: A, B, C, D
+    paired_rows = None
+    if not os.path.exists(f"{msa_output_dir}/pair_msas.npy"):
+        return paired_rows
+
+    with open(f"{msa_output_dir}/pair_msas.npy", 'rb') as f:
+        paired_rows = np.load(f)
+
+    # Group the chains by sequence
+    grouped_chains = collections.defaultdict(list)
+    seq_to_entity_id = {}
+    for chain_id, chain_features in all_chain_features.items():
+        seq = str(chain_features['sequence'])
+        if seq not in seq_to_entity_id:
+            seq_to_entity_id[seq] = len(seq_to_entity_id)
+        grouped_chains[seq_to_entity_id[seq]].append(chain_id)
+
+    chain_reorder = {}
+    chain_num = 0
+    for entity_id, chain_ids in grouped_chains.items():
+        for chain_id in chain_ids:
+            chain_reorder[chain_num] = chain_id
+            chain_num += 1
+
+    for chain_num in chain_reorder:
+        final_a3m = os.path.join(msa_output_dir, chain_reorder[chain_num], 'multimer_final.a3m')
+        with open(final_a3m) as f:
+            final_msa = parsers.parse_a3m(f.read())
+
+        seen_desc = []
+        seen_sequences = []
+        for sequence_index in list(paired_rows[:, chain_num]):
+            if sequence_index == -1:
+                seen_desc += ['placeholder']
+                seen_sequences += ['-' * len(chain_id_map[chain_reorder[chain_num]].sequence)]
+            else:
+                seen_desc += [final_msa.descriptions[sequence_index]]
+                seen_sequences += [final_msa.sequences[sequence_index]]
+
+        with open(f"{msa_output_dir}/{chain_id_map[chain_reorder[chain_num]].description}.paired.a3m", 'w') as fw:
+            for (desc, seq) in zip(seen_desc, seen_sequences):
+                fw.write(f'>{desc}\n{seq}\n')
+
 def pad_msa(np_example, min_num_seq):
   np_example = dict(np_example)
   num_seq = np_example['msa'].shape[0]
@@ -229,7 +274,7 @@ class DataPipeline:
         self.use_precomputed_msas)
     msa = parsers.parse_stockholm(result['sto'])
     msa = msa.truncate(max_seqs=self._max_uniprot_hits)
-    all_seq_features = pipeline.make_msa_features([msa])
+    all_seq_features = pipeline.make_msa_features([msa], msa_output_dir, 'multimer_final.a3m')
     valid_feats = msa_pairing.MSA_FEATURES + (
         'msa_species_identifiers',
     )
@@ -257,10 +302,10 @@ class DataPipeline:
     sequence_features = {}
     is_homomer_or_monomer = len(set(input_seqs)) == 1
     for chain_id, fasta_chain in chain_id_map.items():
-      if fasta_chain.sequence in sequence_features:
-        all_chain_features[chain_id] = copy.deepcopy(
-            sequence_features[fasta_chain.sequence])
-        continue
+      # if fasta_chain.sequence in sequence_features:
+      #   all_chain_features[chain_id] = copy.deepcopy(
+      #       sequence_features[fasta_chain.sequence])
+      #   continue
       chain_features = self._process_single_chain(
           chain_id=chain_id,
           sequence=fasta_chain.sequence,
@@ -273,12 +318,17 @@ class DataPipeline:
       all_chain_features[chain_id] = chain_features
       sequence_features[fasta_chain.sequence] = chain_features
 
+    all_chain_features_raw = copy.deepcopy(all_chain_features)
+
     all_chain_features = add_assembly_features(all_chain_features)
 
     np_example = feature_processing.pair_and_merge(
-        all_chain_features=all_chain_features)
+        all_chain_features=all_chain_features, msa_output_dir=msa_output_dir, custom_inputs=None)
 
     # Pad MSA to avoid zero-sized extra_msa.
     np_example = pad_msa(np_example, 512)
+
+    # save paired monomer alignments
+    save_paired_msas(chain_id_map, all_chain_features_raw, msa_output_dir)
 
     return np_example

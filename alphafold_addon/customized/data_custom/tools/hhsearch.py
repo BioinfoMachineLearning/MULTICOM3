@@ -21,7 +21,7 @@ from typing import Sequence
 
 from absl import logging
 
-from alphafold.data import parsers
+from alphafold.data_custom import parsers
 from alphafold.data.tools import utils
 # Internal import (7716).
 

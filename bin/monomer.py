@@ -12,14 +12,19 @@ from absl import flags
 from absl import app
 
 flags.DEFINE_string('option_file', None, 'option file')
-flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
+flags.DEFINE_string('fasta_path', None, 'Path to monomer fasta')
 flags.DEFINE_string('output_dir', None, 'Output directory')
+flags.DEFINE_boolean('run_img', False, 'Whether to use IMG alignment to generate models')
 FLAGS = flags.FLAGS
 
 
 def main(argv):
+
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
+
+    os.environ['TF_FORCE_UNIFIED_MEMORY'] = '1'
+    os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '4.0'
 
     check_file(FLAGS.option_file)
 
@@ -31,19 +36,16 @@ def main(argv):
 
     check_file(FLAGS.fasta_path)
 
-    # targetname = pathlib.Path(FLAGS.fasta_path).stem
     targetname = None
     sequence = None
     for line in open(FLAGS.fasta_path):
         line = line.rstrip('\n').strip()
         if line.startswith('>'):
             targetname = line[1:].split()[0]
-            # if targetname_in_fasta != targetname:
-            #     print("Warning: fasta file name doesn't match with fasta content!")
         else:
             sequence = line
 
-    outdir = FLAGS.output_dir  # + '/' + targetname
+    outdir = FLAGS.output_dir
 
     makedir_if_not_exists(outdir)
 
@@ -58,9 +60,10 @@ def main(argv):
     if result is None:
         raise RuntimeError('The monomer alignment generation has failed!')
 
-    N1_outdir_img = outdir + '/N1_monomer_alignments_generation_img'
-    makedir_if_not_exists(N1_outdir_img)
-    img_msa = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path, outdir=N1_outdir_img)
+    if FLAGS.run_img:
+        N1_outdir_img = outdir + '/N1_monomer_alignments_generation_img'
+        makedir_if_not_exists(N1_outdir_img)
+        img_msa = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path, outdir=N1_outdir_img)
 
     print("#################################################################################################")
     print("2. Start to generate template for monomer")
@@ -90,19 +93,20 @@ def main(argv):
         print("Program failed in step 3: monomer structure generation")
 
 
-    while not os.path.exists(img_msa):
-        print("Waiting for img alignment")
-        # sleep for 5 mins
-        time.sleep(300)
+    if FLAGS.run_img:
+        while not os.path.exists(img_msa):
+            print(f"Waiting for img alignment: {img_msa}")
+            # sleep for 5 mins
+            time.sleep(300)
 
-    print("Found img alignment, start to run monomer model generation again")
+        print("Found img alignment, start to run monomer model generation again")
 
-    os.system(f"cp {N1_outdir}/{targetname}_uniref90.sto {N1_outdir_img}")
-    if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                        run_methods=['img', 'img+seq_template'],
-                                                        fasta_path=FLAGS.fasta_path,
-                                                        alndir=N1_outdir_img, templatedir=N2_outdir, outdir=N3_outdir):
-        print("Program failed in step 3: monomer structure generation: img")
+        os.system(f"cp {N1_outdir}/{targetname}_uniref90.sto {N1_outdir_img}")
+        if not run_monomer_structure_generation_pipeline_v2(params=params,
+                                                            run_methods=['img', 'img+seq_template'],
+                                                            fasta_path=FLAGS.fasta_path,
+                                                            alndir=N1_outdir_img, templatedir=N2_outdir, outdir=N3_outdir):
+            print("Program failed in step 3: monomer structure generation: img")
 
     print("The prediction for monomers has finished!")
 
@@ -153,33 +157,6 @@ def main(argv):
     final_dir = N5_outdir_avg + '_final'
     run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs, outdir=N5_outdir_avg,
                                     finaldir=final_dir, prefix="refine")
-
-    N5_outdir_af = outdir + '/N5_monomer_structure_refinement_af'
-
-    makedir_if_not_exists(N5_outdir_af)
-
-    # os.system(f"cp {result['alphafold']} {N5_outdir_af}")
-
-    # ref_ranking_af = pd.read_csv(result['alphafold'])  # apollo or average ranking or the three qas
-
-    # refine_inputs = []
-    # refined_models = [ref_ranking_avg.loc[i, 'model'] for i in range(5)]
-    # for i in range(5):
-    #     pdb_name = f'default_{i}.pdb'
-    #     if pdb_name not in refined_models:
-    #         refine_input = iterative_refine_pipeline.refinement_input(fasta_path=FLAGS.fasta_path,
-    #                                                                   pdb_path=N4_outdir + '/pdb/' + pdb_name,
-    #                                                                   pkl_path=N4_outdir + '/pkl/' + pdb_name.replace(
-    #                                                                       '.pdb', '.pkl'),
-    #                                                                   msa_path=N4_outdir + '/msa/' + pdb_name.replace(
-    #                                                                       '.pdb', '.a3m'))
-    #         refine_inputs += [refine_input]
-    #     else:
-    #         os.system(f"cp -r {N5_outdir_avg}/{pdb_name.replace('.pdb', '')} {N5_outdir_af}")
-    #
-    # final_dir = N5_outdir_af + '_final'
-    # run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-    #                                 outdir=N5_outdir_af, finaldir=final_dir, prefix="qa")
 
     print("The refinement for the top-ranked monomer models has been finished!")
 

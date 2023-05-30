@@ -6,7 +6,6 @@ from multicom3.monomer_alignment_generation.alignment import read_fasta, write_f
 from multicom3.monomer_alignment_generation.pipeline import *
 from multicom3.monomer_structure_generation.pipeline_v2 import *
 from multicom3.monomer_structure_evaluation.pipeline_sep import *
-from multicom3.monomer_structure_evaluation.human_pipeline import *
 from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import *
 from multicom3.monomer_structure_refinement import iterative_refine_pipeline
 from multicom3.quaternary_structure_refinement import iterative_refine_pipeline_multimer
@@ -20,7 +19,6 @@ from multicom3.quaternary_structure_generation.pipeline_homo_v2 import *
 from multicom3.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
 from multicom3.quaternary_structure_generation.iterative_search_pipeline_v0_2_old import *
 from multicom3.quaternary_structure_evaluation.pipeline import *
-from multicom3.quaternary_structure_evaluation.human_pipeline import *
 from multicom3.common.protein import *
 import pandas as pd
 import numpy as np
@@ -133,20 +131,6 @@ def run_monomer_template_search_pipeline(params, targetname, sequence, a3m, outd
     except Exception as e:
         print(e)
     return template_file
-
-
-# def run_monomer_structure_generation_pipeline(params, run_methods, fasta_path, alndir, templatedir, outdir):
-#     try:
-#         pipeline = Monomer_structure_prediction_pipeline(params, run_methods=run_methods)
-#         pipeline.process_single(fasta_path=fasta_path,
-#                                 alndir=alndir,
-#                                 template_dir=templatedir,
-#                                 outdir=outdir)
-#     except Exception as e:
-#         print(e)
-#         return False
-#     return True
-
 
 def run_monomer_structure_generation_pipeline_v2(params, fasta_path, alndir, templatedir, outdir, run_methods=None):
     try:
@@ -314,180 +298,6 @@ def run_monomer_evaluation_pipeline(params, targetname, fasta_file, input_monome
     return qa_result
 
 
-def select_models_monomer_only_human(qa_result, outputdir, params):
-    if "pairwise_af_avg" not in qa_result:
-        raise Exception(
-            f"Cannot find pairwise ranking file for generating multicom models: {qa_result['pairwise_af_avg']}")
-
-    selected_models = []
-    pairwise_ranking_df = pd.read_csv(qa_result["pairwise_af_avg"])
-    for i in range(4):
-        model = pairwise_ranking_df.loc[i, 'model']
-        os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom{i + 1}.pdb")
-        selected_models += [model]
-
-    multicom_model_count = 5
-    multicom_added_models = []
-    top1_model = f"{outputdir}/pdb/{pairwise_ranking_df.loc[0, 'model']}"
-    for i in range(4, len(pairwise_ranking_df)):
-        model = pairwise_ranking_df.loc[i, 'model']
-        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
-                                        f"{outputdir}/pdb/{model}",
-                                        top1_model,
-                                        outputdir + '/tmp')
-        if tmscore < 0.98:
-            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom{multicom_model_count}.pdb")
-            multicom_added_models += [model]
-            selected_models += [model]
-            multicom_model_count += 1
-            if multicom_model_count > 5:
-                break
-        else:
-            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
-
-    if multicom_model_count <= 5:
-        for i in range(4, len(pairwise_ranking_df)):
-            model = pairwise_ranking_df.loc[i, 'model']
-            if model in multicom_added_models:
-                continue
-            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom{multicom_model_count}.pdb")
-            multicom_added_models += [model]
-            multicom_model_count += 1
-            selected_models += [model]
-            if multicom_model_count > 5:
-                break
-    selected_df = pd.DataFrame({'selected_models': selected_models})
-    selected_df.to_csv(outputdir + '/multicom_selected.csv')
-
-    selected_models = []
-    casp13_human_ranking_df = read_qa_txt_as_df(qa_result["casp13"])
-    casp13_human_ranking_df['model'] = casp13_human_ranking_df['model'] + '.pdb'
-    for i in range(4):
-        model = casp13_human_ranking_df.loc[i, 'model']
-        os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom_human{i + 1}.pdb")
-        selected_models += [model]
-
-    multicom_human_model_count = 5
-    multicom_human_added_models = []
-    top1_model = f"{outputdir}/pdb/{casp13_human_ranking_df.loc[0, 'model']}"
-    for i in range(4, len(casp13_human_ranking_df)):
-        model = casp13_human_ranking_df.loc[i, 'model']
-        tmscore, gdtscore = cal_tmscore(params['tmscore_program'],
-                                        f"{outputdir}/pdb/{model}",
-                                        top1_model,
-                                        outputdir + '/tmp')
-        if tmscore < 0.98:
-            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom_human{multicom_human_model_count}.pdb")
-            multicom_human_added_models += [model]
-            selected_models += [model]
-            multicom_human_model_count += 1
-            if multicom_human_model_count > 5:
-                break
-        else:
-            print(f"The tmscore between {model} and {top1_model} is larger than 0.98 ({tmscore}), skipped!")
-
-    if multicom_human_model_count <= 5:
-        for i in range(4, len(casp13_human_ranking_df)):
-            model = casp13_human_ranking_df.loc[i, 'model']
-            if model in multicom_human_added_models:
-                continue
-            os.system(f"cp {outputdir}/pdb/{model} {outputdir}/multicom_human{multicom_human_model_count}.pdb")
-            multicom_human_added_models += [model]
-            multicom_human_model_count += 1
-            selected_models += [model]
-            if multicom_human_model_count > 5:
-                break
-    selected_df = pd.DataFrame({'selected_models': selected_models})
-    selected_df.to_csv(outputdir + '/multicom_human_selected.csv')
-
-
-# def select_models_with_multimer(qa_result, outputdir):
-#     if "pairwise_af_avg" not in qa_result:
-#         raise Exception(
-#             f"Cannot find pairwise ranking file for generating multicom-egnn models: {qa_result['pairwise_af_avg']}")
-#
-#     # pdbs_from_monomer = [qa_result['pairwise_af_avg_monomer'].loc[i, 'model']
-#     #                      for i in range(len(qa_result['pairwise_af_avg_monomer']))]
-#     #
-#     # pdbs_from_multimer = [qa_result['pairwise_af_avg_multimer'].loc[i, 'model']
-#     #                       for i in range(len(qa_result['pairwise_af_avg_multimer']))]
-#     pairwise_af_avg_multimer_ranking = pd.read_csv(qa_result['pairwise_af_avg_multimer'])
-#     pairwise_af_avg_ranking = pd.read_csv(qa_result['pairwise_af_avg'])
-#     selected_multimer_models = [pairwise_af_avg_multimer_ranking.loc[i, 'model'] for i in range(3)]
-#     for i in range(len(pairwise_af_avg_ranking)):
-#         if pairwise_af_avg_ranking.loc[i, 'model'] in selected_multimer_models:
-#             continue
-#         else:
-#             selected_multimer_models += [pairwise_af_avg_ranking.loc[i, 'model']]
-#             if len(selected_multimer_models) >= 5:
-#                 break
-#
-#     for i in range(len(selected_multimer_models)):
-#         os.system(f"cp {outputdir}/pdb/{selected_multimer_models[i]} {outputdir}/egnn{i + 1}.pdb")
-#
-#     selected_df = pd.DataFrame({'selected_models': selected_multimer_models})
-#     selected_df.to_csv(outputdir + '/egnn_selected.csv')
-#
-#     alphafold_multimer_ranking = pd.read_csv(qa_result['alphafold_multimer'])
-#     alphafold_ranking = pd.read_csv(qa_result['alphafold'])
-#     selected_multimer_models = [alphafold_multimer_ranking.loc[i, 'model'] for i in range(3)]
-#     for i in range(len(alphafold_ranking)):
-#         if alphafold_ranking.loc[i, 'model'] in selected_multimer_models:
-#             continue
-#         else:
-#             selected_multimer_models += [alphafold_ranking.loc[i, 'model']]
-#             if len(selected_multimer_models) >= 5:
-#                 break
-#
-#     for i in range(len(selected_multimer_models)):
-#         os.system(f"cp {outputdir}/pdb/{selected_multimer_models[i]} {outputdir}/refine{i + 1}.pdb")
-#
-#     selected_df = pd.DataFrame({'selected_models': selected_multimer_models})
-#     selected_df.to_csv(outputdir + '/refine_selected.csv')
-
-
-def run_monomer_evaluation_pipeline_human(params, targetname, fasta_file, input_monomer_dir, outputdir,
-                                          input_multimer_dir="", generate_egnn_models=False, model_count=5,
-                                          dncon2_file="", dncon4_file="", distmap=""):
-    makedir_if_not_exists(outputdir)
-    qa_result = None
-    pipeline = Monomer_structure_evaluation_human_pipeline(params=params,
-                                                           use_gpu=True)
-    try:
-        qa_result = pipeline.process(targetname=targetname, fasta_file=fasta_file,
-                                     monomer_model_dir=input_monomer_dir, multimer_model_dir=input_multimer_dir,
-                                     output_dir=outputdir, model_count=model_count,
-                                     dncon2_file=dncon2_file, dncon4_file=dncon4_file, distmap=distmap)
-    except Exception as e:
-        print(e)
-
-    if generate_egnn_models:
-        if input_multimer_dir == "" or not os.path.exists(input_multimer_dir):
-            select_models_monomer_only_human(qa_result=qa_result, outputdir=outputdir, params=params)
-        else:
-            select_models_with_multimer(qa_result=qa_result, outputdir=outputdir)
-
-    return qa_result
-
-
-def rerun_monomer_evaluation_pipeline_human(params, targetname, fasta_file, outputdir,
-                                            run_methods=None,
-                                            dncon2_file="", dncon4_file="", distmap=""):
-    makedir_if_not_exists(outputdir)
-    result = None
-    pipeline = Monomer_structure_evaluation_human_pipeline(params=params,
-                                                           run_methods=run_methods,
-                                                           use_gpu=True)
-    try:
-        result = pipeline.reprocess(targetname=targetname, fasta_file=fasta_file,
-                                    output_dir=outputdir, dncon2_file=dncon2_file, dncon4_file=dncon4_file,
-                                    distmap=distmap)
-    except Exception as e:
-        print(e)
-
-    return result
-
-
 def rerun_monomer_evaluation_pipeline(params, targetname, fasta_file, outputdir):
     makedir_if_not_exists(outputdir)
     result = None
@@ -511,16 +321,6 @@ def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir,
     pipeline = iterative_refine_pipeline.Monomer_refinement_model_selection(params)
     pipeline.select_v1(indir=outdir, outdir=finaldir, prefix=prefix)
     # pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
-
-
-def run_monomer_refinement_pipeline_human(params, ranking_df, refinement_inputs, outdir, finaldir, prefix, refpdb=""):
-    pipeline = iterative_refine_pipeline.Monomer_iterative_refinement_pipeline_server(params=params)
-    pipeline.search(refinement_inputs=refinement_inputs, outdir=outdir)
-
-    makedir_if_not_exists(finaldir)
-
-    pipeline = iterative_refine_pipeline.Monomer_refinement_model_selection(params)
-    pipeline.select_v2(indir=outdir, outdir=finaldir, ranking_df=ranking_df, prefix=prefix, refpdb=refpdb)
 
 
 def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, outputdir, params, is_homomers=False):
@@ -817,29 +617,28 @@ def extract_monomer_models_from_complex(complex_pdb, complex_pkl, chain_id_map, 
     return chain_group
 
 
-def rerun_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir,
-                                       outdir, stoichiometry):
+def rerun_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, outdir):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
         multimer_qa_result = pipeline.reprocess(fasta_path=fasta_path,
-                                                chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
-                                                output_dir=outdir, stoichiometry=stoichiometry)
+                                                chain_id_map=chain_id_map, output_dir=outdir)
     except Exception as e:
         print(e)
 
 
-def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_model_dir,
-                                     indir, outdir, stoichiometry, is_homomer=False, model_count=5):
+def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map,
+                                     indir, outdir, is_homomer=False, model_count=5):
     makedir_if_not_exists(outdir)
     pipeline = Quaternary_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
         multimer_qa_result = pipeline.process(fasta_path=fasta_path,
-                                              chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
+                                              chain_id_map=chain_id_map,
                                               model_dir=indir,
-                                              output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
+                                              output_dir=outdir, 
+                                              model_count=model_count)
     except Exception as e:
         print(e)
 
@@ -869,65 +668,6 @@ def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, monomer_m
                 chain_outdir = f"{outdir}/deep_{chain_id}"
                 makedir_if_not_exists(chain_outdir)
                 os.system(f"cp {outdir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
-
-    return multimer_qa_result
-
-
-def run_multimer_evaluation_pipeline_human(params, fasta_path, chain_id_map, monomer_model_dir,
-                                           indir, extract_dir, outdir, stoichiometry, is_homomer=False, model_count=5):
-    makedir_if_not_exists(outdir)
-    pipeline = Quaternary_structure_evaluation_pipeline_human(params=params)
-    multimer_qa_result = None
-    try:
-        multimer_qa_result = pipeline.process(fasta_path=fasta_path,
-                                              chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
-                                              model_dir=indir,
-                                              extract_model_dir=extract_dir,
-                                              output_dir=outdir, stoichiometry=stoichiometry, model_count=model_count)
-    except Exception as e:
-        print(e)
-
-    alphafold_confidence_ranking = pd.read_csv(multimer_qa_result['alphafold'])
-    for i in range(5):
-        model_name = alphafold_confidence_ranking.loc[i, 'model']
-        os.system(f"cp {outdir}/pdb/{model_name} {outdir}/qa{i + 1}.pdb")
-        if not is_homomer:
-            chain_group = extract_monomer_models_from_complex(complex_pdb=f"{outdir}/qa{i + 1}.pdb",
-                                                              complex_pkl=f"{outdir}/pkl/{model_name.replace('.pdb', '.pkl')}",
-                                                              chain_id_map=chain_id_map, workdir=f"{outdir}/qa{i + 1}")
-            for chain_id in chain_group:
-                chain_outdir = f"{outdir}/qa_{chain_id}"
-                makedir_if_not_exists(chain_outdir)
-                os.system(f"cp {outdir}/qa{i + 1}/{chain_id}_top1.pdb {chain_outdir}/qa{i + 1}.pdb")
-
-    af_pairwise_avg_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])
-    for i in range(5):
-        model_name = af_pairwise_avg_ranking.loc[i, 'model']
-        os.system(f"cp {outdir}/pdb/{model_name} {outdir}/deep{i + 1}.pdb")
-        if not is_homomer:
-            chain_group = extract_monomer_models_from_complex(complex_pdb=f"{outdir}/deep{i + 1}.pdb",
-                                                              complex_pkl=f"{outdir}/pkl/{model_name.replace('.pdb', '.pkl')}",
-                                                              chain_id_map=chain_id_map,
-                                                              workdir=f"{outdir}/deep{i + 1}")
-            for chain_id in chain_group:
-                chain_outdir = f"{outdir}/deep_{chain_id}"
-                makedir_if_not_exists(chain_outdir)
-                os.system(f"cp {outdir}/deep{i + 1}/{chain_id}_top1.pdb {chain_outdir}/deep{i + 1}.pdb")
-
-    return multimer_qa_result
-
-
-def rerun_multimer_evaluation_pipeline_human(params, fasta_path, chain_id_map, monomer_model_dir,
-                                             outdir, stoichiometry):
-    makedir_if_not_exists(outdir)
-    pipeline = Quaternary_structure_evaluation_pipeline_human(params=params)
-    multimer_qa_result = None
-    try:
-        multimer_qa_result = pipeline.reprocess(fasta_path=fasta_path,
-                                                chain_id_map=chain_id_map, monomer_model_dir=monomer_model_dir,
-                                                output_dir=outdir, stoichiometry=stoichiometry)
-    except Exception as e:
-        print(e)
 
     return multimer_qa_result
 

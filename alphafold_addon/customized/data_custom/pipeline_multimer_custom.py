@@ -26,7 +26,7 @@ from typing import Mapping, MutableMapping, Sequence
 from absl import logging
 from alphafold.common import protein
 from alphafold.common import residue_constants
-from alphafold.common import custom_params
+from alphafold.data_custom import custom_params
 from alphafold.data_custom import feature_processing
 from alphafold.data_custom import msa_pairing
 from alphafold.data_custom import parsers
@@ -454,7 +454,7 @@ class DataPipeline:
                 seen_seqs = [hit.name + hit.hit_sequence for hit in monomer_template_hits]
 
                 for hit in pdb_template_hits:
-                    print(hit.name.split()[0] + hit.hit_sequence)
+                    #print(hit.name.split()[0] + hit.hit_sequence)
                     if hit.name.split()[0] + hit.hit_sequence not in seen_seqs:
                         hit.index = len(monomer_template_hits)
                         monomer_template_hits += [hit]

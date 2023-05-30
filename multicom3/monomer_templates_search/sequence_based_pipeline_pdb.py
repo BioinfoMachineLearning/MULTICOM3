@@ -88,7 +88,8 @@ class monomer_sequence_based_template_search_pipeline:
         self.params = params
 
         self.template_searcher = hhsearch.HHSearch(
-            binary_path='/home/multicom3/BML_CASP15/tools/hhsuite-3.2.0/bin/hhsearch',
+            # binary_path='/home/multicom3/BML_CASP15/tools/hhsuite-3.2.0/bin/hhsearch',
+            binary_path=params['hhsearch_program'],
             databases=[params['pdb_sort90_hhsuite_database']],
             input_format='hmm')
 

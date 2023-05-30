@@ -20,10 +20,9 @@ import copy
 import pandas as pd
 
 flags.DEFINE_string('option_file', None, 'option file')
-flags.DEFINE_string('fasta_path', None, 'Path to multimer fastas')
+flags.DEFINE_string('fasta_path', None, 'Path to multimer fasta')
 flags.DEFINE_string('output_dir', None, 'Output directory')
-flags.DEFINE_string('stoichiometry', None, 'stoichiometry')
-flags.DEFINE_string('stoichiometry2', None, 'stoichiometry')
+flags.DEFINE_boolean('run_img', False, 'Whether to use IMG alignment to generate models')
 FLAGS = flags.FLAGS
 
 
@@ -31,6 +30,9 @@ def main(argv):
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
 
+    os.environ['TF_FORCE_UNIFIED_MEMORY'] = '1'
+    os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '4.0'
+    
     check_file(FLAGS.option_file)
 
     params = read_option_file(FLAGS.option_file)
@@ -77,11 +79,12 @@ def main(argv):
             if result is None:
                 raise RuntimeError(f"Program failed in step 1: monomer {monomer_id} alignment generation")
 
-            N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
-            makedir_if_not_exists(N1_monomer_outdir_img)
-            img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params,
-                                                              fasta=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                              outdir=N1_monomer_outdir_img)
+            if FLAGS.run_img:
+                N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
+                makedir_if_not_exists(N1_monomer_outdir_img)
+                img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params,
+                                                                fasta=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                outdir=N1_monomer_outdir_img)
 
             N2_monomer_outdir = N2_outdir + '/' + monomer_id
             makedir_if_not_exists(N2_monomer_outdir)
@@ -134,7 +137,7 @@ def main(argv):
 
     try:
         concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch',
-                          'string_interact', 'uniprot_distance', 'species_colabfold_interact']
+                          'string_interact', 'uniprot_distance']
         run_concatenate_dimer_msas_pipeline(
             multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
             run_methods=concat_methods,
@@ -164,41 +167,35 @@ def main(argv):
     N6_outdir = FLAGS.output_dir + '/N6_quaternary_structure_generation'
     makedir_if_not_exists(N6_outdir)
 
-    run_methods_part1 = ['default',
-                         'default_mul_newest',
-                         'default+sequence_based_template_pdb70',
-                         'default_uniclust30',
-                         'default_uniref30_22',
-                         'default+structure_based_template',
-                         'default+sequence_based_template_pdb',
-                         'default+sequence_based_template_complex_pdb',
-                         'default+alphafold_model_templates',
-                         # 'uniclust_oxmatch_a3m',
-                         # 'pdb_interact_uniref_a3m',
-                         # 'species_interact_uniref_a3m',
-                         # 'species_interact_uniref_a3m+sequence_based_template_pdb70',
-                         # 'species_interact_uniref_a3m+structure_based_template',
-                         # 'species_interact_uniref_a3m+sequence_based_template_pdb',
-                         # 'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
-                         'species_interact_uniref_a3m+alphafold_model_templates',
-                         'uniprot_distance_uniref_a3m',
-                         'string_interact_uniref_a3m',
-                         # 'geno_dist_uniref_a3m',
-                         # 'pdb_interact_uniref_sto',
-                         # 'species_interact_uniref_sto',
-                         'uniprot_distance_uniref_sto',
-                         'string_interact_uniref_sto',
-                         'string_interact_uniref_sto+sequence_based_template_pdb70',
-                         'string_interact_uniref_sto+structure_based_template',
-                         'string_interact_uniref_sto+sequence_based_template_pdb',
-                         'string_interact_uniref_sto+sequence_based_template_complex_pdb',
-                         'string_interact_uniref_sto+alphafold_model_templates',
-                         # 'geno_dist_uniref_sto',
-                         # 'pdb_interact_uniprot_sto',
-                         # 'species_interact_uniprot_sto',
-                         'uniprot_distance_uniprot_sto',
-                         'string_interact_uniprot_sto']
-    # 'species_colabfold_interact']
+    run_methods = ['default',
+                    'default+sequence_based_template_pdb70',
+                    'default+structure_based_template',
+                    'default+sequence_based_template_pdb',
+                    'default+sequence_based_template_complex_pdb',
+                    'default+alphafold_model_templates',
+                    'uniclust_oxmatch_a3m',
+                    'pdb_interact_uniref_a3m',
+                    'species_interact_uniref_a3m',
+                    'species_interact_uniref_a3m+sequence_based_template_pdb70',
+                    'species_interact_uniref_a3m+structure_based_template',
+                    'species_interact_uniref_a3m+sequence_based_template_pdb',
+                    'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
+                    'species_interact_uniref_a3m+alphafold_model_templates',
+                    'uniprot_distance_uniref_a3m',
+                    'string_interact_uniref_a3m',
+                    'pdb_interact_uniref_sto',
+                    'species_interact_uniref_sto',
+                    'uniprot_distance_uniref_sto',
+                    'string_interact_uniref_sto',
+                    'string_interact_uniref_sto+sequence_based_template_pdb70',
+                    'string_interact_uniref_sto+structure_based_template',
+                    'string_interact_uniref_sto+sequence_based_template_pdb',
+                    'string_interact_uniref_sto+sequence_based_template_complex_pdb',
+                    'string_interact_uniref_sto+alphafold_model_templates',
+                    'pdb_interact_uniprot_sto',
+                    'species_interact_uniprot_sto',
+                    'uniprot_distance_uniprot_sto',
+                    'string_interact_uniprot_sto']
 
     if not run_quaternary_structure_generation_pipeline_v2(params=params,
                                                            fasta_path=FLAGS.fasta_path,
@@ -208,7 +205,7 @@ def main(argv):
                                                            template_dir=N5_outdir,
                                                            monomer_model_dir=N3_outdir,
                                                            output_dir=N6_outdir,
-                                                           run_methods=run_methods_part1):
+                                                           run_methods=run_methods):
         print("Program failed in step 7")
 
     print("Complex quaternary structure generation has been finished!")
@@ -217,15 +214,7 @@ def main(argv):
 
     print("#################################################################################################")
 
-    run_img = False
-    for chain_id in chain_id_map:
-        monomer_id = chain_id_map[chain_id].description
-        default_alphafold_msa = N3_outdir + '/' + monomer_id + '/default/msas/monomer_final.a3m'
-        if len(open(default_alphafold_msa).readlines()) < 1000000 * 2:
-            run_img = True
-            break
-
-    if run_img:
+    if FLAGS.run_img:
         img_wait_list = [chain_id for chain_id in chain_id_map]
 
         img_processed_list = []
@@ -299,59 +288,11 @@ def main(argv):
                 os.system(
                     f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' {N7_monomer_outdir}/msa/{msa}")
 
-    # N8_outdir_avg = FLAGS.output_dir + '/N8_monomer_structure_refinement_avg'
-    # N8_outdir_af = FLAGS.output_dir + '/N8_monomer_structure_refinement_af'
-    # for chain_id in chain_id_map:
-    #     monomer_id = chain_id_map[chain_id].description
-    #     N8_monomer_avg_outdir = N8_outdir_avg + '/' + monomer_id
-    #     makedir_if_not_exists(N8_monomer_avg_outdir)
-    #     final_dir = N8_monomer_avg_outdir + '_final'
-    #
-    #     os.system(f"cp {monomer_qas_res[monomer_id]['pairwise_af_avg']} {N8_monomer_avg_outdir}")
-    #     ref_ranking_avg = pd.read_csv(
-    #         monomer_qas_res[monomer_id]['pairwise_af_avg'])  # apollo or average ranking or the three qas
-    #     refine_inputs = []
-    #     for i in range(5):
-    #         pdb_name = ref_ranking_avg.loc[i, 'model']
-    #         refine_input = iterative_refine_pipeline.refinement_input(
-    #             fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-    #             pdb_path=f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}",
-    #             pkl_path=f"{N7_outdir}/{monomer_id}/pkl/{pdb_name.replace('.pdb', '.pkl')}",
-    #             msa_path=f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}")
-    #         refine_inputs += [refine_input]
-    #
-    #     run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-    #                                     outdir=N8_monomer_avg_outdir, finaldir=final_dir, prefix="refine")
-
-    # N8_monomer_af_outdir = N8_outdir_af + '/' + monomer_id
-    #
-    # makedir_if_not_exists(N8_monomer_af_outdir)
-    #
-    # refine_inputs = []
-    # refined_models = [ref_ranking_avg.loc[i, 'model'] for i in range(5)]
-    # for i in range(5):
-    #     pdb_name = f'default_{i}.pdb'
-    #     if pdb_name not in refined_models:
-    #         refine_input = iterative_refine_pipeline.refinement_input(
-    #             fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-    #             pdb_path=f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}",
-    #             pkl_path=f"{N7_outdir}/{monomer_id}/pkl/{pdb_name.replace('.pdb', '.pkl')}",
-    #             msa_path=f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}")
-    #         refine_inputs += [refine_input]
-    #     else:
-    #         os.system(f"cp -r {N8_monomer_avg_outdir}/{pdb_name.replace('.pdb', '')} {N8_monomer_af_outdir}")
-    #
-    # final_dir = N8_monomer_af_outdir + '_final'
-    # run_monomer_refinement_pipeline(params=params, refinement_inputs=refine_inputs,
-    #                                 outdir=N8_monomer_af_outdir, finaldir=final_dir, prefix="qa")
-
-    # print("The refinement for the top-ranked monomer models has been finished!")
-
     print("#################################################################################################")
 
     print("#################################################################################################")
 
-    print("9. Start to run multimer iterative generation pipeline using top-ranked monomer models")
+    print("8. Start to run multimer iterative generation pipeline using top-ranked monomer models")
 
     pipeline_inputs = []
     for i in range(2):
@@ -377,24 +318,23 @@ def main(argv):
 
     print("#################################################################################################")
 
-    print("10. Start to evaluate multimer models")
+    print("9. Start to evaluate multimer models")
 
-    N9_outdir = FLAGS.output_dir + '/N9_multimer_structure_evaluation'
+    N8_outdir = FLAGS.output_dir + '/N8_multimer_structure_evaluation'
     multimer_qa_result = run_multimer_evaluation_pipeline(fasta_path=FLAGS.fasta_path,
                                                           params=params, monomer_model_dir=N7_outdir,
                                                           chain_id_map=chain_id_map,
-                                                          indir=N6_outdir, outdir=N9_outdir,
-                                                          stoichiometry=FLAGS.stoichiometry)
+                                                          indir=N6_outdir, outdir=N8_outdir)
 
     print("#################################################################################################")
 
     print("#################################################################################################")
 
-    print("9. Start to refine multimer models based on the qa rankings")
+    print("10. Start to refine multimer models based on the qa rankings")
 
-    N10_outdir = FLAGS.output_dir + '/N10_multimer_structure_refinement'
+    N9_outdir = FLAGS.output_dir + '/N9_multimer_structure_refinement'
 
-    makedir_if_not_exists(N10_outdir)
+    makedir_if_not_exists(N9_outdir)
     ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
     refine_inputs = []
@@ -403,21 +343,25 @@ def main(argv):
         msa_paths = {}
         for chain_id in chain_id_map:
             msa_paths[chain_id] = dict(
-                paired_msa=f"{N9_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.paired.a3m",
-                monomer_msa=f"{N9_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
+                paired_msa=f"{N8_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.paired.a3m",
+                monomer_msa=f"{N8_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
 
         refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
                                                                                     fasta_path=FLAGS.fasta_path,
-                                                                                    pdb_path=N9_outdir + '/pdb/' + pdb_name,
-                                                                                    pkl_path=N9_outdir + '/pkl/' + pdb_name.replace(
+                                                                                    pdb_path=N8_outdir + '/pdb/' + pdb_name,
+                                                                                    pkl_path=N8_outdir + '/pkl/' + pdb_name.replace(
                                                                                         '.pdb', '.pkl'),
                                                                                     msa_paths=msa_paths)
         refine_inputs += [refine_input]
 
-    final_dir = N10_outdir + '_final'
+    final_dir = N9_outdir + '_final'
+    stoichiometry = "heterodimer"
+    if len(input_seqs) > 2:
+        stoichiometry = "heteromer"
+
     run_multimer_refinement_pipeline(chain_id_map=chain_id_map,
-                                     params=params, refinement_inputs=refine_inputs, outdir=N10_outdir,
-                                     finaldir=final_dir, stoichiometry=FLAGS.stoichiometry2)
+                                     params=params, refinement_inputs=refine_inputs, outdir=N9_outdir,
+                                     finaldir=final_dir, stoichiometry=stoichiometry)
 
     print("The refinement for the top-ranked multimer models has been finished!")
 

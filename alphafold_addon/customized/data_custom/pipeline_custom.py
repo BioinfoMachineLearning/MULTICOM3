@@ -18,7 +18,7 @@ import os
 from typing import Any, Mapping, MutableMapping, Optional, Sequence, Union
 from absl import logging
 from alphafold.common import residue_constants
-from alphafold.common import custom_params
+from alphafold.data_custom import custom_params
 from alphafold.data_custom import msa_identifiers
 from alphafold.data_custom import parsers
 from alphafold.data_custom import templates

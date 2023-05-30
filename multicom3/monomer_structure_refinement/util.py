@@ -35,16 +35,6 @@ def convert_taln_seq_to_a3m(query_non_gaps, aln):
             yield sequence_res
 
 
-def complete_result(outputdir):
-    complete = True
-    for i in range(0, 5):
-        model = f'{outputdir}/ranked_{i}.pdb'
-        if not os.path.exists(model):
-            complete = False
-            break
-    return complete
-
-
 def cal_tmscore(tmscore_program, inpdb, nativepdb, tmpdir):
     cwd = os.getcwd()
 

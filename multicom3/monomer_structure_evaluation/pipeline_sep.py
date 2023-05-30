@@ -127,7 +127,6 @@ class Monomer_structure_evaluation_pipeline:
         self.alphafold_qa = Alphafold_pkl_qa(ranking_methods=['plddt_avg'])
         self.parwise_qa = params['qscore_program']
         self.tmscore = params['tmscore_program']
-        self.enqa = En_qa(enqa_program=params['enqa_program'], use_gpu=use_gpu)
         self.bfactorqa = Bfactor_qa()
 
     def run_qas(self, fasta_file, pdbdir, pkldir, output_dir_abs,
@@ -187,24 +186,7 @@ class Monomer_structure_evaluation_pipeline:
             pairwise_ranking_monomer.reset_index(inplace=True, drop=True)
             pairwise_ranking_monomer.to_csv(output_dir_abs + '/pairwise_ranking_monomer.csv')
             result_dict["apollo_monomer"] = output_dir_abs + '/pairwise_ranking_monomer.csv'
-            
-        if "enQA" in self.run_methods:
-            if os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
-                df = pd.read_csv(output_dir_abs + '/enqa_ranking.csv')
-                if len(df) != pdb_count:
-                    os.system(f"rm {output_dir_abs}/enqa_ranking.csv")
-
-            if not os.path.exists(output_dir_abs + '/enqa_ranking.csv'):
-                # enqa_ranking = self.enqa.run(input_dir=pdbdir,
-                #                              alphafold_prediction_dir=f"{monomer_model_dir}/original",
-                #                              outputdir=output_dir_abs+'/enqa')
-                enqa_ranking = self.enqa.run_with_pairwise_ranking(input_dir=pdbdir,
-                                                                   pkl_dir=pkldir,
-                                                                   pairwise_ranking_file=output_dir_abs + '/pairwise_ranking.tm',
-                                                                   outputdir=output_dir_abs + '/enqa',
-                                                                   pdbs_with_dist=pdbs_with_dist)
-                enqa_ranking.to_csv(output_dir_abs + '/enqa_ranking.csv')
-            result_dict["enQA"] = output_dir_abs + '/enqa_ranking.csv'
+       
         if "bfactor" in self.run_methods:
             # if os.path.exists(output_dir_abs + '/bfactor_ranking.csv'):
             #     df = pd.read_csv(output_dir_abs + '/bfactor_ranking.csv')

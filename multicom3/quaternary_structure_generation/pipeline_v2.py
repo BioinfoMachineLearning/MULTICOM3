@@ -71,8 +71,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                                 # 'pdb_interact_uniprot_sto',
                                 'species_interact_uniprot_sto',
                                 'uniprot_distance_uniprot_sto',
-                                'string_interact_uniprot_sto',
-                                'species_colabfold_interact']
+                                'string_interact_uniprot_sto']
         else:
             self.run_methods = run_methods
 
@@ -107,8 +106,6 @@ class Quaternary_structure_prediction_pipeline_v2:
                            'species_interact_uniprot_sto': 'spec_iter_uniprot_sto',
                            'uniprot_distance_uniprot_sto': 'unidist_uniprot_sto',
                            'string_interact_uniprot_sto': 'str_iter_uniprot_sto',
-
-                           'species_colabfold_interact': 'spec_colab_iter',
                            
                            'pdb_interact_uniref_sto': 'pdb_iter_uniref_sto',
                            'pdb_interact_uniprot_sto': 'pdb_iter_uniprot_sto',
@@ -132,8 +129,8 @@ class Quaternary_structure_prediction_pipeline_v2:
             # run alphafold default pipeline:
             outdir = f"{output_dir}/default_multimer"
             monomers = [chain_id_map[chain_id].description for chain_id in chain_id_map]
-            if not complete_result(outdir):
-                os.chdir(self.params['alphafold_default_program_dir'])
+            if not complete_result(outdir, 5 * int(self.params['num_multimer_predictions_per_model'])):
+                os.chdir(self.params['alphafold_program_dir'])
                 bfd_uniref_a3ms = []
                 mgnify_stos = []
                 uniref90_stos = []
@@ -162,12 +159,15 @@ class Quaternary_structure_prediction_pipeline_v2:
 
                 cmd = f"python {self.params['alphafold_default_program']} " \
                       f"--fasta_path {fasta_path} " \
-                      f"--bfd_uniclust_a3ms {','.join(bfd_uniref_a3ms)} " \
+                      f"--bfd_uniref_a3ms {','.join(bfd_uniref_a3ms)} " \
                       f"--mgnify_stos {','.join(mgnify_stos)} " \
                       f"--uniref90_stos {','.join(uniref90_stos)} " \
                       f"--uniprot_stos {','.join(uniprot_stos)} " \
                       f"--env_dir {self.params['alphafold_env_dir']} " \
                       f"--database_dir {self.params['alphafold_database_dir']} " \
+                      f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
+                      f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
+                      f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
                       f"--output_dir {outdir} "
 
                 if notemplates:
@@ -255,7 +255,10 @@ class Quaternary_structure_prediction_pipeline_v2:
                            f"--multimer_a3ms {','.join(a3m_paths)} " \
                            f"--msa_pair_file {msa_pair_file} " \
                            f"--env_dir {self.params['alphafold_env_dir']} " \
-                           f"--database_dir {self.params['alphafold_database_dir']} "
+                           f"--database_dir {self.params['alphafold_database_dir']} " \
+                           f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
+                           f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
+                           f"--multimer_num_recycle {self.params['multimer_num_recycle']} "
 
                 if template_method == "":
                     base_cmd += f"--template_stos {','.join(template_stos)} "
@@ -324,7 +327,7 @@ class Quaternary_structure_prediction_pipeline_v2:
                 if notemplates:
                     base_cmd += "--notemplates=true"  
 
-                if complete_result(outdir):
+                if complete_result(outdir, 5 * int(self.params['num_multimer_predictions_per_model'])):
                     continue
 
                 makedir_if_not_exists(outdir)
@@ -336,7 +339,7 @@ class Quaternary_structure_prediction_pipeline_v2:
 
             rerun = False
             for result_dir in result_dirs:
-                if not complete_result(result_dir):
+                if not complete_result(result_dir, 5 * int(self.params['num_multimer_predictions_per_model'])):
                     rerun = True
 
             if not rerun:

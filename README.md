@@ -17,11 +17,24 @@ conda install tqdm
 # install ColabFold
 pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
 
+# install mmseqs2
+conda install -c conda-forge -c bioconda mmseqs2
 ```
-## Download databases and tools in MULTICOM3
+## Configuration for the system
+The python script will 
+* Download the additional databases
+* Download the required tools in the system
+* Copy the alphafold_addon scripts
+* Create the configuration file (bin/db_option) for running the system
 
 ```
-python setup.py
+python setup.py --envidr $YOUR_PYTHON_ENV --af_dir $YOUR_ALPHAFOLD_DIR --afdb_dir $YOUR_ALPHAFOLD_DB_DIR
+
+# e.g, 
+# python setup.py \
+# --envdir /home/multicom3/anaconda3/envs/MULTICOM_dev/ \
+# --af_dir /home/multicom3/tools/alphafold_v2.3.2/ \
+# --afdb_dir /home/multicom3/tools/alphafold_databases/
 ```
 
 ### Genetic databases
@@ -46,33 +59,47 @@ Additional databases will be installed for the MULTICOM system:
 *   [pdb_sort90](https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1),
 *   [Uniclust30](https://uniclust.mmseqs.com/).
 
+# Important parameters in bin/db_option for AlphaFold2/AlphaFold-Multimer
+Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameters will apply to all the AlphaFold2/AlphaFold-Multimer variants in our system to generate models.
+```
+# AlphaFold2 parameters
+monomer_num_ensemble = 1
+monomer_num_recycle = 3
+num_monomer_predictions_per_model = 5
+
+# AlphaFold-Multimer parameters
+multimer_num_ensemble = 1
+multimer_num_recycle = 3
+num_multimer_predictions_per_model = 10
+```
 
 # Running the monomer/teritary structure prediction pipeline
+Please be aware that we have included a parameter (--run_img) that allows you to regulate the usage of IMG database for faster prediction (--run_img=False). In the case of --run_img=True, the program will pause at the monomer model generation stage until the IMG alignment is created. Please note that generating the IMG alignment may take a longer time, potentially several days, particularly for challenging targets. We advise you to consider this option based on your prediction expectations.
+
 ```bash
 python bin/monomer.py \
-    --option_file bin/db_option \
-    --fasta_path $YOUR_FASTA \
-    --output_dir $OUTDIR
+    --option_file=bin/db_option \
+    --fasta_path=$YOUR_FASTA \
+    --run_img=False \
+    --output_dir=$OUTDIR
 ```
 # Running the multimer/quaternary structure prediction pipeline
+Same as above, we provided a parameter for using the IMG alignment to generate models.
+
 ```bash
 # For homo-multimer
-# stoichiometry: A4
 python bin/homomer.py \
-    --option_file bin/db_option \
-    --fasta_path $YOUR_FASTA \
-    --stoichiometry $STOICHIOMETRY \ 
-    --output_dir $OUTDIR
+    --option_file=bin/db_option \
+    --fasta_path=$YOUR_FASTA \
+    --run_img=False \
+    --output_dir=$OUTDIR
 
 # For hetero-multimer
-# stoichiometry: A1B1/A9B9C9
-# stoichiometry2: heterodimer or heteromer
 python bin/heteromer.py \
-    --option_file bin/db_option \
-    --fasta_path $YOUR_FASTA \
-    --stoichiometry $STOICHIOMETRY \ 
-    --stoichiometry2 $STOICHIOMETRY2 \ 
-    --output_dir $OUTDIR
+    --option_file=bin/db_option \
+    --fasta_path=$YOUR_FASTA \
+    --run_img=False \
+    --output_dir=$OUTDIR
 ```
 
 # Examples
@@ -90,9 +117,9 @@ Then run the following command:
 
 ```bash
 python bin/monomer.py \
-    --option_file bin/db_option \
-    --fasta_path monomer.fasta \
-    --output_dir outdir
+    --option_file=bin/db_option \
+    --fasta_path=monomer.fasta \
+    --output_dir=outdir
 ```
 
 ## Folding a homo-multimer
@@ -115,10 +142,9 @@ Then run the following command:
 
 ```bash
 python bin/homomer.py \
-    --option_file bin/db_option \
-    --fasta_path homomer.fasta \
-    --stoichiometry A4 \ 
-    --output_dir outdir
+    --option_file=bin/db_option \
+    --fasta_path=homomer.fasta \
+    --output_dir=outdir
 ```
 
 ## Folding a hetero-multimer
@@ -143,16 +169,30 @@ Then run the following command:
 
 ```bash
 python bin/heteromer.py \
-    --option_file bin/db_option \
-    --fasta_path heteromer.fasta \
-    --stoichiometry A2B3 \ 
-    --stoichiometry2 heteromer \ 
-    --output_dir outdir
+    --option_file=bin/db_option \
+    --fasta_path=heteromer.fasta \
+    --output_dir=outdir
 ```
 
 ## Output
 
 ### Monomer
+
+```
+$OUTPUT_DIR/                                   # Your output directory
+    N1_monomer_alignments_generation/          # Working directory for generating monomer MSAs
+    N1_monomer_alignments_generation_img/      # Working directory for generating IMG MSA
+        # Note: the img.running file may use many disk space
+    N2_monomer_template_search/                # Working directory for searching monomer templates
+    N3_monomer_structure_generation/           # Working directory for generating monomer structural models
+    N4_monomer_structure_evaluation/           # Working directory for evaluating the monomer structural models
+        - alphafold_ranking.csv    # AlphaFold2 pLDDT ranking
+        - pairwise_ranking.tm      # Pairwise (APOLLO) ranking
+        - pairwise_af_avg.ranking  # Average ranking of the two
+    N5_monomer_structure_refinement_avg/       # Working directory for monomer structure refinement
+    N5_monomer_structure_refinement_avg_final/ # Output directory for the refined monomer models
+        - final_ranking.csv        # AlphaFold2 pLDDT ranking of the original and refined models
+```
 
 * The models and ranking files are saved in *N4_monomer_structure_evaluation* folder. You can check the alphafold pLDDT score ranking file (alphafold_ranking.csv) to look for the structure with the highest pLDDT score. The *pairwise_ranking.tm* and *pairwise_af_avg.ranking* are the other two ranking files. 
 
@@ -160,9 +200,55 @@ python bin/heteromer.py \
 
 ### Multimer (Homo-multimer and hetero-multimer)
 
+```
+$OUTPUT_DIR/                                   # Your output directory
+    N1_monomer_alignments_generation/          # Working directory for generating monomer MSAs
+        - Subunit A
+        - Subunit B
+        - ...
+    N1_monomer_alignments_generation_img/      # Working directory for generating IMG MSA
+        - Subunit A
+        - Subunit B
+        - ...
+    N2_monomer_template_search/                # Working directory for searching monomer templates
+        - Subunit A
+        - Subunit B
+        - ...
+    N3_monomer_structure_generation/           # Working directory for generating monomer structural models
+        - Subunit A
+        - Subunit B
+        - ...
+    N4_complex_alignments_concatenation/       # Working directory for concatenating the monomer MSAs
+    N5_complex_templates_search/               # Working directory for concatenating the monomer templates
+    N6_quaternary_structure_generation/        # Working directory for generating multimer structural models
+    N7_monomer_structure_evaluation            # Working directory for evaluating monomer structural models
+        - Subunit A
+            # Rankings for all the models
+            - alphafold_ranking.csv            # AlphaFold2 pLDDT ranking 
+            - pairwise_ranking.tm              # Pairwise (APOLLO) ranking
+            - pairwise_af_avg.ranking          # Average ranking of the two 
+
+            # Rankings for the models generated by monomer structure prediction
+            - alphafold_ranking_monomer.csv    # AlphaFold2 pLDDT ranking 
+            - pairwise_af_avg_monomer.ranking  # Average ranking 
+
+            # Rankings for the models extracted from multimer models
+            - alphafold_ranking_multimer.csv   # AlphaFold2 pLDDT ranking 
+            - pairwise_af_avg_multimer.ranking # Average ranking 
+
+        - Subunit B
+        - ...
+    N8_multimer_structure_evaluation           # Working directory for evaluating multimer structural models
+        - alphafold_ranking.csv                # AlphaFold2 pLDDT ranking
+        - multieva.csv                         # Pairwise ranking using MMalign
+        - pairwise_af_avg.ranking              # Average ranking of the two
+    N9_multimer_structure_refinement           # Working directory for refining multimer structural models
+    N9_multimer_structure_refinement_final     # Output directory for the refined multimer models
+```
+
 * The models and ranking files are saved in *N9_multimer_structure_evaluation*, similarly, you can check the alphafold confidence score ranking file (alphafold_ranking.csv) to look for the structure with the highest predicted confidence score generated by AlphaFold-Multimer. The *multieva.csv* and *pairwise_af_avg.ranking* are the other two ranking files.
 
-* The refined multimer models are saved in *N10_multimer_structure_refinement_final*.
+* The refined multimer models are saved in *N9_multimer_structure_refinement_final*.
 
 * The monomer structures and ranking files are saved in *N7_monomer_structure_evaluation* if you want to check the models and rankings for the monomer structures.
 

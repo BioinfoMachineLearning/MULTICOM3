@@ -6,8 +6,6 @@ from multiprocessing import Pool
 
 from multicom3.common.util import is_dir, is_file, read_option_file, makedir_if_not_exists
 from multicom3.common.util import makedir_if_not_exists
-from multicom3.complex_alignment_generation.colabfold_interact_v3 import colabfold_interact_v3
-from multicom3.complex_alignment_generation.geno_dist import Geno_interact
 from multicom3.complex_alignment_generation.pdb_interact_v3 import PDB_interact_v3
 from multicom3.complex_alignment_generation.species_interact_v3 import Species_interact_v3
 from multicom3.complex_alignment_generation.string_interact_v3 import STRING_interact_v3
@@ -357,12 +355,6 @@ class Complex_alignment_concatenation_pipeline:
         print(self.methods)
 
         self.runners = {}
-
-        if "geno_dist" in self.methods:
-            self.Geno_interact_runner = Geno_interact(self.params['uniprot_to_embl_table'],
-                                                      self.params['ena_genome_location_table'],
-                                                      self.params['genome_distance_threshold'])
-            self.runners['Geno_interact'] = self.Geno_interact_runner
 
         if "pdb_interact" in self.methods:
             self.pdb_interact_runner = PDB_interact_v3(self.params['uniprot2pdb_mapping_file'],

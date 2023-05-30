@@ -14,7 +14,7 @@ from multicom3.complex_templates_search.parsers import TemplateHit
 from multicom3.quaternary_structure_refinement.iterative_refine_pipeline_v1 import *
 from multicom3.quaternary_structure_refinement.util import *
 from multicom3.monomer_alignment_generation.alignment import read_a3m
-
+from multicom3.common.protein import complete_result
 
 def search_templates_foldseek(foldseek_program, databases, inpdb, outdir):
     makedir_if_not_exists(outdir)
@@ -176,158 +176,6 @@ class Multimer_iterative_generation_pipeline_monomer:
                 os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb} {outdir}")
             os.system(f"gunzip -f {template_pdb}")
 
-    def search(self, fasta_file, monomer_pdb_dir, outdir, native_pdb_dir=""):
-
-        fasta_file = os.path.abspath(fasta_file)
-
-        targetname = pathlib.Path(fasta_file).stem
-
-        print(f"Processing {targetname}")
-
-        outdir = os.path.abspath(outdir) + "/"
-
-        makedir_if_not_exists(outdir)
-
-        sequences, descriptions = parse_fasta(fasta_file)
-
-        monomer_abs_dirs = {}
-        chain_id_map = {}
-        for chain_id, sequence, description in zip(PDB_CHAIN_IDS_UNRELAX, sequences, descriptions):
-            chain_id_map[chain_id] = FastaChain(sequence=sequence, description=description)
-
-            if not os.path.exists(monomer_pdb_dir + '/' + description):
-                print(f"Cannot find monomer models for {description}: {monomer_pdb_dir}/{description}")
-                return
-            monomer_abs_dirs[chain_id] = os.path.abspath(monomer_pdb_dir + '/' + description + '/default')
-
-        print(monomer_abs_dirs)
-        native_pdb = ""
-        if os.path.exists(native_pdb_dir):
-            native_pdb = outdir + '/' + '_'.join(
-                [chain_id_map[chain_id].description for chain_id in chain_id_map]) + '.atom'
-            combine_pdb(
-                [native_pdb_dir + '/' + chain_id_map[chain_id].description + '.atom'
-                 if os.path.exists(native_pdb_dir + '/' + chain_id_map[chain_id].description + '.atom')
-                 else native_pdb_dir + '/' + chain_id_map[chain_id].description + '.pdb'
-                 for chain_id in chain_id_map],
-                native_pdb)
-
-        cwd = os.getcwd()
-
-        # outdir = f"{outdir}/{'_'.join(descriptions)}"
-
-        makedir_if_not_exists(outdir)
-
-        out_model_dir = outdir + '/alphafold'
-        makedir_if_not_exists(out_model_dir)
-
-        targets = [targetname] * 5
-        tmscores = [0] * 5
-        tmaligns = [0] * 5
-
-        if not complete_result(out_model_dir):
-            out_template_dir = outdir + '/templates'
-
-            makedir_if_not_exists(out_template_dir)
-
-            template_results = []
-            alphafold_monomer_a3ms = []
-
-            for chain_id in chain_id_map:
-
-                monomer_work_dir = outdir + '/' + chain_id_map[chain_id].description
-
-                makedir_if_not_exists(monomer_work_dir)
-
-                chain_monomer_final_a3m = monomer_abs_dirs[chain_id] + '/msas/final.a3m'
-
-                if not os.path.exists(chain_monomer_final_a3m):
-                    raise Exception(f"Cannot find the monomer final a3m in {monomer_abs_dirs[chain_id]}")
-
-                os.system(f"cp {chain_monomer_final_a3m} "
-                          f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m")
-
-                alphafold_monomer_a3ms += [f"{outdir}/{chain_id_map[chain_id].description}.alphafold.monomer.a3m"]
-
-                chain_pdb = monomer_abs_dirs[chain_id] + '/ranked_0.pdb'
-
-                os.system(f"cp {chain_pdb} {monomer_work_dir}/{chain_id_map[chain_id].description}.pdb")
-
-                foldseek_res = search_templates_foldseek(
-                    foldseek_program=self.params['foldseek_program'],
-                    databases=[self.params['foldseek_pdb_database'], self.params['foldseek_af_database']],
-                    inpdb=f"{monomer_work_dir}/{chain_id_map[chain_id].description}.pdb",
-                    outdir=monomer_work_dir + '/foldseek')
-
-                if len(foldseek_res['all_alignment']) == 0:
-                    print(
-                        f"Cannot find any templates for {chain_id_map[chain_id].description}")
-                    break
-
-                template_results += [foldseek_res]
-
-                self.copy_atoms_and_unzip(templates=foldseek_res['all_alignment'],
-                                          outdir=out_template_dir)
-
-            if len(template_results) != len(chain_id_map):
-                df_all = {'targetname': targets, 'tmscore': tmscores, 'tmalign': tmaligns}
-                df_max = {'targetname': [targetname],
-                          'tmscore': [np.max(np.array(tmscores))],
-                          'tmalign': [np.max(np.array(tmaligns))]}
-                return df_all, df_max
-
-            template_files, multimer_msa_files, monomer_msa_files, msa_pair_file = \
-                self.concatenate_msa_and_templates(chain_id_map=chain_id_map,
-                                                   template_results=template_results,
-                                                   alphafold_monomer_a3ms=alphafold_monomer_a3ms,
-                                                   outpath=outdir)
-
-            if len(template_files) == 1:
-                cmd = f"python {self.params['alphafold_multimer_program']} " \
-                      f"--fasta_path {fasta_file} " \
-                      f"--env_dir {self.params['alphafold_env_dir']} " \
-                      f"--database_dir {self.params['alphafold_database_dir']} " \
-                      f"--multimer_a3ms {','.join(multimer_msa_files)} " \
-                      f"--monomer_a3ms {','.join(monomer_msa_files)} " \
-                      f"--msa_pair_file {msa_pair_file} " \
-                      f"--temp_struct_csv {template_files[0]} " \
-                      f"--struct_atom_dir {out_template_dir} " \
-                      f"--output_dir {out_model_dir}"
-            else:
-                cmd = f"python {self.params['alphafold_multimer_program']} " \
-                      f"--fasta_path {fasta_file} " \
-                      f"--env_dir {self.params['alphafold_env_dir']} " \
-                      f"--database_dir {self.params['alphafold_database_dir']} " \
-                      f"--multimer_a3ms {','.join(multimer_msa_files)} " \
-                      f"--monomer_a3ms {','.join(monomer_msa_files)} " \
-                      f"--msa_pair_file {msa_pair_file} " \
-                      f"--monomer_temp_csvs {','.join(template_files)} " \
-                      f"--struct_atom_dir {out_template_dir} " \
-                      f"--output_dir {out_model_dir}"
-
-            try:
-                os.chdir(self.params['alphafold_program_dir'])
-                print(cmd)
-                os.system(cmd)
-            except Exception as e:
-                print(e)
-
-        if os.path.exists(out_model_dir + '/ranked_0.pdb'):
-            for i in range(0, 5):
-                inpdb = f"{out_model_dir}/ranked_{i}.pdb"
-                if os.path.exists(native_pdb):
-                    tmscores[i] = cal_tmscore(self.params['mmalign_program'],
-                                              inpdb, native_pdb)
-                    tmaligns[i] = cal_tmalign(self.params['tmalign_program'],
-                                              inpdb, native_pdb,
-                                              out_model_dir + '/tmp')
-
-        df_all = {'targetname': targets, 'tmscore': tmscores, 'tmalign': tmaligns}
-        df_max = {'targetname': [targetname],
-                  'tmscore': [np.max(np.array(tmscores))],
-                  'tmalign': [np.max(np.array(tmaligns))]}
-        return df_all, df_max
-
     def search_single(self, fasta_file, chain_id_map, monomer_pdb_dirs, monomer_alphafold_a3ms, outdir):
 
         fasta_file = os.path.abspath(fasta_file)
@@ -352,7 +200,7 @@ class Multimer_iterative_generation_pipeline_monomer:
 
         makedir_if_not_exists(prepare_dir)
 
-        if not complete_result(out_model_dir):
+        if not complete_result(out_model_dir, 5 * int(self.params['num_multimer_predictions_per_model'])):
 
             out_template_dir = prepare_dir + '/templates'
 
@@ -414,6 +262,9 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--msa_pair_file {msa_pair_file} " \
                       f"--temp_struct_csv {template_files[0]} " \
                       f"--struct_atom_dir {out_template_dir} " \
+                      f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
+                      f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
+                      f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
                       f"--output_dir {out_model_dir}"
             else:
                 cmd = f"python {self.params['alphafold_multimer_program']} " \
@@ -425,6 +276,9 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--msa_pair_file {msa_pair_file} " \
                       f"--monomer_temp_csvs {','.join(template_files)} " \
                       f"--struct_atom_dir {out_template_dir} " \
+                      f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
+                      f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
+                      f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
                       f"--output_dir {out_model_dir}"
 
             try:
@@ -623,7 +477,7 @@ class Multimer_iterative_generation_pipeline_monomer:
 
         makedir_if_not_exists(prepare_dir)
 
-        if not complete_result(out_model_dir):
+        if not complete_result(out_model_dir, 5 * int(self.params['num_multimer_predictions_per_model'])):
 
             out_template_dir = prepare_dir + '/templates'
 
@@ -684,6 +538,9 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--monomer_a3ms {','.join(monomer_msa_files)} " \
                       f"--temp_struct_csv {template_files[0]} " \
                       f"--struct_atom_dir {out_template_dir} " \
+                      f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
+                      f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
+                      f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
                       f"--output_dir {out_model_dir}"
             else:
                 cmd = f"python {self.params['alphafold_multimer_program']} " \
@@ -694,6 +551,9 @@ class Multimer_iterative_generation_pipeline_monomer:
                       f"--monomer_a3ms {','.join(monomer_msa_files)} " \
                       f"--monomer_temp_csvs {','.join(template_files)} " \
                       f"--struct_atom_dir {out_template_dir} " \
+                      f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
+                      f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
+                      f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
                       f"--output_dir {out_model_dir}"
 
             try:
