@@ -13,11 +13,6 @@ Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the i
 
 ```
 conda install tqdm
-
-# install sequence databases and some alignment generation tools of ColabFold
-pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
-
-# install mmseqs2
 conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
 ```
 ## Install the MULTICOM3 add-on system and its databases
