@@ -9,13 +9,13 @@ MULTICOM3 is an addon package to improve AlphaFold2- and AlphaFold-Multimer-base
 
 ## Install AlphaFold/AlphaFold-Multimer and other rquired third-party packages
 
-Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the installation guide here: https://github.com/kalininalab/alphafold_non_docker to install the required python packages to run AlphaFold2/AlphaFold-Multimer first, and then run the following commands to install the additional two packages required by our MULTICOM3 system.
+Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the installation guide here: https://github.com/kalininalab/alphafold_non_docker to install the required python packages to run AlphaFold2/AlphaFold-Multimer first, and then run the following commands to install the additional two packages required by MULTICOM3.
 
 ```
 conda install tqdm
 conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
 ```
-## Install the MULTICOM3 add-on system and its databases
+## Install the MULTICOM3 addon system and its databases
 
 ```
 python setup.py --envidr $YOUR_PYTHON_ENV --af_dir $YOUR_ALPHAFOLD_DIR --afdb_dir $YOUR_ALPHAFOLD_DB_DIR
