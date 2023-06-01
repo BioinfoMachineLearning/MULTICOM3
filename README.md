@@ -9,7 +9,7 @@ MULTICOM3 is an addon package to improve AlphaFold2- and AlphaFold-Multimer-base
 
 ## Python virtual environment
 
-Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the installation guide here: https://github.com/kalininalab/alphafold_non_docker to install the required python packages to run AlphaFold2/AlphaFold-Multimer, then run the following commands to install the additional packages required in our system.
+Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the installation guide here: https://github.com/kalininalab/alphafold_non_docker to install the required python packages to run AlphaFold2/AlphaFold-Multimer first, and then run the following commands to install the additional two packages required by our MULTICOM3 system.
 
 ```
 conda install tqdm
@@ -20,8 +20,8 @@ pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
 # install mmseqs2
 conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
 ```
-## Configuration for the system
-The python script will 
+## Install the MULTICOM3 system and its databases
+The setup.py python script will 
 * Download the additional databases
 * Download the required tools in the system
 * Copy the alphafold_addon scripts
@@ -37,9 +37,9 @@ python setup.py --envidr $YOUR_PYTHON_ENV --af_dir $YOUR_ALPHAFOLD_DIR --afdb_di
 # --afdb_dir /home/multicom3/tools/alphafold_databases/
 ```
 
-### Genetic databases
+### Genetic databases used by MULTICOM3
 
-Assume the following databases have been installed as a part of the AlphaFold2/AlphaFold-Multimer
+Assume the following databases have been installed as a part of the AlphaFold2/AlphaFold-Multimer installation
 *   [BFD](https://bfd.mmseqs.com/),
 *   [MGnify](https://www.ebi.ac.uk/metagenomics/),
 *   [PDB70](http://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/),
@@ -59,8 +59,8 @@ Additional databases will be installed for the MULTICOM system:
 *   [pdb_sort90](https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1): ~48G
 *   [Uniclust30](https://uniclust.mmseqs.com/): ~87G
 
-# Important parameters in bin/db_option for AlphaFold2/AlphaFold-Multimer
-Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameters will apply to all the AlphaFold2/AlphaFold-Multimer variants in our system to generate models.
+# Important parameter values set in the bin/db_option file for AlphaFold2/AlphaFold-Multimer
+
 ```
 # AlphaFold2 parameters
 monomer_num_ensemble = 1
@@ -72,6 +72,7 @@ multimer_num_ensemble = 1
 multimer_num_recycle = 3
 num_multimer_predictions_per_model = 10
 ```
+Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameters are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate models.
 
 # Running the monomer/teritary structure prediction pipeline
 
@@ -82,7 +83,7 @@ python bin/monomer.py \
     --run_img=False \
     --output_dir=$OUTDIR
 ```
-Please be aware that we have included a parameter (--run_img) that allows you to turn off the usage of IMG database for faster prediction (--run_img=False). In the case of --run_img=True, the program will pause at the monomer model generation stage to wait for the IMG alignment to be created. Generating alignments from IMG may take a much longer time, potentially several days, because the database is very large. So run_img is set to false by default. It is advised that run_img is set to true only if other alignments cannot yield good results. 
+option_file is a file in the MULTICOM package to store the some key parameter values for AlphaFold2 and AlphaFold-Multimer. fasta_path is the full path of the file of storing the input protien sequence(s) in the FASTA format. output_dir specifies where the predition results are stored. Please be aware that we have included a parameter (--run_img) that allows you to turn off the usage of IMG database for faster prediction (--run_img=False). In the case of --run_img=True, the program will pause at the monomer model generation stage to wait for the IMG alignment to be created. Generating alignments from IMG may take a much longer time, potentially several days, because the database is very large. So run_img is set to false by default. It is advised that run_img is set to true only if other alignments cannot yield good results. 
 
 # Running the multimer/quaternary structure prediction pipeline
 
@@ -106,7 +107,7 @@ python bin/heteromer.py \
 
 ## Folding a monomer
 
-Say we have a monomer with the sequence `<SEQUENCE>`. The input fasta should be:
+Say we have a monomer with the sequence `<SEQUENCE>`. The input sequence file should be in the FASTA format as follows:
 
 ```fasta
 >sequence_name
@@ -125,7 +126,7 @@ python bin/monomer.py \
 ## Folding a homo-multimer
 
 Say we have a homomer with 4 copies of the same sequence
-`<SEQUENCE>`. The input fasta should be:
+`<SEQUENCE>`. The input file should be in the format as follows:
 
 ```fasta
 >sequence_1
@@ -150,7 +151,7 @@ python bin/homomer.py \
 ## Folding a hetero-multimer
 
 Say we have an A2B3 heteromer, i.e. with 2 copies of
-`<SEQUENCE A>` and 3 copies of `<SEQUENCE B>`. The input fasta should be:
+`<SEQUENCE A>` and 3 copies of `<SEQUENCE B>`. The input file should be in the format as follows:
 
 ```fasta
 >sequence_1
