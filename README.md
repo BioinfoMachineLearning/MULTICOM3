@@ -7,7 +7,7 @@ MULTICOM3 is an addon package to improve AlphaFold2- and AlphaFold-Multimer-base
 
 # Installation
 
-## Python virtual environment
+## Install AlphaFold/AlphaFold-Multimer and other rquired third-party packages
 
 Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the installation guide here: https://github.com/kalininalab/alphafold_non_docker to install the required python packages to run AlphaFold2/AlphaFold-Multimer first, and then run the following commands to install the additional two packages required by our MULTICOM3 system.
 
@@ -20,12 +20,7 @@ pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
 # install mmseqs2
 conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
 ```
-## Install the MULTICOM3 system and its databases
-The setup.py python script will 
-* Download the additional databases
-* Download the required tools in the system
-* Copy the alphafold_addon scripts
-* Create the configuration file (bin/db_option) for running the system
+## Install the MULTICOM3 add-on system and its databases
 
 ```
 python setup.py --envidr $YOUR_PYTHON_ENV --af_dir $YOUR_ALPHAFOLD_DIR --afdb_dir $YOUR_ALPHAFOLD_DB_DIR
@@ -36,6 +31,11 @@ python setup.py --envidr $YOUR_PYTHON_ENV --af_dir $YOUR_ALPHAFOLD_DIR --afdb_di
 # --af_dir /home/multicom3/tools/alphafold_v2.3.2/ \
 # --afdb_dir /home/multicom3/tools/alphafold_databases/
 ```
+The setup.py python script will 
+* Download the additional databases
+* Download the required tools in the system
+* Copy the alphafold_addon scripts
+* Create the configuration file (bin/db_option) for running the system
 
 ### Genetic databases used by MULTICOM3
 
@@ -49,7 +49,7 @@ Assume the following databases have been installed as a part of the AlphaFold2/A
 *   [UniProt](https://www.uniprot.org/uniprot/),
 *   [UniRef90](https://www.uniprot.org/help/uniref).
 
-Additional databases will be installed for the MULTICOM system:
+Additional databases will be installed for the MULTICOM system by setup.py:
 *   [AlphaFoldDB](https://alphafold.ebi.ac.uk/): ~53G
 *   [ColabFold database](https://colabfold.mmseqs.com/): ~1.7T
 *   [Integrated Microbial Genomes (IMG)](https://img.jgi.doe.gov/): ~1.5T
@@ -72,7 +72,7 @@ multimer_num_ensemble = 1
 multimer_num_recycle = 3
 num_multimer_predictions_per_model = 10
 ```
-Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameters are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate models.
+Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameters are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate models. The default parameter values can be changed if needed. 
 
 # Running the monomer/teritary structure prediction pipeline
 
