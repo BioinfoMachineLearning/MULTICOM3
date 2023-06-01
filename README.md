@@ -74,7 +74,6 @@ num_multimer_predictions_per_model = 10
 ```
 
 # Running the monomer/teritary structure prediction pipeline
-Please be aware that we have included a parameter (--run_img) that allows you to regulate the usage of IMG database for faster prediction (--run_img=False). In the case of --run_img=True, the program will pause at the monomer model generation stage until the IMG alignment is created. Please note that generating the IMG alignment may take a longer time, potentially several days, particularly for challenging targets. We advise you to consider this option based on your prediction expectations.
 
 ```bash
 python bin/monomer.py \
@@ -83,8 +82,9 @@ python bin/monomer.py \
     --run_img=False \
     --output_dir=$OUTDIR
 ```
+Please be aware that we have included a parameter (--run_img) that allows you to turn off the usage of IMG database for faster prediction (--run_img=False). In the case of --run_img=True, the program will pause at the monomer model generation stage to wait for the IMG alignment to be created. Generating alignments from IMG may take a much longer time, potentially several days, because the database is very large. So run_img is set to false by default. It is advised that run_img is set to true only if other alignments cannot yield good results. 
+
 # Running the multimer/quaternary structure prediction pipeline
-Same as above, we provided a parameter for using the IMG alignment to generate models.
 
 ```bash
 # For homo-multimer
