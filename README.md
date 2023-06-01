@@ -50,14 +50,14 @@ Assume the following databases have been installed as a part of the AlphaFold2/A
 *   [UniRef90](https://www.uniprot.org/help/uniref).
 
 Additional databases will be installed for the MULTICOM system:
-*   [AlphaFoldDB](https://alphafold.ebi.ac.uk/),
-*   [ColabFold database](https://colabfold.mmseqs.com/),
-*   [Integrated Microbial Genomes (IMG)](https://img.jgi.doe.gov/),
-*   [Metaclust](https://metaclust.mmseqs.org/current_release/),
-*   [STRING](https://string-db.org/cgi/download?sessionId=bgV6D67b9gi2),
-*   [pdb_complex](https://www.biorxiv.org/content/10.1101/2023.05.16.541055v1),
-*   [pdb_sort90](https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1),
-*   [Uniclust30](https://uniclust.mmseqs.com/).
+*   [AlphaFoldDB](https://alphafold.ebi.ac.uk/): ~53G
+*   [ColabFold database](https://colabfold.mmseqs.com/): ~1.7T
+*   [Integrated Microbial Genomes (IMG)](https://img.jgi.doe.gov/): ~1.5T
+*   [Metaclust](https://metaclust.mmseqs.org/current_release/): ~114G
+*   [STRING](https://string-db.org/cgi/download?sessionId=bgV6D67b9gi2): ~129G
+*   [pdb_complex](https://www.biorxiv.org/content/10.1101/2023.05.16.541055v1): ~38G
+*   [pdb_sort90](https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1): ~48G
+*   [Uniclust30](https://uniclust.mmseqs.com/): ~87G
 
 # Important parameters in bin/db_option for AlphaFold2/AlphaFold-Multimer
 Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameters will apply to all the AlphaFold2/AlphaFold-Multimer variants in our system to generate models.
