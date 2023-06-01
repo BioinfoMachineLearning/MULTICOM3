@@ -14,7 +14,7 @@ Our system is built on top of AlphaFold2/AlphaFold-Multimer, please follow the i
 ```
 conda install tqdm
 
-# install ColabFold
+# install sequence databases and some alignment generation tools of ColabFold
 pip install "colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold"
 
 # install mmseqs2
