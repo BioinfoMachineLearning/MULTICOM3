@@ -59,7 +59,7 @@ Additional databases will be installed for the MULTICOM system by setup.py:
 *   [pdb_sort90](https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1): ~48G
 *   [Uniclust30](https://uniclust.mmseqs.com/): ~87G
 
-# Important parameter values set in the bin/db_option file for AlphaFold2/AlphaFold-Multimer
+### Important parameter values set in the bin/db_option file for AlphaFold2/AlphaFold-Multimer
 
 ```
 # AlphaFold2 parameters
