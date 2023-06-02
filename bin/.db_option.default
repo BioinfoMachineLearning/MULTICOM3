@@ -40,9 +40,9 @@ tmscore_program = INSTALLDIR_TOOLS/tmscore/TMscore
 
 ################################MSA generation tool###########################
 
-colabfold_search_program = INSTALLDIR_TOOLS/ColabFold-1.5.2/colabfold/mmseqs/search.py
+colabfold_search_program = INSTALLDIR_TOOLS/colabfold/search.py
 
-colabfold_split_msas_program = INSTALLDIR_TOOLS/ColabFold-1.5.2/colabfold/mmseqs/split_msas.py
+colabfold_split_msas_program = INSTALLDIR_TOOLS/colabfold/split_msas.py
 
 colabfold_databases = INSTALLDIR_DATABASES/colabfold
 
