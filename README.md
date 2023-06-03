@@ -69,6 +69,13 @@ num_multimer_predictions_per_model = 10
 ```
 Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameters are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate models. The default parameter values can be changed if needed. 
 
+# Activate your python environment and add MULTICOM3 system path to PYTHONPATH
+
+```bash
+conda activate YOUR_ENV
+export PYTHONPATH=MULTICOM3_INSTALL_DIR
+```
+
 # Running the monomer/teritary structure prediction pipeline
 
 ```bash
