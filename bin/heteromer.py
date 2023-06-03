@@ -322,7 +322,7 @@ def main(argv):
 
     N8_outdir = FLAGS.output_dir + '/N8_multimer_structure_evaluation'
     multimer_qa_result = run_multimer_evaluation_pipeline(fasta_path=FLAGS.fasta_path,
-                                                          params=params, monomer_model_dir=N7_outdir,
+                                                          params=params,
                                                           chain_id_map=chain_id_map,
                                                           indir=N6_outdir, outdir=N8_outdir)
 
