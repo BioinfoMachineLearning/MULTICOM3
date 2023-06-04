@@ -67,7 +67,7 @@ multimer_num_ensemble = 1
 multimer_num_recycle = 3
 num_multimer_predictions_per_model = 10
 ```
-Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the following parameters. The parameter values stored in bin/db_option file are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate models. a default bin/db_option file is created automatically by setup.py during the intallation. The default parameter values can be changed if needed. 
+Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the parameters. The parameter values stored in bin/db_option file are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate models. The default bin/db_option file is created automatically by setup.py during the intallation. The default parameter values above can be changed if needed. 
 
 # Activate your python environment and add MULTICOM3 system path to PYTHONPATH
 
