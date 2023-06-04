@@ -264,7 +264,7 @@ $OUTPUT_DIR/                                   # Your output directory
 
 # Citing this work
 
-**If you use the code or data in this package for tertiary or quaternary structure prediction, please cite:**
+**If you use this package for tertiary or quaternary structure prediction, please cite:**
 
 **Tertiary (monomer) structure prediction**
 
