@@ -85,37 +85,6 @@ Now MULTICOM3 is ready for you to make predictions.
 
 # Running the monomer/tertiary structure prediction pipeline
 
-```bash
-python bin/monomer.py \
-    --option_file=bin/db_option \
-    --fasta_path=$YOUR_FASTA \
-    --run_img=False \
-    --output_dir=$OUTDIR
-```
-option_file is a file in the MULTICOM package to store some key parameter values for AlphaFold2 and AlphaFold-Multimer. fasta_path is the full path of the file storing the input protein sequence(s) in the FASTA format. output_dir specifies where the prediction results are stored. Please be aware that we have included a parameter (--run_img) that allows you to turn off the usage of the IMG database for faster prediction (--run_img=False). In the case of --run_img=True, the program will pause at the monomer model generation stage to wait for the IMG alignment to be created. Generating alignments from IMG may take a much longer time, potentially several days, because the database is very large. So run_img is set to false by default. It is advised that run_img is set to true only if other alignments cannot yield good results.
-
-# Running the multimer/quaternary structure prediction pipeline
-
-```bash
-# For homo-multimer
-python bin/homomer.py \
-    --option_file=bin/db_option \
-    --fasta_path=$YOUR_FASTA \
-    --run_img=False \
-    --output_dir=$OUTDIR
-
-# For hetero-multimer
-python bin/heteromer.py \
-    --option_file=bin/db_option \
-    --fasta_path=$YOUR_FASTA \
-    --run_img=False \
-    --output_dir=$OUTDIR
-```
-
-# Examples
-
-## Folding a monomer
-
 Say we have a monomer with the sequence `<SEQUENCE>`. The input sequence file should be in the FASTA format as follows:
 
 ```fasta
@@ -128,16 +97,43 @@ Then run the following command:
 ```bash
 python bin/monomer.py \
     --option_file=bin/db_option \
-    --fasta_path=monomer.fasta \
-    --output_dir=outdir
+    --fasta_path=$YOUR_FASTA \
+    --run_img=False \
+    --output_dir=$OUTDIR
 
 # e.g.,
 # python bin/monomer.py \
 #         --option_file=bin/db_option \
 #         --fasta_path examples/fasta/T1104.fasta \
 #         --run_img=False \
-#         --output_dir examples/run/T1104
+#         --output_dir=examples/run/T1104
 ```
+
+option_file is a file in the MULTICOM package to store some key parameter values for AlphaFold2 and AlphaFold-Multimer. fasta_path is the full path of the file storing the input protein sequence(s) in the FASTA format. output_dir specifies where the prediction results are stored. Please be aware that we have included a parameter (--run_img) that allows you to turn off the usage of the IMG database for faster prediction (--run_img=False). In the case of --run_img=True, the program will pause at the monomer model generation stage to wait for the IMG alignment to be created. Generating alignments from IMG may take a much longer time, potentially several days, because the database is very large. So run_img is set to false by default. It is advised that run_img is set to true only if other alignments cannot yield good results.
+
+## Output
+
+```
+$OUTPUT_DIR/                                   # Your output directory
+    N1_monomer_alignments_generation/          # Working directory for generating monomer MSAs
+    N1_monomer_alignments_generation_img/      # Working directory for generating IMG MSA
+        # Note: the img.running file may use many disk space
+    N2_monomer_template_search/                # Working directory for searching monomer templates
+    N3_monomer_structure_generation/           # Working directory for generating monomer structural models
+    N4_monomer_structure_evaluation/           # Working directory for evaluating the monomer structural models
+        - alphafold_ranking.csv    # AlphaFold2 pLDDT ranking
+        - pairwise_ranking.tm      # Pairwise (APOLLO) ranking
+        - pairwise_af_avg.ranking  # Average ranking of the two
+    N5_monomer_structure_refinement_avg/       # Working directory for monomer structure refinement
+    N5_monomer_structure_refinement_avg_final/ # Output directory for the refined monomer models
+        - final_ranking.csv        # AlphaFold2 pLDDT ranking of the original and refined models
+```
+
+* The models and ranking files are saved in the *N4_monomer_structure_evaluation* folder. You can check the AlphaFold2 pLDDT score ranking file (alphafold_ranking.csv) to look for the structure with the highest pLDDT score. The *pairwise_ranking.tm* and *pairwise_af_avg.ranking* are the other two ranking files. 
+
+* The refined monomer models are saved in *N5_monomer_structure_refinement_avg_final*.
+
+# Running the multimer/quaternary structure prediction pipeline
 
 ## Folding a homo-multimer
 
@@ -160,8 +156,9 @@ Then run the following command:
 ```bash
 python bin/homomer.py \
     --option_file=bin/db_option \
-    --fasta_path=homomer.fasta \
-    --output_dir=outdir
+    --fasta_path=$YOUR_FASTA \
+    --run_img=False \
+    --output_dir=$OUTDIR
 ```
 
 ## Folding a hetero-multimer
@@ -187,36 +184,13 @@ Then run the following command:
 ```bash
 python bin/heteromer.py \
     --option_file=bin/db_option \
-    --fasta_path=heteromer.fasta \
-    --output_dir=outdir
+    --fasta_path=$YOUR_FASTA \
+    --run_img=False \
+    --output_dir=$OUTDIR
 ```
 
 ## Output
 
-### Monomer
-
-```
-$OUTPUT_DIR/                                   # Your output directory
-    N1_monomer_alignments_generation/          # Working directory for generating monomer MSAs
-    N1_monomer_alignments_generation_img/      # Working directory for generating IMG MSA
-        # Note: the img.running file may use many disk space
-    N2_monomer_template_search/                # Working directory for searching monomer templates
-    N3_monomer_structure_generation/           # Working directory for generating monomer structural models
-    N4_monomer_structure_evaluation/           # Working directory for evaluating the monomer structural models
-        - alphafold_ranking.csv    # AlphaFold2 pLDDT ranking
-        - pairwise_ranking.tm      # Pairwise (APOLLO) ranking
-        - pairwise_af_avg.ranking  # Average ranking of the two
-    N5_monomer_structure_refinement_avg/       # Working directory for monomer structure refinement
-    N5_monomer_structure_refinement_avg_final/ # Output directory for the refined monomer models
-        - final_ranking.csv        # AlphaFold2 pLDDT ranking of the original and refined models
-```
-
-* The models and ranking files are saved in the *N4_monomer_structure_evaluation* folder. You can check the AlphaFold2 pLDDT score ranking file (alphafold_ranking.csv) to look for the structure with the highest pLDDT score. The *pairwise_ranking.tm* and *pairwise_af_avg.ranking* are the other two ranking files. 
-
-* The refined monomer models are saved in *N5_monomer_structure_refinement_avg_final*.
-
-### Multimer (Homo-multimer and hetero-multimer)
-
 ```
 $OUTPUT_DIR/                                   # Your output directory
     N1_monomer_alignments_generation/          # Working directory for generating monomer MSAs
@@ -235,9 +209,9 @@ $OUTPUT_DIR/                                   # Your output directory
         - Subunit A
         - Subunit B
         - ...
-    N4_complex_alignments_concatenation/       # Working directory for concatenating the monomer MSAs
-    N5_complex_templates_search/               # Working directory for concatenating the monomer templates
-    N6_quaternary_structure_generation/        # Working directory for generating multimer structural models
+    N4_monomer_alignments_concatenation/       # Working directory for concatenating the monomer MSAs
+    N5_monomer_templates_search/               # Working directory for concatenating the monomer templates
+    N6_multimer_structure_generation/          # Working directory for generating multimer structural models
     N7_monomer_structure_evaluation            # Working directory for evaluating monomer structural models
         - Subunit A
             # Rankings for all the models
@@ -269,7 +243,7 @@ $OUTPUT_DIR/                                   # Your output directory
 
 * The monomer structures and ranking files are saved in *N7_monomer_structure_evaluation* if you want to check the models and rankings for the monomer structures.
 
-## Some CASP15 Prediction Examples (MULTICOM versus the Standard AlphaFold method: NIBS-AF2-multimer)
+# Some CASP15 Prediction Examples (MULTICOM versus the Standard AlphaFold method: NIBS-AF2-multimer)
 
 ![CASP15 pipeline](imgs/CASP15_good_examples1.png)
 ![CASP15 pipeline](imgs/CASP15_good_examples2.png)
