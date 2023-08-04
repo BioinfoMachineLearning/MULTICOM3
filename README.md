@@ -18,6 +18,7 @@ conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
 ## Install the MULTICOM3 addon system and its databases
 
 ```
+# Note: here the parameters should be the absolute paths
 python setup.py --envdir $YOUR_PYTHON_ENV --af_dir $YOUR_ALPHAFOLD_DIR --afdb_dir $YOUR_ALPHAFOLD_DB_DIR
 
 # e.g, 
@@ -129,6 +130,13 @@ python bin/monomer.py \
     --option_file=bin/db_option \
     --fasta_path=monomer.fasta \
     --output_dir=outdir
+
+# e.g.,
+# python bin/monomer.py \
+#         --option_file=bin/db_option \
+#         --fasta_path examples/fasta/T1104.fasta \
+#         --run_img=False \
+#         --output_dir examples/run/T1104
 ```
 
 ## Folding a homo-multimer
