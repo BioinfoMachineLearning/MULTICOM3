@@ -74,6 +74,8 @@ Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understan
 
 ```bash
 conda activate $YOUR_PYTHON_ENV
+
+# Note: here the parameters should be the absolute paths
 export PYTHONPATH=$MULTICOM3_INSTALL_DIR
 
 # e.g, 
