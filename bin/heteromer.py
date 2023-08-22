@@ -63,7 +63,7 @@ def main(argv):
 
     with open(FLAGS.fasta_path) as f:
         input_fasta_str = f.read()
-    input_seqs, input_descs = parse_fasta(fasta_string=input_fasta_str, sort_sequence=True)
+    input_seqs, input_descs = parse_fasta(fasta_string=input_fasta_str)
     chain_id_map, chain_id_seq_map = make_chain_id_map(sequences=input_seqs,
                                                        descriptions=input_descs)
 
