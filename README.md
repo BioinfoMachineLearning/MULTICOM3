@@ -94,6 +94,8 @@ Say we have a monomer with the sequence `<SEQUENCE>`. The input sequence file sh
 <SEQUENCE>
 ```
 
+Note: It is recommended that the name of the sequence file in FASTA format should be the same as the sequence name.
+
 Then run the following command:
 
 ```bash
@@ -166,7 +168,7 @@ python bin/homomer.py \
 ## Folding a hetero-multimer
 
 Say we have an A2B3 heteromer, i.e. with 2 copies of
-`<SEQUENCE A>` and 3 copies of `<SEQUENCE B>`. The input file should be in the format as follows:
+`<SEQUENCE A>` and 3 copies of `<SEQUENCE B>`. The input file should be in the format as follows (the same sequences should be grouped together):
 
 ```fasta
 >sequence_1
