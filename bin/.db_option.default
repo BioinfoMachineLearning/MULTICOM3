@@ -70,13 +70,15 @@ alphafold_multimer_program = run_alphafold_multimer_custom.py
 # alphafold tertiary structure prediction script
 alphafold_default_program = run_alphafold_pre.py
 
-# alphafold parameters
+# AlphaFold2 parameters
 monomer_num_ensemble = 1
 monomer_num_recycle = 3
+num_monomer_predictions_per_model = 1
+
+# AlphaFold-Multimer parameters
 multimer_num_ensemble = 1
 multimer_num_recycle = 3
 num_multimer_predictions_per_model = 5
-num_monomer_predictions_per_model = 1
 
 ######################Monomer template search option#################################
 

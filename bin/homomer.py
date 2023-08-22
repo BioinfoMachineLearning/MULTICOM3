@@ -4,15 +4,15 @@ from multicom3.common.util import check_file, check_dir, check_dirs, makedir_if_
     read_option_file
 from multicom3.monomer_alignment_generation.alignment import write_fasta
 from multicom3.common.protein import read_qa_txt_as_df, parse_fasta, complete_result, make_chain_id_map
-from multicom3.quaternary_structure_refinement import iterative_refine_pipeline_multimer
+from multicom3.multimer_structure_refinement import iterative_refine_pipeline_multimer
 from multicom3.monomer_structure_refinement import iterative_refine_pipeline
 from multicom3.common.pipeline import run_monomer_msa_pipeline, run_monomer_template_search_pipeline, \
     run_monomer_structure_generation_pipeline_v2, run_monomer_evaluation_pipeline, run_monomer_refinement_pipeline, \
-    run_concatenate_dimer_msas_pipeline, run_complex_template_search_pipeline, \
-    run_quaternary_structure_generation_homo_pipeline_v2, \
-    run_quaternary_structure_generation_pipeline_foldseek, run_quaternary_structure_generation_pipeline_foldseek_old, \
+    run_monomer_msas_concatenation_pipeline, run_monomer_templates_concatenation_pipeline, \
+    run_multimer_structure_generation_homo_pipeline_v2, \
+    run_multimer_structure_generation_pipeline_foldseek, run_multimer_structure_generation_pipeline_foldseek_old, \
     run_multimer_refinement_pipeline, run_multimer_evaluation_pipeline, run_monomer_msa_pipeline_img, \
-    foldseek_iterative_monomer_input, copy_same_sequence_msas, run_quaternary_structure_generation_homo_pipeline_img_v2
+    foldseek_iterative_monomer_input, copy_same_sequence_msas, run_multimer_structure_generation_homo_pipeline_img_v2
 
 from absl import flags
 from absl import app
@@ -32,6 +32,9 @@ def main(argv):
 
     os.environ['TF_FORCE_UNIFIED_MEMORY'] = '1'
     os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '4.0'
+    
+    FLAGS.fasta_path = os.path.abspath(FLAGS.fasta_path)
+    FLAGS.output_dir = os.path.abspath(FLAGS.output_dir)
     
     check_file(FLAGS.option_file)
 
@@ -67,13 +70,13 @@ def main(argv):
     processed_seuqences = {}
     monomer_qas_res = {}
     for chain_id in chain_id_map:
-        monomer_id = chain_id_map[chain_id].description
+        monomer_id = chain_id
         monomer_sequence = chain_id_map[chain_id].sequence
 
         if monomer_sequence not in processed_seuqences:
 
             with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
-                write_fasta({monomer_id: monomer_sequence}, fw)
+                write_fasta({chain_id: monomer_sequence}, fw)
             N1_monomer_outdir = N1_outdir + '/' + monomer_id
             makedir_if_not_exists(N1_monomer_outdir)
             result = run_monomer_msa_pipeline(f"{FLAGS.output_dir}/{monomer_id}.fasta", N1_monomer_outdir, params)
@@ -108,7 +111,7 @@ def main(argv):
 
         else:
             with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
-                write_fasta({monomer_id: monomer_sequence}, fw)
+                write_fasta({chain_id: monomer_sequence}, fw)
             N1_monomer_outdir = N1_outdir + '/' + monomer_id
             makedir_if_not_exists(N1_monomer_outdir)
 
@@ -136,13 +139,13 @@ def main(argv):
     print("#################################################################################################")
     print("4. Start to generate complex alignments")
 
-    N4_outdir = FLAGS.output_dir + '/N4_complex_alignments_concatenation'
+    N4_outdir = FLAGS.output_dir + '/N4_monomer_alignments_concatenation'
     makedir_if_not_exists(N4_outdir)
 
     try:
         concat_methods = ['pdb_interact', 'species_interact', 'uniclust_oxmatch']
-        run_concatenate_dimer_msas_pipeline(
-            multimer=','.join([chain_id_map[chain_id].description for chain_id in chain_id_map]),
+        run_monomer_msas_concatenation_pipeline(
+            multimer=','.join([chain_id for chain_id in chain_id_map]),
             run_methods=concat_methods,
             monomer_aln_dir=N1_outdir, outputdir=N4_outdir, params=params, is_homomers=True)
 
@@ -156,9 +159,9 @@ def main(argv):
 
     print("5. Start to search complex templates based on monomer structures")
 
-    N5_outdir = FLAGS.output_dir + '/N5_complex_templates_search'
+    N5_outdir = FLAGS.output_dir + '/N5_monomer_templates_concatenation'
 
-    run_complex_template_search_pipeline(multimers=[chain_id_map[chain_id].description for chain_id in chain_id_map],
+    run_monomer_templates_concatenation_pipeline(multimers=[chain_id for chain_id in chain_id_map],
                                          monomer_aln_dir=N1_outdir,
                                          monomer_model_dir=N3_outdir,
                                          outdir=N5_outdir, params=params)
@@ -167,11 +170,11 @@ def main(argv):
 
     print("#################################################################################################")
 
-    print("6. Start to generate complex quaternary structures")
-    N6_outdir = FLAGS.output_dir + '/N6_quaternary_structure_generation'
+    print("6. Start to generate complex multimer structures")
+    N6_outdir = FLAGS.output_dir + '/N6_multimer_structure_generation'
     makedir_if_not_exists(N6_outdir)
 
-    if not run_quaternary_structure_generation_homo_pipeline_v2(params=params,
+    if not run_multimer_structure_generation_homo_pipeline_v2(params=params,
                                                                 fasta_path=FLAGS.fasta_path,
                                                                 chain_id_map=chain_id_map,
                                                                 aln_dir=N1_outdir,
@@ -181,7 +184,7 @@ def main(argv):
                                                                 output_dir=N6_outdir):
         print("Program failed in step 6")
 
-    print("Complex quaternary structure generation has been finished!")
+    print("Multimer structure generation has been finished!")
 
     print("#################################################################################################")
 
@@ -189,7 +192,7 @@ def main(argv):
 
         processed_seuqences = {}
         for chain_id in chain_id_map:
-            monomer_id = chain_id_map[chain_id].description
+            monomer_id = chain_id
             monomer_sequence = chain_id_map[chain_id].sequence
             print(monomer_id)
             if monomer_sequence not in processed_seuqences:
@@ -235,7 +238,7 @@ def main(argv):
                 makedir_if_not_exists(N3_monomer_outdir)
                 os.system(f"cp -r {N3_outdir}/{processed_seuqences[monomer_sequence]} {N3_monomer_outdir}")
 
-            if not run_quaternary_structure_generation_homo_pipeline_img_v2(params=params,
+            if not run_multimer_structure_generation_homo_pipeline_img_v2(params=params,
                                                                             fasta_path=FLAGS.fasta_path,
                                                                             chain_id_map=chain_id_map,
                                                                             aln_dir=N1_outdir + '_img',
@@ -249,7 +252,7 @@ def main(argv):
 
     processed_seuqences = {}
     for chain_id in chain_id_map:
-        monomer_id = chain_id_map[chain_id].description
+        monomer_id = chain_id
         monomer_sequence = chain_id_map[chain_id].sequence
         if monomer_sequence not in processed_seuqences:
             N7_monomer_outdir = N7_outdir + '/' + monomer_id
@@ -291,7 +294,7 @@ def main(argv):
 
         first_monomer_id = ""
         for chain_id in chain_id_map:
-            first_monomer_id = chain_id_map[chain_id].description
+            first_monomer_id = chain_id
             monomer_ranking = pd.read_csv(monomer_qas_res[first_monomer_id]['apollo_monomer'])
             pdb_name = monomer_ranking.loc[i, 'model']
             break
@@ -300,7 +303,7 @@ def main(argv):
         makedir_if_not_exists(current_work_dir)
 
         for chain_id in chain_id_map:
-            monomer_id = chain_id_map[chain_id].description
+            monomer_id = chain_id
             chain_pdb_dir = current_work_dir + '/' + monomer_id
             makedir_if_not_exists(chain_pdb_dir)
             os.system(f"cp {qa_result_dir}/{first_monomer_id}/pdb/{pdb_name} {chain_pdb_dir}/{pdb_name}")
@@ -321,21 +324,21 @@ def main(argv):
         pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
                                                              monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
 
-    if not run_quaternary_structure_generation_pipeline_foldseek_old(params=params, fasta_path=FLAGS.fasta_path,
+    if not run_multimer_structure_generation_pipeline_foldseek_old(params=params, fasta_path=FLAGS.fasta_path,
                                                                      chain_id_map=chain_id_map,
                                                                      pipeline_inputs=pipeline_inputs, outdir=N6_outdir,
                                                                      is_homomers=True):
         print("Program failed in step 6 iterative")
 
     if len(chain_id_map) <= 6:
-        if not run_quaternary_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
+        if not run_multimer_structure_generation_pipeline_foldseek(params=params, fasta_path=FLAGS.fasta_path,
                                                                      chain_id_map=chain_id_map,
                                                                      pipeline_inputs=[pipeline_inputs[0]],
                                                                      outdir=N6_outdir,
                                                                      is_homomers=True):
             print("Program failed in step 6 iterative")
 
-    print("Complex quaternary structure generation has been finished!")
+    print("Multimer structure generation has been finished!")
 
     print("#################################################################################################")
 
@@ -347,7 +350,7 @@ def main(argv):
     multimer_qa_result = run_multimer_evaluation_pipeline(fasta_path=FLAGS.fasta_path,
                                                           params=params,
                                                           chain_id_map=chain_id_map,
-                                                          indir=N6_outdir, outdir=N8_outdir)
+                                                          indir=N6_outdir, outdir=N8_outdir, is_homomer=True)
 
     print("#################################################################################################")
 
@@ -367,8 +370,8 @@ def main(argv):
             msa_paths = {}
             for chain_id in chain_id_map:
                 msa_paths[chain_id] = dict(
-                    paired_msa=f"{N8_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.paired.a3m",
-                    monomer_msa=f"{N8_outdir}/msa/{chain_id_map[chain_id].description}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
+                    paired_msa=f"{N8_outdir}/msa/{chain_id}/{pdb_name.replace('.pdb', '')}.paired.a3m",
+                    monomer_msa=f"{N8_outdir}/msa/{chain_id}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
             print(msa_paths)
             refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
                                                                                         fasta_path=FLAGS.fasta_path,

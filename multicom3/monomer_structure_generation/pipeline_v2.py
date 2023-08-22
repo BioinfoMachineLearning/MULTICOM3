@@ -23,7 +23,7 @@ class Monomer_structure_prediction_pipeline_v2:
             self.run_methods = run_methods
 
     def process_single(self, fasta_path, alndir, outdir, template_dir=None):
-
+        
         targetname = pathlib.Path(fasta_path).stem
 
         cmd = ""

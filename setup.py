@@ -53,6 +53,9 @@ if __name__ == '__main__':
     makedir_if_not_exists(bin_dir)
     makedir_if_not_exists(log_dir)
 
+    args.af_dir = os.path.abspath(args.af_dir)
+    args.afdb_dir = os.path.abspath(args.afdb_dir)
+    
     print("MULTICOM3 database path : "+ database_dir)
     print("MULTICOM3 tool path : "+ tools_dir)
 
@@ -119,11 +122,11 @@ if __name__ == '__main__':
     # (4) configure db_option file
     db_option_file_template = install_dir + '/bin/.db_option.default'
     newlines = []
-    keywords_dict = {'YOUR_ENV': args.envdir,
-                    'INSTALLDIR_TOOLS': install_dir + '/tools/',
-                    'INSTALLDIR_DATABASES': install_dir + '/databases/',
-                    'AFDB_DIR': args.afdb_dir,
-                    'AF_DIR': args.af_dir}
+    keywords_dict = {'YOUR_ENV': os.path.abspath(args.envdir.rstrip('/')),
+                    'INSTALLDIR_TOOLS': install_dir + '/tools',
+                    'INSTALLDIR_DATABASES': install_dir + '/databases',
+                    'AFDB_DIR': args.afdb_dir.rstrip('/'),
+                    'AF_DIR': args.af_dir.rstrip('/')}
 
     for line in open(db_option_file_template):
         newline = line

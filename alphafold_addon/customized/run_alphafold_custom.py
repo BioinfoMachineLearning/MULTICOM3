@@ -339,7 +339,7 @@ def main(argv):
         jackhmmer_binary_path=FLAGS.env_dir + '/jackhmmer',
         hhblits_binary_path=FLAGS.env_dir + '/hhblits',
         uniref90_database_path=FLAGS.database_dir + '/uniref90/uniref90.fasta',
-        mgnify_database_path=FLAGS.database_dir + '/mgnify/mgy_clusters_2018_12.fa',
+        mgnify_database_path=FLAGS.database_dir + '/mgnify/mgy_clusters_2022_05.fa',
         bfd_database_path=FLAGS.database_dir + '/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt',
         uniref30_database_path=FLAGS.database_dir + '/uniref30/UniRef30_2021_03',
         small_bfd_database_path=FLAGS.database_dir + '/small_bfd/bfd-first_non_consensus_sequences.fasta',

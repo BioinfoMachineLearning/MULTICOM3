@@ -1,1 +1,1 @@
-from multicom3.complex_templates_search import *
+from multicom3.monomer_templates_search import *

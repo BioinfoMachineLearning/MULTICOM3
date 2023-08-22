@@ -26,6 +26,9 @@ def main(argv):
     os.environ['TF_FORCE_UNIFIED_MEMORY'] = '1'
     os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '4.0'
 
+    FLAGS.fasta_path = os.path.abspath(FLAGS.fasta_path)
+    FLAGS.output_dir = os.path.abspath(FLAGS.output_dir)
+
     check_file(FLAGS.option_file)
 
     params = read_option_file(FLAGS.option_file)
@@ -36,20 +39,14 @@ def main(argv):
 
     check_file(FLAGS.fasta_path)
 
-    targetname = None
-    sequence = None
-    for line in open(FLAGS.fasta_path):
-        line = line.rstrip('\n').strip()
-        if line.startswith('>'):
-            targetname = line[1:].split()[0]
-        else:
-            sequence = line
+    targetname = pathlib.Path(FLAGS.fasta_path).stem
+    sequence = open(FLAGS.fasta_path).readlines()[1].rstrip('\n').strip()
 
     outdir = FLAGS.output_dir
 
     makedir_if_not_exists(outdir)
 
-    N1_outdir = outdir + '/N1_monomer_alignments_generation'
+    N1_outdir = os.path.join(outdir, 'N1_monomer_alignments_generation')
     makedir_if_not_exists(N1_outdir)
 
     print("#################################################################################################")
@@ -61,14 +58,14 @@ def main(argv):
         raise RuntimeError('The monomer alignment generation has failed!')
 
     if FLAGS.run_img:
-        N1_outdir_img = outdir + '/N1_monomer_alignments_generation_img'
+        N1_outdir_img = os.path.join(outdir, 'N1_monomer_alignments_generation_img')
         makedir_if_not_exists(N1_outdir_img)
         img_msa = run_monomer_msa_pipeline_img(params=params, fasta=FLAGS.fasta_path, outdir=N1_outdir_img)
 
     print("#################################################################################################")
     print("2. Start to generate template for monomer")
 
-    N2_outdir = outdir + '/N2_monomer_template_search'
+    N2_outdir = os.path.join(outdir, 'N2_monomer_template_search')
 
     makedir_if_not_exists(N2_outdir)
 
@@ -85,7 +82,7 @@ def main(argv):
     print("#################################################################################################")
 
     print("3. Start to generate tertiary structure for monomers using alphafold")
-    N3_outdir = outdir + '/N3_monomer_structure_generation'
+    N3_outdir = os.path.join(outdir, 'N3_monomer_structure_generation')
     makedir_if_not_exists(N3_outdir)
     if not run_monomer_structure_generation_pipeline_v2(params=params,
                                                         fasta_path=FLAGS.fasta_path,
@@ -116,7 +113,7 @@ def main(argv):
 
     print("4. Start to evaluate monomer models")
 
-    N4_outdir = outdir + '/N4_monomer_structure_evaluation'
+    N4_outdir = os.path.join(outdir, 'N4_monomer_structure_evaluation')
 
     makedir_if_not_exists(N4_outdir)
 
@@ -135,7 +132,7 @@ def main(argv):
 
     print("5. Start to refine monomer models based on the qa rankings")
 
-    N5_outdir_avg = outdir + '/N5_monomer_structure_refinement_avg'
+    N5_outdir_avg = os.path.join(outdir, 'N5_monomer_structure_refinement_avg')
 
     makedir_if_not_exists(N5_outdir_avg)
 

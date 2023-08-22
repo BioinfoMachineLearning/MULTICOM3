@@ -31,7 +31,7 @@ class FastaChain:
         self.description = description
 
 
-def parse_fasta(fasta_string):
+def parse_fasta(fasta_string, sort_sequence=False):
     sequences = []
     descriptions = []
     index = -1
@@ -46,6 +46,12 @@ def parse_fasta(fasta_string):
             continue  # Skip blank lines.
         sequences[index] += line
 
+    if sort_sequence:
+        desc_seq_dict = {sequence: desc for sequence, desc in zip(sequences, descriptions)}
+        desc_seq_dict = sorted(desc_seq_dict.items(), key=lambda x:x[1])
+        sequences = list(desc_seq_dict.keys())
+        descriptions = list(desc_seq_dict.values())
+        
     return sequences, descriptions
 
 

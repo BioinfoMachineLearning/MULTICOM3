@@ -8,17 +8,17 @@ from multicom3.monomer_structure_generation.pipeline_v2 import *
 from multicom3.monomer_structure_evaluation.pipeline_sep import *
 from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import *
 from multicom3.monomer_structure_refinement import iterative_refine_pipeline
-from multicom3.quaternary_structure_refinement import iterative_refine_pipeline_multimer
-from multicom3.complex_alignment_generation.pipeline_v3 import *
-from multicom3.complex_templates_search import sequence_based_pipeline_complex_pdb, \
+from multicom3.multimer_structure_refinement import iterative_refine_pipeline_multimer
+from multicom3.monomer_alignments_concatenation.pipeline_v3 import *
+from multicom3.monomer_templates_concatenation import sequence_based_pipeline_complex_pdb, \
     sequence_based_pipeline_pdb, sequence_based_pipeline, structure_based_pipeline_v2
-# from multicom3.quaternary_structure_generation.pipeline import *
-from multicom3.quaternary_structure_generation.pipeline_v2 import *
-# from multicom3.quaternary_structure_generation.pipeline_homo import *
-from multicom3.quaternary_structure_generation.pipeline_homo_v2 import *
-from multicom3.quaternary_structure_generation.iterative_search_pipeline_v0_2 import *
-from multicom3.quaternary_structure_generation.iterative_search_pipeline_v0_2_old import *
-from multicom3.quaternary_structure_evaluation.pipeline import *
+# from multicom3.multimer_structure_generation.pipeline import *
+from multicom3.multimer_structure_generation.pipeline_v2 import *
+# from multicom3.multimer_structure_generation.pipeline_homo import *
+from multicom3.multimer_structure_generation.pipeline_homo_v2 import *
+from multicom3.multimer_structure_generation.iterative_search_pipeline_v0_2 import *
+from multicom3.multimer_structure_generation.iterative_search_pipeline_v0_2_old import *
+from multicom3.multimer_structure_evaluation.pipeline import *
 from multicom3.common.protein import *
 import pandas as pd
 import numpy as np
@@ -323,7 +323,7 @@ def run_monomer_refinement_pipeline(params, refinement_inputs, outdir, finaldir,
     # pipeline.select_v2(indir=outdir, outdir=finaldir + '/v2', ranking_df=ranking_df)
 
 
-def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, outputdir, params, is_homomers=False):
+def run_monomer_msas_concatenation_pipeline(multimer, run_methods, monomer_aln_dir, outputdir, params, is_homomers=False):
     chains = multimer.split(',')
     # alignment = {'outdir': f"{outputdir}/{'_'.join(chains)}"}
     alignment = {'outdir': outputdir}
@@ -365,9 +365,9 @@ def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, 
         print("Start to concatenate alignments for dimers")
 
         if not os.path.exists(alignment['outdir'] + '/DONE'):
-            complex_alignment_concatenation_pipeline = Complex_alignment_concatenation_pipeline(params=params,
+            monomer_alignments_concatenation_pipeline = Monomer_alignments_concatenation_pipeline(params=params,
                                                                                                 run_methods=run_methods)
-            alignments = complex_alignment_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'],
+            alignments = monomer_alignments_concatenation_pipeline.concatenate(alignments, params['hhfilter_program'],
                                                                               is_homomers=is_homomers)
         else:
             print("The multimer alignments have been generated!")
@@ -375,7 +375,7 @@ def run_concatenate_dimer_msas_pipeline(multimer, run_methods, monomer_aln_dir, 
         print("The a3ms for dimers are not complete!")
 
 
-def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_model_dir, outdir, params):
+def run_monomer_templates_concatenation_pipeline(multimers, monomer_aln_dir, monomer_model_dir, outdir, params):
     monomer_template_inputs = []
     monomer_sequences = []
     for chain in multimers:
@@ -426,11 +426,11 @@ def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_mod
         pipeline.search(monomer_sequences, monomer_pdbs, struct_temp_dir)
 
 
-# def run_quaternary_structure_generation_pipeline(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
+# def run_multimer_structure_generation_pipeline(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
 #                                                  template_dir,
 #                                                  monomer_model_dir, output_dir):
 #     try:
-#         pipeline = Quaternary_structure_prediction_pipeline(params)
+#         pipeline = multimer_structure_prediction_pipeline(params)
 #         result = pipeline.process(fasta_path=fasta_path,
 #                                   chain_id_map=chain_id_map,
 #                                   aln_dir=aln_dir,
@@ -444,11 +444,11 @@ def run_complex_template_search_pipeline(multimers, monomer_aln_dir, monomer_mod
 #     return True
 
 
-def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
+def run_multimer_structure_generation_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
                                                     template_dir,
                                                     monomer_model_dir, output_dir, run_methods=None, notemplates=False):
     try:
-        pipeline = Quaternary_structure_prediction_pipeline_v2(params, run_methods)
+        pipeline = Multimer_structure_prediction_pipeline_v2(params, run_methods)
         result = pipeline.process(fasta_path=fasta_path,
                                   chain_id_map=chain_id_map,
                                   aln_dir=aln_dir,
@@ -463,9 +463,9 @@ def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id
     return True
 
 
-# def run_quaternary_structure_generation_pipeline_default(params, fasta_path, chain_id_map, aln_dir, output_dir):
+# def run_multimer_structure_generation_pipeline_default(params, fasta_path, chain_id_map, aln_dir, output_dir):
 #     try:
-#         pipeline = Quaternary_structure_prediction_pipeline_default(params)
+#         pipeline = multimer_structure_prediction_pipeline_default(params)
 #         result = pipeline.process(fasta_path=fasta_path,
 #                                   chain_id_map=chain_id_map,
 #                                   aln_dir=aln_dir,
@@ -476,11 +476,11 @@ def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id
 #     return True
 
 
-# def run_quaternary_structure_generation_homo_pipeline(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
+# def run_multimer_structure_generation_homo_pipeline(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
 #                                                       template_dir,
 #                                                       monomer_model_dir, output_dir):
 #     try:
-#         pipeline = Quaternary_structure_prediction_homo_pipeline(params)
+#         pipeline = multimer_structure_prediction_homo_pipeline(params)
 #         result = pipeline.process(fasta_path=fasta_path,
 #                                   chain_id_map=chain_id_map,
 #                                   aln_dir=aln_dir,
@@ -494,9 +494,9 @@ def run_quaternary_structure_generation_pipeline_v2(params, fasta_path, chain_id
 #     return True
 #
 #
-def run_quaternary_structure_generation_homo_pipeline_img_v2(params, fasta_path, chain_id_map, aln_dir, output_dir):
+def run_multimer_structure_generation_homo_pipeline_img_v2(params, fasta_path, chain_id_map, aln_dir, output_dir):
     try:
-        pipeline = Quaternary_structure_prediction_homo_pipeline_v2(params)
+        pipeline = Multimer_structure_prediction_homo_pipeline_v2(params)
         result = pipeline.process_img(fasta_path=fasta_path,
                                       chain_id_map=chain_id_map,
                                       aln_dir=aln_dir,
@@ -507,11 +507,11 @@ def run_quaternary_structure_generation_homo_pipeline_img_v2(params, fasta_path,
     return True
 
 
-def run_quaternary_structure_generation_homo_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
+def run_multimer_structure_generation_homo_pipeline_v2(params, fasta_path, chain_id_map, aln_dir, complex_aln_dir,
                                                          template_dir,
                                                          monomer_model_dir, output_dir, run_methods=None):
     try:
-        pipeline = Quaternary_structure_prediction_homo_pipeline_v2(params, run_methods)
+        pipeline = Multimer_structure_prediction_homo_pipeline_v2(params, run_methods)
         result = pipeline.process(fasta_path=fasta_path,
                                   chain_id_map=chain_id_map,
                                   aln_dir=aln_dir,
@@ -531,7 +531,7 @@ class foldseek_iterative_monomer_input:
         self.monomer_alphafold_a3ms = monomer_alphafold_a3ms
 
 
-def run_quaternary_structure_generation_pipeline_foldseek(params, fasta_path, chain_id_map, pipeline_inputs, outdir,
+def run_multimer_structure_generation_pipeline_foldseek(params, fasta_path, chain_id_map, pipeline_inputs, outdir,
                                                           start=0, is_homomers=False):
     pipeline = Multimer_iterative_generation_pipeline_monomer(params)
     try:
@@ -554,7 +554,7 @@ def run_quaternary_structure_generation_pipeline_foldseek(params, fasta_path, ch
     return True
 
 
-def run_quaternary_structure_generation_pipeline_foldseek_old(params, fasta_path, chain_id_map, pipeline_inputs, outdir,
+def run_multimer_structure_generation_pipeline_foldseek_old(params, fasta_path, chain_id_map, pipeline_inputs, outdir,
                                                               start=0, is_homomers=False):
     pipeline = Multimer_iterative_generation_pipeline_monomer_old(params)
     try:
@@ -617,13 +617,14 @@ def extract_monomer_models_from_complex(complex_pdb, complex_pkl, chain_id_map, 
     return chain_group
 
 
-def rerun_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, outdir):
+def rerun_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, outdir, is_homomer=False):
     makedir_if_not_exists(outdir)
-    pipeline = Quaternary_structure_evaluation_pipeline(params=params)
+    pipeline = Multimer_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
         multimer_qa_result = pipeline.reprocess(fasta_path=fasta_path,
-                                                chain_id_map=chain_id_map, output_dir=outdir)
+                                                chain_id_map=chain_id_map, output_dir=outdir, 
+                                                is_homomer=is_homomer)
     except Exception as e:
         print(e)
 
@@ -631,14 +632,15 @@ def rerun_multimer_evaluation_pipeline(params, fasta_path, chain_id_map, outdir)
 def run_multimer_evaluation_pipeline(params, fasta_path, chain_id_map,
                                      indir, outdir, is_homomer=False, model_count=5):
     makedir_if_not_exists(outdir)
-    pipeline = Quaternary_structure_evaluation_pipeline(params=params)
+    pipeline = Multimer_structure_evaluation_pipeline(params=params)
     multimer_qa_result = None
     try:
         multimer_qa_result = pipeline.process(fasta_path=fasta_path,
                                               chain_id_map=chain_id_map,
                                               model_dir=indir,
                                               output_dir=outdir, 
-                                              model_count=model_count)
+                                              model_count=model_count,
+                                              is_homomer=is_homomer)
     except Exception as e:
         print(e)
 

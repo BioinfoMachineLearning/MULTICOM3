@@ -5,7 +5,7 @@ import time
 from multicom3.common.util import makedir_if_not_exists, check_dirs
 import pandas as pd
 from multiprocessing import Pool
-from multicom3.complex_templates_search import parsers
+from multicom3.monomer_templates_concatenation import parsers
 from multicom3.tool import hhsearch
 from multicom3.tool import hhalign
 import dataclasses

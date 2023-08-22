@@ -8,7 +8,7 @@ from multicom3.monomer_alignment_generation.colabfold_msa_runner import *
 from multicom3.monomer_alignment_generation.img_msa_runner import *
 from multicom3.tool import hhblits
 from multicom3.tool import jackhmmer
-
+import pathlib
 
 def run_msa_tool(inparams):
     msa_runner, input_fasta_path, msa_out_path, msa_out_name, msa_key = inparams
@@ -131,64 +131,65 @@ class Monomer_alignment_generation_pipeline:
         """Runs alignment tools on the input sequence and creates features."""
 
         os.system(f"cp {input_fasta_path} {msa_output_dir}")
-        input_id = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
+        
+        targetname = pathlib.Path(input_fasta_path).stem
 
         msa_process_list = []
 
         if self.jackhmmer_uniref90_runner is not None:
             msa_process_list.append(
                 [self.jackhmmer_uniref90_runner, input_fasta_path,
-                 msa_output_dir, f'{input_id}_uniref90.sto', 'uniref90_sto'])
+                 msa_output_dir, f'{targetname}_uniref90.sto', 'uniref90_sto'])
 
         if self.jackhmmer_mgnify_runner is not None:
             msa_process_list.append([self.jackhmmer_mgnify_runner, input_fasta_path,
-                                     msa_output_dir, f'{input_id}_mgnify.sto', 'mgnify_sto'])
+                                     msa_output_dir, f'{targetname}_mgnify.sto', 'mgnify_sto'])
 
         if self.jackhmmer_small_bfd_runner is not None:
             msa_process_list.append(
                 [self.jackhmmer_small_bfd_runner, input_fasta_path, msa_output_dir,
-                 f'{input_id}_smallbfd.sto', 'smallbfd_sto'])
+                 f'{targetname}_smallbfd.sto', 'smallbfd_sto'])
 
         if self.hhblits_bfd_runner is not None:
             msa_process_list.append([self.hhblits_bfd_runner, input_fasta_path,
-                                     msa_output_dir, f'{input_id}_bfd.a3m', 'bfd_a3m'])
+                                     msa_output_dir, f'{targetname}_bfd.a3m', 'bfd_a3m'])
 
         if self.hhblits_uniref_runner is not None:
             msa_process_list.append([self.hhblits_uniref_runner, input_fasta_path,
-                                     msa_output_dir, f'{input_id}_uniref30.a3m', 'uniref30_a3m'])
+                                     msa_output_dir, f'{targetname}_uniref30.a3m', 'uniref30_a3m'])
 
         if self.hhblits_uniclust_runner is not None:
             msa_process_list.append(
                 [self.hhblits_uniclust_runner, input_fasta_path,
-                 msa_output_dir, f'{input_id}_uniclust30.a3m', 'uniclust30_a3m'])
+                 msa_output_dir, f'{targetname}_uniclust30.a3m', 'uniclust30_a3m'])
 
         if self.hhblits_uniclust_folddock_runner is not None:
             msa_process_list.append([self.hhblits_uniclust_folddock_runner, input_fasta_path,
-                                    msa_output_dir, f'{input_id}_uniclust30_all.a3m', 'uniclust30_all_a3m'])
+                                    msa_output_dir, f'{targetname}_uniclust30_all.a3m', 'uniclust30_all_a3m'])
 
         if self.jackhmmer_uniprot_runner is not None:
             msa_process_list.append([self.jackhmmer_uniprot_runner, input_fasta_path,
-                                    msa_output_dir, f'{input_id}_uniprot.sto', 'uniprot_sto'])
+                                    msa_output_dir, f'{targetname}_uniprot.sto', 'uniprot_sto'])
 
         if self.rosettafold_msa_runner is not None:
             msa_process_list.append(
                 [self.rosettafold_msa_runner, input_fasta_path,
-                msa_output_dir, f'{input_id}_rosettafold.a3m', 'rosettafold_sto'])
+                msa_output_dir, f'{targetname}_rosettafold.a3m', 'rosettafold_sto'])
 
         if self.colabfold_msa_runner is not None:
             msa_process_list.append(
                 [self.colabfold_msa_runner, input_fasta_path, msa_output_dir,
-                 f'{input_id}_colabfold.a3m', 'colabfold_a3m'])
+                 f'{targetname}_colabfold.a3m', 'colabfold_a3m'])
 
         if self.unclust30_bfd_msa_runner is not None:
             msa_process_list.append(
                 [self.unclust30_bfd_msa_runner, input_fasta_path, msa_output_dir,
-                 f'{input_id}_uniclust30_bfd.a3m', 'uniclust30_bfd_a3m'])
+                 f'{targetname}_uniclust30_bfd.a3m', 'uniclust30_bfd_a3m'])
 
         if self.uniref30_bfd_msa_runner is not None:
             msa_process_list.append(
                 [self.uniref30_bfd_msa_runner, input_fasta_path,
-                 msa_output_dir, f'{input_id}_uniref30_bfd.a3m', 'uniref30_bfd_a3m'])
+                 msa_output_dir, f'{targetname}_uniref30_bfd.a3m', 'uniref30_bfd_a3m'])
 
         if multiprocess:
             pool = Pool(processes=len(msa_process_list))
@@ -234,9 +235,9 @@ class Monomer_alignment_generation_pipeline_img:
     def process(self, input_fasta_path, msa_output_dir):
         """Runs alignment tools on the input sequence and creates features."""
 
-        input_id = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
+        targetname = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
 
-        img_out_path = os.path.join(msa_output_dir, f'{input_id}.a3m')
+        img_out_path = os.path.join(msa_output_dir, f'{targetname}.a3m')
         print(img_out_path)
 
         if not os.path.exists(img_out_path) or len(open(img_out_path).readlines()) == 0:

@@ -9,8 +9,8 @@ import dataclasses
 from multicom3.tool.foldseek import *
 import pickle
 import numpy as np
-from multicom3.complex_templates_search.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
-from multicom3.complex_templates_search.parsers import TemplateHit
+from multicom3.monomer_templates_concatenation.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
+from multicom3.monomer_templates_concatenation.parsers import TemplateHit
 
 
 def combine_a3ms(infiles, outfile):
