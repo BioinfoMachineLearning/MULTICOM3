@@ -50,12 +50,12 @@ class Multimer_structure_evaluation_pipeline:
                 model_name = list(ranking_json["order"])[i]
                 os.system(f"cp {model_dir}/{method}/result_{model_name}.pkl {pkldir}/{method}_{i}.pkl")
                 for chain_id in chain_id_map:
-                    msa_chain_outdir = msadir + '/' + chain_id_map[chain_id].description
+                    msa_chain_outdir = msadir + '/' + chain_id
                     makedir_if_not_exists(msa_chain_outdir)
                     os.system(f"cp {model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
                               f"{msa_chain_outdir}/{method}_{i}.monomer.a3m")
                     if not is_homomer:
-                        os.system(f"cp {model_dir}/{method}/msas/{chain_id_map[chain_id].description}.paired.a3m "
+                        os.system(f"cp {model_dir}/{method}/msas/{chain_id}.paired.a3m "
                                 f"{msa_chain_outdir}/{method}_{i}.paired.a3m")
 
         result_dict = {}
