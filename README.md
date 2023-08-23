@@ -1,9 +1,11 @@
 # MULTICOM3 
 MULTICOM3 is an add-on package to improve AlphaFold2- and AlphaFold-Multimer-based prediction of protein tertiary and quaternary structures by diverse multiple sequence alignment sampling, template identification, structural prediction evaluation and structural prediction refinement. It can improve AlphaFold2-based tertiary structure prediction by 8-10% and AlphaFold-Multimer-based quaternary structure prediction by 5-8%. In CASP15, MULTICOM3 used AlphaFold v2.2 as the engine to generate structural predictions. In this release, it is adjusted to run on top of AlphaFold v2.3 (https://github.com/deepmind/alphafold/releases/tag/v2.3.2) to leverage the latest improvement on AlphaFold2. You can install MULTICOM3 on top of your AlphaFold2 and AlphaFold-Multimer to improve both the tertiary structure prediction of monomers and the quaternary structure prediction of multimers. 
 
-## Overall workflow
-![CASP15 pipeline](imgs/pipeline.png)
+## Overall workflow for the MULTICOM Protein tertiary structure prediction system
+![CASP15_TS pipeline](imgs/TS.png)
 
+## Overall workflow for the MULTICOM Protein complex structure prediction system 
+![CASP15_QS pipeline](imgs/QS.png)
 
 # Installation
 
