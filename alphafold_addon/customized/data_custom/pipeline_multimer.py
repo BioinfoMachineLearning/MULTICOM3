@@ -196,7 +196,7 @@ def save_paired_msas(chain_id_map, all_chain_features, msa_output_dir):
                 seen_desc += [final_msa.descriptions[sequence_index]]
                 seen_sequences += [final_msa.sequences[sequence_index]]
 
-        with open(f"{msa_output_dir}/{chain_id_map[chain_reorder[chain_num]].description}.paired.a3m", 'w') as fw:
+        with open(f"{msa_output_dir}/{chain_reorder[chain_num]}.paired.a3m", 'w') as fw:
             for (desc, seq) in zip(seen_desc, seen_sequences):
                 fw.write(f'>{desc}\n{seq}\n')
 
