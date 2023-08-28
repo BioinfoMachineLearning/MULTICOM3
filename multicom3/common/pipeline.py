@@ -95,7 +95,7 @@ def copy_same_sequence_msas(srcdir, trgdir, srcname, trgname):
 
                 tmp = line.split()
                 if len(tmp) > 0 and tmp[0] == srcname:
-                    line = line.replace(srcname, trgname)
+                    line = line[0:39].replace(srcname, trgname) + line[39:]
                 contents += [line]
             fw = open(f"{trgdir}/{msa}", 'w')
             fw.writelines(contents)
