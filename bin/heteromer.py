@@ -288,8 +288,8 @@ def main(argv):
             N7_monomer_outdir = N7_outdir + '/' + monomer_id
             os.system(f"cp -r {N7_outdir}/{processed_seuqences[monomer_sequence]} {N7_monomer_outdir}")
             for msa in os.listdir(N7_monomer_outdir + '/msa'):
-                os.system(
-                    f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' {N7_monomer_outdir}/msa/{msa}")
+                os.system(f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' {N7_monomer_outdir}/msa/{msa}")
+            monomer_qas_res[monomer_id] = copy.deepcopy(monomer_qas_res[processed_seuqences[monomer_sequence]])
 
     print("#################################################################################################")
 
