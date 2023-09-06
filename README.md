@@ -165,6 +165,13 @@ python bin/homomer.py \
     --fasta_path=$YOUR_FASTA \
     --run_img=False \
     --output_dir=$OUTDIR
+
+# e.g.,
+# python bin/homomer.py \
+#         --option_file=bin/db_option \
+#         --fasta_path examples/fasta/test_homo.fasta \
+#         --run_img=False \
+#         --output_dir=examples/run/T1173
 ```
 
 ## Folding a hetero-multimer
@@ -193,6 +200,13 @@ python bin/heteromer.py \
     --fasta_path=$YOUR_FASTA \
     --run_img=False \
     --output_dir=$OUTDIR
+
+# e.g.,
+# python bin/heteromer.py \
+#         --option_file=bin/db_option \
+#         --fasta_path examples/fasta/test_hetero.fasta \
+#         --run_img=False \
+#         --output_dir=examples/run/7Y9V
 ```
 
 ## Output
