@@ -72,24 +72,27 @@ def run_monomer_msa_pipeline(fasta, outdir, params, only_monomer=False):
     return result
 
 
+
 def copy_same_sequence_msas(srcdir, trgdir, srcname, trgname):
     for msa in os.listdir(srcdir):
+        if msa[0] != srcname:
+            continue
         if msa.find('.a3m') > 0 or msa.find('.fasta') > 0:
-            print(f"cp {srcdir}/{msa} {trgdir}/{msa}")
-            os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
-            contents = open(f"{trgdir}/{msa}")
+            # print(f"cp {srcdir}/{msa} {trgdir}/{msa}")
+            # os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
+            contents = open(f"{srcdir}/{msa}")
             new_contents = []
             for i, line in enumerate(contents):
                 if i == 0:
                     new_contents += [f">{trgname}\n"]
                 else:
                     new_contents += [line]
-            fw = open(f"{trgdir}/{msa}", 'w')
+            fw = open(f"{trgdir}/{trgname}{msa[1:]}", 'w')
             fw.writelines(new_contents)
         elif msa.find('.sto') > 0:
-            os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
+            # os.system(f"cp {srcdir}/{msa} {trgdir}/{msa}")
             contents = []
-            for line in open(f"{trgdir}/{msa}"):
+            for line in open(f"{srcdir}/{msa}"):
                 if line[:7] == "#=GF ID":
                     line = line.replace(srcname, trgname)
 
@@ -97,13 +100,13 @@ def copy_same_sequence_msas(srcdir, trgdir, srcname, trgname):
                 if len(tmp) > 0 and tmp[0] == srcname:
                     line = line[0].replace(srcname, trgname) + line[1:]
                 contents += [line]
-            fw = open(f"{trgdir}/{msa}", 'w')
+            fw = open(f"{trgdir}/{trgname}{msa[1:]}", 'w')
             fw.writelines(contents)
-    cwd = os.getcwd()
-    os.chdir(trgdir)
-    print(f"rename {srcname} {trgname} *")
-    os.system(f"rename {srcname} {trgname} *")
-    os.chdir(cwd)
+    # cwd = os.getcwd()
+    # os.chdir(trgdir)
+    # print(f"rename {srcname} {trgname} *")
+    # os.system(f"rename {srcname} {trgname} *")
+    # os.chdir(cwd)
 
 
 def run_monomer_msa_pipeline_img(fasta, outdir, params):
