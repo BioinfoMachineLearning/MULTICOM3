@@ -1,0 +1,4 @@
+[submodule "tools/alphafold-v2.3.2"]
+	path = tools/alphafold-v2.3.2
+	url = https://github.com/google-deepmind/alphafold
+	branch = v2.3.2
