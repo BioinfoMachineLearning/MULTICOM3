@@ -6,6 +6,7 @@ import os
 import re
 import glob
 import subprocess, argparse
+import shutil
 
 def makedir_if_not_exists(directory):
     if not os.path.exists(directory):
@@ -40,12 +41,13 @@ if __name__ == '__main__':
     parser.add_argument('--install_dir', type=str, required=True)
     parser.add_argument('--multicom3_db_dir', type=str, required=True)
     parser.add_argument('--afdb_dir', type=str, required=True)
+    parser.add_argument('--outfile', type=str, required=True)
     args = parser.parse_args()
 
     # configure db_option file
-    db_option_file_template = args.install_dir + '/bin/.db_option.default'
+    db_option_file_template = args.install_dir + '/docker/.db_option.default'
     newlines = []
-    keywords_dict = {'INSTALLDIR_DATABASES': multicom3_db_dir.rstrip('/'),
+    keywords_dict = {'INSTALLDIR_DATABASES': args.multicom3_db_dir.rstrip('/'),
                     'AFDB_DIR': args.afdb_dir.rstrip('/')}
 
     for line in open(db_option_file_template):
@@ -54,7 +56,7 @@ if __name__ == '__main__':
             newline = newline.replace(keyword, keywords_dict[keyword])
         newlines += [newline]
     
-    with open(args.install_dir + '/bin/db_option', 'w') as fw:
+    with open(args.outfile, 'w') as fw:
         fw.writelines(''.join(newlines))
 
     print("\nConfiguration....Done")

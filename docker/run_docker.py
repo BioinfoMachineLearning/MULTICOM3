@@ -75,29 +75,29 @@ def main(argv):
     raise app.UsageError('Too many command-line arguments.')
 
   mounts = []
-  command_args = [f'-mode {FLAGS.mode}']
-  command_args = [f'-run_img {FLAGS.run_img}']
+  command_args = [f'-m {FLAGS.mode}']
+  command_args.append(f'-i {FLAGS.run_img}')
 
   mount, target_path = _create_mount(f'fasta_path', FLAGS.fasta_path)
   mounts.append(mount)
-  command_args.append(f'-fasta_path {target_path}')
+  command_args.append(f'-f {target_path}')
 
   mount, target_path = _create_mount("multicom3_db", FLAGS.multicom3_db_dir)
   mounts.append(mount)
-  command_args.append(f'-multicom3_db_dir {target_path}')
+  command_args.append(f'-d {target_path}')
 
   mount, target_path = _create_mount("af_db", FLAGS.af_db_dir)
   mounts.append(mount)
-  command_args.append(f'-af_db_dir {target_path}')
+  command_args.append(f'-a {target_path}')
 
   output_target_path = os.path.join(_ROOT_MOUNT_DIRECTORY, 'output')
   mounts.append(types.Mount(output_target_path, FLAGS.output_dir, type='bind'))
 
-  command_args.append(f'-output_dir {output_target_path}')
+  command_args.append(f'-o {output_target_path}')
 
   client = docker.from_env()
   device_requests = [docker.types.DeviceRequest(driver='nvidia', capabilities=[['gpu']])]
-
+  print(command_args)
   container = client.containers.run(
       image=FLAGS.docker_image_name,
       command=command_args,

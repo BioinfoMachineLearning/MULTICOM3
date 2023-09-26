@@ -1,0 +1,158 @@
+###########################This is an option file####################################
+
+################################tools option#########################################
+
+# hhblits program path
+hhblits_program = /opt/conda/bin/hhblits
+
+# hhfilter program path
+hhfilter_program = /opt/conda/bin/hhfilter
+
+# hhmake program path
+hhmake_program = /opt/conda/bin/hhmake
+
+# hhalign program path
+hhalign_program = /opt/conda/bin/hhalign
+
+# jackhmmer program path
+jackhmmer_program = /opt/conda/bin/jackhmmer
+
+# hhsearch program path
+hhsearch_program = /app/MULTICOM3/tools/hhsuite-3.2.0/bin/hhsearch
+
+# deepmsa2 program path
+deepmsa2_program = /app/MULTICOM3/tools/deepmsa/hhsuite2/scripts/build_MSA2.py
+
+# tmalign program path
+tmalign_program = /app/MULTICOM3/tools/tmalign/TMalign
+
+# mmalign program path
+mmalign_program = /app/MULTICOM3/tools/mmalign/MMalign
+
+# dockq program
+dockq_program = /app/MULTICOM3/tools/DockQ/DockQ.py
+
+# qscore program
+qscore_program = /app/MULTICOM3/tools/pairwiseQA/q_score
+
+# tmscore program
+tmscore_program = /app/MULTICOM3/tools/tmscore/TMscore
+
+################################MSA generation tool###########################
+
+colabfold_search_program = /app/MULTICOM3/tools/colabfold/search.py
+
+colabfold_split_msas_program = /app/MULTICOM3/tools/colabfold/split_msas.py
+
+colabfold_databases = INSTALLDIR_DATABASES/colabfold
+
+mmseq_program = /opt/conda/bin/mmseqs
+
+################################QA option#####################################
+
+#########################Customized alphafold program###########################
+
+# alphafold environment directory
+alphafold_env_dir = /opt/conda/bin/
+
+# alphafold database directory
+alphafold_database_dir = AFDB_DIR
+
+# alphafold program path
+alphafold_program_dir = AF_DIR
+
+# alphafold tertiary structure prediction script
+alphafold_program = run_alphafold_custom.py
+
+# alphafold tertiary structure prediction script
+alphafold_multimer_program = run_alphafold_multimer_custom.py
+
+# alphafold tertiary structure prediction script
+alphafold_default_program = run_alphafold_pre.py
+
+# AlphaFold2 parameters
+monomer_num_ensemble = 1
+monomer_num_recycle = 3
+num_monomer_predictions_per_model = 1
+
+# AlphaFold-Multimer parameters
+multimer_num_ensemble = 1
+multimer_num_recycle = 3
+num_multimer_predictions_per_model = 5
+
+######################Monomer template search option#################################
+
+foldseek_program = /app/MULTICOM3/tools/foldseek/bin/foldseek
+
+foldseek_pdb_database = /app/MULTICOM3/tools/foldseek/databases/complex
+
+foldseek_pdb_database_dir = INSTALLDIR_DATABASES/pdb_complex/pdb
+
+foldseek_af_database = /app/MULTICOM3/tools/foldseek/databases/af_db
+
+foldseek_af_database_dir = INSTALLDIR_DATABASES/af_pdbs
+
+################################databases option#####################################
+
+bfd_database = AFDB_DIR/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt
+
+mgnify_database = AFDB_DIR/mgnify/mgy_clusters_2022_05.fa
+
+metaclust_database = INSTALLDIR_DATABASES/Metaclust_2018_06/metaclust_50
+
+img_database = INSTALLDIR_DATABASES/img/img_new.fasta
+
+###########################Complex alignment generation option#######################
+
+###########################UNIPROT TO PDB database option############################
+
+# uniclust database
+uniclust_db = INSTALLDIR_DATABASES/uniclust30_2018_08/uniclust30_2018_08
+
+# uniref database
+uniref_db = AFDB_DIR/uniref30/UniRef30_2021_03
+
+uniref90_fasta = AFDB_DIR/uniref90/uniref90.fasta
+
+uniprot_fasta = AFDB_DIR/uniprot/uniprot.fasta
+
+###########################UNIPROT TO PDB database option############################
+
+uniprot2pdb_mapping_file = INSTALLDIR_DATABASES/uniprot2pdb/uniprot2pdb.map
+
+complexes_list = INSTALLDIR_DATABASES/uniprot2pdb/complexes_cm.list
+
+###########################STRING database option####################################
+
+string2uniprot_map = INSTALLDIR_DATABASES/string/string2uniprot.map
+
+#######################End of Complex alignment generation option###################
+
+
+###########################Complex template search option###########################
+
+###########################Sequence and structure based template search option####################
+
+pdb70_hhsuite_database = AFDB_DIR/pdb70/pdb70
+
+pdb70_hhsuite_cluster_tsv = AFDB_DIR/pdb70/pdb70_clu.tsv
+
+pdb_seqs_dir = AFDB_DIR/pdb_seqres/pdb_seqs
+
+pdb_sort90_hhsuite_database = INSTALLDIR_DATABASES/pdb_sort90/hhsuitedb3
+
+pdb_sort90_hhsuite_cluster_tsv = INSTALLDIR_DATABASES/pdb_sort90/sort90_clust
+
+pdb_sort90_atom_dir = INSTALLDIR_DATABASES/pdb_sort90/pdb
+
+pdb_sort90_hmm_dir =INSTALLDIR_DATABASES/pdb_sort90/hmm
+
+complex_sort90_hhsuite_database = INSTALLDIR_DATABASES/pdb_complex/hhsuitedb3
+
+complex_sort90_hhsuite_cluster_tsv = INSTALLDIR_DATABASES/pdb_complex/sort90_clust
+
+complex_sort90_atom_dir = INSTALLDIR_DATABASES/pdb_complex/pdb
+
+complex_sort90_hmm_dir = INSTALLDIR_DATABASES/pdb_complex/hmm
+
+#######################End of Complex alignment generation option###################

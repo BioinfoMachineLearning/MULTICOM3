@@ -11,8 +11,8 @@ RUN apt-get update \
         cmake \
         cuda-command-line-tools-$(cut -f1,2 -d- <<< ${CUDA//./-}) \
         git \
-        hmmer \
-        kalign \
+        # hmmer \
+        # kalign \
         tzdata \
         wget \
     && rm -rf /var/lib/apt/lists/* \
@@ -20,14 +20,14 @@ RUN apt-get update \
     && apt-get clean
 
 # Compile HHsuite from source.
-RUN git clone --branch v3.3.0 https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
-    && mkdir /tmp/hh-suite/build \
-    && pushd /tmp/hh-suite/build \
-    && cmake -DCMAKE_INSTALL_PREFIX=/opt/hhsuite .. \
-    && make -j 4 && make install \
-    && ln -s /opt/hhsuite/bin/* /usr/bin \
-    && popd \
-    && rm -rf /tmp/hh-suite
+# RUN git clone --branch v3.3.0 https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
+#     && mkdir /tmp/hh-suite/build \
+#     && pushd /tmp/hh-suite/build \
+#     && cmake -DCMAKE_INSTALL_PREFIX=/opt/hhsuite .. \
+#     && make -j 4 && make install \
+#     && ln -s /opt/hhsuite/bin/* /usr/bin \
+#     && popd \
+#     && rm -rf /tmp/hh-suite
 
 # Install Miniconda package manager.
 RUN wget -q -P /tmp \
@@ -45,6 +45,8 @@ RUN conda install -y -c conda-forge \
       pdbfixer
 
 RUN conda install tqdm && conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
+
+RUN conda install -c bioconda hmmer hhsuite==3.3.0 kalign2 -y
 
 RUN conda clean --all --force-pkgs-dirs --yes
 
@@ -73,5 +75,5 @@ RUN chmod u+s /sbin/ldconfig.real
 # ENTRYPOINT does not support easily running multiple commands, so instead we
 # write a shell script to wrap them up.
 WORKDIR /app/MULTICOM3
-RUN chmod +x /app/MULTICOM3/run_multicom3.sh
-ENTRYPOINT ["/app/MULTICOM3/run_multicom3.sh"]
+RUN chmod +x /app/MULTICOM3/docker/run_multicom3.sh
+ENTRYPOINT ["/app/MULTICOM3/docker/run_multicom3.sh"]

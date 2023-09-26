@@ -7,39 +7,40 @@ usage() {
         echo "Please make sure all required parameters are given"
         echo "Usage: $0 <OPTIONS>"
         echo "Required Parameters:"
-        echo "-mode <mode>                          monomer, heteromer or homomer"
+        echo "-m <mode>                          monomer, heteromer or homomer"
         #echo "-op <option_file>   db_option file"
-        echo "-multicom3_db_dir <multicom3_db_dir>  multicom3 database dir"
-        echo "-af_db_dir <af_db_dir>                alphafold database dir"
-        echo "-fasta_path <fasta_path>                       Path to fasta file" 
-        echo "-output_dir <output_dir>                       output directory"
-        echo "-run_img <run_img>                        Option, whether to use IMG alignment to generate models"
+        echo "-d <multicom3_db_dir>  multicom3 database dir"
+        echo "-a <af_db_dir>                alphafold database dir"
+        echo "-f <fasta_path>                       Path to fasta file" 
+        echo "-o <output_dir>                       output directory"
+        echo "-i <run_img>                        Option, whether to use IMG alignment to generate models"
         echo ""
         exit 1
 }
 
-while getopts ":mode:multicom3_db_dir:af_db_dir:fasta_path:output_dir:run_img" i; do
+while getopts ":m:d:a:f:o:img" i; do
         case "${i}" in
-        mode)
+        m)
                 mode=$OPTARG
         ;;
-        multicom3_db_dir)
+        d)
                 multicom3_db_dir=$OPTARG
         ;;
-        af_db_dir)
+        a)
                 af_db_dir=$OPTARG
         ;;
-        fasta_path)
+        f)
                 fasta_path=$OPTARG
         ;;
-        output_dir)
+        o)
                 output_dir=$OPTARG
         ;;
-        run_img)
+        i)
                 run_img=$OPTARG
         ;;
         esac
 done
+
 
 # Parse input and set defaults
 if [[ "$mode" == "" || "$multicom3_db_dir" == "" || "$af_db_dir" == "" || "$fasta_path" == "" || "$output_dir" == "" ]] ; then
@@ -50,22 +51,26 @@ if [[ "$run_img" == "" ]] ; then
     run_img="False"
 fi
 
-configure_script = "/app/MULTICOM3/configure.py"
-python $configure_script --install_dir=/app/MULTICOM3 --multicom3_db_dir=$multicom3_db_dir --afdb_dir=$af_db_dir
+configure_script="/app/MULTICOM3/docker/configure.py"
+python $configure_script --install_dir /app/MULTICOM3 --multicom3_db_dir $multicom3_db_dir --afdb_dir $af_db_dir --outfile $output_dir/db_option
 
-option_file="/app/MULTICOM3/bin/option_file"
+option_file="$output_dir/db_option"
 monomer_script="/app/MULTICOM3/bin/monomer.py"
 heteromer_script="/app/MULTICOM3/bin/heteromer.py"
 homomer_script="/app/MULTICOM3/bin/homomer.py"
 
+export PYTHONPATH=/app/MULTICOM3
 if [ "$mode" == "monomer" ]
 then  
-    python $monomer_script --option_file=$option_file --fasta_path=$fasta_path --run_img=$run_img --output_dir=$output_dir
+    echo "Predicting structure for monomer"
+    python $monomer_script --option_file $option_file --fasta_path $fasta_path --output_dir $output_dir --run_img=$run_img 
 elif [ "$mode" == "heteromer" ]
 then
-    python $heteromer_script --option_file=$option_file --fasta_path=$fasta_path --run_img=$run_img --output_dir=$output_dir
+    echo "Predicting structure for heteromer"
+    python $heteromer_script --option_file $option_file --fasta_path $fasta_path --output_dir $output_dir --run_img=$run_img 
 else
-    python $homomer_script --option_file=$option_file --fasta_path=$fasta_path --run_img=$run_img --output_dir=$output_dir
+    echo "Predicting structure for homomer"
+    python $homomer_script --option_file $option_file --fasta_path $fasta_path --output_dir $output_dir --run_img=$run_img 
 fi
  
 
