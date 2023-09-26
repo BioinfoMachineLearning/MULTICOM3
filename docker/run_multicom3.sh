@@ -18,37 +18,27 @@ usage() {
         exit 1
 }
 
-while getopts ":m:d:a:f:o:img" i; do
-        case "${i}" in
-        m)
-                mode=$OPTARG
-        ;;
-        d)
-                multicom3_db_dir=$OPTARG
-        ;;
-        a)
-                af_db_dir=$OPTARG
-        ;;
-        f)
-                fasta_path=$OPTARG
-        ;;
-        o)
-                output_dir=$OPTARG
-        ;;
-        i)
-                run_img=$OPTARG
-        ;;
+while getopts "m:d:a:f:o:i:" arg; do
+        case $arg in
+            m) mode=$OPTARG;;
+            d) multicom3_db_dir=$OPTARG;;
+            a) af_db_dir=$OPTARG;;
+            f) fasta_path=$OPTARG;;
+            o) output_dir=$OPTARG;;
+            i) run_img=$OPTARG;;
         esac
 done
 
+mode=$(echo "$mode" | xargs)
+multicom3_db_dir=$(echo "$multicom3_db_dir" | xargs)
+af_db_dir=$(echo "$af_db_dir" | xargs)
+fasta_path=$(echo "$fasta_path" | xargs)
+output_dir=$(echo "$output_dir" | xargs)
+run_img=$(echo "$run_img" | xargs)
 
 # Parse input and set defaults
 if [[ "$mode" == "" || "$multicom3_db_dir" == "" || "$af_db_dir" == "" || "$fasta_path" == "" || "$output_dir" == "" ]] ; then
     usage
-fi
-
-if [[ "$run_img" == "" ]] ; then
-    run_img="False"
 fi
 
 configure_script="/app/MULTICOM3/docker/configure.py"
@@ -60,17 +50,20 @@ heteromer_script="/app/MULTICOM3/bin/heteromer.py"
 homomer_script="/app/MULTICOM3/bin/homomer.py"
 
 export PYTHONPATH=/app/MULTICOM3
-if [ "$mode" == "monomer" ]
-then  
+
+if [[ "$mode" =~ "monomer" ]] ; then
     echo "Predicting structure for monomer"
-    python $monomer_script --option_file $option_file --fasta_path $fasta_path --output_dir $output_dir --run_img=$run_img 
-elif [ "$mode" == "heteromer" ]
-then
-    echo "Predicting structure for heteromer"
-    python $heteromer_script --option_file $option_file --fasta_path $fasta_path --output_dir $output_dir --run_img=$run_img 
-else
-    echo "Predicting structure for homomer"
-    python $homomer_script --option_file $option_file --fasta_path $fasta_path --output_dir $output_dir --run_img=$run_img 
+    python $monomer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img
 fi
- 
+
+if [[ "$mode" =~ "heteromer" ]] ; then
+    echo "Predicting structure for heteromer"
+    python $heteromer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img
+fi
+
+if [[ "$mode" =~ "homomer" ]] ; then
+    echo "Predicting structure for homomer"
+    python $homomer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img
+fi
+
 

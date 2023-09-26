@@ -59,7 +59,7 @@ alphafold_env_dir = /opt/conda/bin/
 alphafold_database_dir = AFDB_DIR
 
 # alphafold program path
-alphafold_program_dir = AF_DIR
+alphafold_program_dir = /app/MULTICOM3/tools/alphafold-v2.3.2/
 
 # alphafold tertiary structure prediction script
 alphafold_program = run_alphafold_custom.py
