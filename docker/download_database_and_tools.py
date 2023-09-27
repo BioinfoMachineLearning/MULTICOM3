@@ -35,10 +35,13 @@ def direct_download(tool, address, tools_dir):  ####Tools don't need to be confi
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dbdir', type=str, required=True)
+    args = parser.parse_args()
 
     # Set directory of multicom databases and tools
     install_dir = os.path.dirname(os.path.realpath(__file__))
-    database_dir = os.path.join(install_dir, "databases")
+    database_dir = args.dbdir
     tools_dir = os.path.join(install_dir, "tools")
     af_dir = os.path.join(tools_dir, "alphafold-v2.3.2")
     bin_dir = os.path.join(install_dir, "bin")

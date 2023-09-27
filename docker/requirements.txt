@@ -1,3 +1,4 @@
 # Dependencies necessary to execute run_docker.py
 absl-py==1.0.0
 docker==5.0.0
+requests==2.28.1
