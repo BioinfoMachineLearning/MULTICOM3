@@ -88,7 +88,6 @@ class monomer_sequence_based_template_search_pipeline:
         self.params = params
 
         self.template_searcher = hhsearch.HHSearch(
-            # binary_path='/home/multicom3/BML_CASP15/tools/hhsuite-3.2.0/bin/hhsearch',
             binary_path=params['hhsearch_program'],
             databases=[params['pdb_sort90_hhsuite_database']],
             input_format='hmm')
@@ -101,7 +100,8 @@ class monomer_sequence_based_template_search_pipeline:
         os.chdir(outdir)
         for i in range(len(templates)):
             template_pdb = templates.loc[i, 'target']
-            os.system(f"cp {self.pdbdir}/{template_pdb}.atom.gz {outdir}")
+            template_path = os.path.join(self.pdbdir, template_pdb + '.atom.gz')
+            os.system(f"cp {template_path} .")
             os.system(f"gunzip -f {template_pdb}.atom.gz")
 
     def search(self, targetname, sequence, a3m, outdir):
@@ -111,6 +111,8 @@ class monomer_sequence_based_template_search_pipeline:
         if os.path.exists(pdb_hits_out_path):
             pdb_templates_result = open(pdb_hits_out_path).read()
         else:
+            trg_a3m = os.path.join(outdir, targetname + '.a3m')
+            trg_hmm = os.path.join(outdir, targetname + '.hmm')
             with open(a3m) as f:
                 msa_for_templates = f.read()
                 if a3m.find('.sto') > 0:
@@ -118,18 +120,15 @@ class monomer_sequence_based_template_search_pipeline:
                     msa_for_templates = parsers.remove_empty_columns_from_stockholm_msa(msa_for_templates)
                     msa_for_templates = parsers.convert_stockholm_to_a3m(msa_for_templates)
 
-                    with open(f"{outdir}/{targetname}.a3m", 'w') as fw:
+                    with open(trg_a3m, 'w') as fw:
                         fw.write(msa_for_templates)
                 else:
-                    os.system(f"cp {a3m} {outdir}/{targetname}.a3m")
+                    os.system(f"cp {a3m} {trg_a3m}")
 
-            os.system(f"{self.hhmake_program} -i {outdir}/{targetname}.a3m -o {outdir}/{targetname}.hmm")
-            with open(f"{outdir}/{targetname}.hmm") as f:
+            os.system(f"{self.hhmake_program} -i {trg_a3m} -o {trg_hmm}")
+            with open(trg_hmm) as f:
                 msa_for_templates = f.read()
                 pdb_templates_result = self.template_searcher.query(msa_for_templates, outdir)
-                # print(pdb_templates_result)
-                # with open(pdb_hits_out_path, 'w') as fw:
-                #     fw.write(pdb_templates_result)
 
         pdb_template_hits = parsers.parse_hhr(hhr_string=pdb_templates_result)
 
@@ -147,12 +146,12 @@ class monomer_sequence_based_template_search_pipeline:
 
         curr_pd = create_df(targetname, curr_template_hits)
 
-        curr_pd.to_csv(outdir + '/sequence_templates.csv', sep='\t')
+        curr_pd.to_csv(os.path.join(outdir, 'sequence_templates.csv'), sep='\t')
 
-        template_dir = outdir + '/templates'
+        template_dir = os.path.join(outdir, 'templates')
 
         makedir_if_not_exists(template_dir)
 
         self.copy_atoms_and_unzip(templates=curr_pd, outdir=template_dir)
 
-        return outdir + '/sequence_templates.csv'
+        return os.path.join(outdir, 'sequence_templates.csv')

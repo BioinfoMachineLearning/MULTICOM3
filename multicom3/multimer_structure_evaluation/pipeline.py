@@ -26,61 +26,68 @@ class Multimer_structure_evaluation_pipeline:
 
         makedir_if_not_exists(output_dir)
 
-        pdbdir = output_dir + '/pdb/'
+        pdbdir = os.path.join(output_dir, 'pdb')
         makedir_if_not_exists(pdbdir)
 
-        pkldir = output_dir + '/pkl/'
+        pkldir = os.path.join(output_dir, 'pkl')
         makedir_if_not_exists(pkldir)
 
-        msadir = output_dir + '/msa/'
+        msadir = os.path.join(output_dir, 'msa')
         makedir_if_not_exists(msadir)
 
         for method in os.listdir(model_dir):
             print(method)
-            ranking_json_file = f"{model_dir}/{method}/ranking_debug.json"
+            ranking_json_file = os.path.join(model_dir, method, "ranking_debug.json")
             if not os.path.exists(ranking_json_file):
                 continue
             ranking_json = json.loads(open(ranking_json_file).read())
 
             for i in range(model_count):
-                # if not complete_result(model_dir + '/' + method):
-                #     continue
-                os.system(f"cp {model_dir}/{method}/ranked_{i}.pdb {pdbdir}/{method}_{i}.pdb")
+                ranked_pdb = os.path.join(model_dir, method, f"ranked_{i}.pdb")
+                trg_pdb = os.path.join(pdbdir, f"{method}_{i}.pdb")
+                os.system(f"cp {ranked_pdb} {trg_pdb})
 
                 model_name = list(ranking_json["order"])[i]
-                os.system(f"cp {model_dir}/{method}/result_{model_name}.pkl {pkldir}/{method}_{i}.pkl")
+                ranked_pkl = os.path.join(model_dir, method, f"result_{model_name}.pkl")
+                trg_pkl = os.path.join(pkldir, f"{method}_{i}.pkl")
+                os.system(f"cp {ranked_pkl} {trg_pkl}")
                 for chain_id in chain_id_map:
-                    msa_chain_outdir = msadir + '/' + chain_id
+                    msa_chain_outdir = os.path.join(msadir, chain_id)
                     makedir_if_not_exists(msa_chain_outdir)
-                    os.system(f"cp {model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
-                              f"{msa_chain_outdir}/{method}_{i}.monomer.a3m")
+                    src_monomer_a3m = os.path.join(model_dir, method, 'msas', chain_id, "monomer_final.a3m")
+                    trg_monomer_a3m = os.path.join(msa_chain_outdir, f"{method}_{i}.monomer.a3m")
+                    os.system(f"cp {src_monomer_a3m} {trg_monomer_a3m}")
                     if not is_homomer:
-                        os.system(f"cp {model_dir}/{method}/msas/{chain_id}.paired.a3m "
-                                f"{msa_chain_outdir}/{method}_{i}.paired.a3m")
+                        src_paired_a3m = os.path.join(model_dir, method, 'msas', chain_id + ".paired.a3m")
+                        trg_paried_a3m = os.path.join(msa_chain_outdir, f"{method}_{i}.paired.a3m")
+                        os.system(f"cp {src_paired_a3m} {trg_paried_a3m}")
 
         result_dict = {}
 
         if "alphafold" in self.run_methods:
-            if not os.path.exists(output_dir + '/alphafold_ranking.csv'):
+            result_file = os.path.join(output_dir, 'alphafold_ranking.csv')
+            if not os.path.exists(result_file):
                 alphafold_ranking = self.alphafold_qa.run(pkldir)
-                alphafold_ranking.to_csv(output_dir + '/alphafold_ranking.csv')
-            result_dict["alphafold"] = output_dir + '/alphafold_ranking.csv'
+                alphafold_ranking.to_csv(result_file)
+            result_dict["alphafold"] = result_file
 
         if "bfactor" in self.run_methods:
-            if not os.path.exists(output_dir + '/bfactor_ranking.csv'):
+            result_file = os.path.join(output_dir, 'bfactor_ranking.csv')
+            if not os.path.exists(result_file):
                 bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
-                bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
-            result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
+                bfactor_ranking.to_csv(result_file)
+            result_dict["bfactor"] = result_file
 
         if "multieva" in self.run_methods:
-            if not os.path.exists(f"{output_dir}/multieva.csv"):
-                workdir = output_dir + '/multieva'
+            result_file = os.path.join(output_dir, 'multieva.csv')
+            if not os.path.exists(result_file):
+                workdir = os.path.join(output_dir, 'multieva')
                 makedir_if_not_exists(workdir)
         
                 multieva_pd = self.multieva_qa.run(input_dir=pdbdir)
-                multieva_pd.to_csv(f"{output_dir}/multieva.csv")
+                multieva_pd.to_csv(result_file)
 
-            result_dict["multieva"] = output_dir + '/multieva.csv'
+            result_dict["multieva"] = result_file
 
         if "multieva" in self.run_methods and "alphafold" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
@@ -110,8 +117,10 @@ class Multimer_structure_evaluation_pipeline:
             avg_ranking_df.reset_index(inplace=True, drop=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
-            avg_ranking_df.to_csv(output_dir + '/pairwise_af_avg.ranking')
-            result_dict["pairwise_af_avg"] = output_dir + '/pairwise_af_avg.ranking'
+
+            result_file = os.path.join(output_dir, 'pairwise_af_avg.ranking')
+            avg_ranking_df.to_csv(result_file)
+            result_dict["pairwise_af_avg"] = result_file
 
         if "multieva" in self.run_methods and "bfactor" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
@@ -141,8 +150,10 @@ class Multimer_structure_evaluation_pipeline:
             avg_ranking_df.reset_index(inplace=True, drop=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
-            avg_ranking_df.to_csv(output_dir + '/pairwise_bfactor_avg.ranking')
-            result_dict["pairwise_bfactor_avg"] = output_dir + '/pairwise_bfactor_avg.ranking'
+
+            result_file = os.path.join(output_dir, 'pairwise_bfactor_avg.ranking')
+            avg_ranking_df.to_csv(result_file)
+            result_dict["pairwise_bfactor_avg"] = result_file
 
         return result_dict
 
@@ -152,42 +163,46 @@ class Multimer_structure_evaluation_pipeline:
 
         makedir_if_not_exists(output_dir)
 
-        pdbdir = output_dir + '/pdb/'
+        pdbdir = os.path.join(output_dir, 'pdb')
         makedir_if_not_exists(pdbdir)
 
-        pkldir = output_dir + '/pkl/'
+        pkldir = os.path.join(output_dir, 'pkl')
         makedir_if_not_exists(pkldir)
 
-        msadir = output_dir + '/msa/'
+        msadir = os.path.join(output_dir, 'msa')
         makedir_if_not_exists(msadir)
 
         result_dict = {}
 
         if "alphafold" in self.run_methods:
-            if not os.path.exists(output_dir + '/alphafold_ranking.csv'):
+            result_file = os.path.join(output_dir, 'alphafold_ranking.csv')
+            if not os.path.exists(result_file):
                 alphafold_ranking = self.alphafold_qa.run(pkldir)
-                alphafold_ranking.to_csv(output_dir + '/alphafold_ranking.csv')
-            result_dict["alphafold"] = output_dir + '/alphafold_ranking.csv'
+                alphafold_ranking.to_csv(result_file)
+            result_dict["alphafold"] = result_file
 
         if "bfactor" in self.run_methods:
-            if not os.path.exists(output_dir + '/bfactor_ranking.csv'):
+            result_file = os.path.join(output_dir, 'bfactor_ranking.csv')
+            if not os.path.exists(result_file):
                 bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
-                bfactor_ranking.to_csv(output_dir + '/bfactor_ranking.csv')
-            result_dict["bfactor"] = output_dir + '/bfactor_ranking.csv'
+                bfactor_ranking.to_csv(result_file)
+            result_dict["bfactor"] = result_file
 
         if "multieva" in self.run_methods:
-            if not os.path.exists(f"{output_dir}/multieva.csv"):
-                workdir = output_dir + '/multieva'
+            result_file = os.path.join(output_dir, 'multieva.csv')
+            if not os.path.exists(result_file):
+                workdir = os.path.join(output_dir, 'multieva')
                 makedir_if_not_exists(workdir)
         
-                multieva_pd = self.multieva.run(input_dir=pdbdir)
-                multieva_pd.to_csv(f"{output_dir}/multieva.csv")
-            result_dict["multieva"] = output_dir + '/multieva.csv'
+                multieva_pd = self.multieva_qa.run(input_dir=pdbdir)
+                multieva_pd.to_csv(result_file)
+
+            result_dict["multieva"] = result_file
 
         if "multieva" in self.run_methods and "alphafold" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
             ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
-            pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
+            pairwise_ranking_df['model'] = pairwise_ranking_df['Name']
             print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
             print(pairwise_ranking_df)
@@ -200,7 +215,7 @@ class Multimer_structure_evaluation_pipeline:
             print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
                 pairwise_score = float(avg_ranking_df.loc[i, 'MMalign score'])
-                alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg'])/100
+                alphafold_score = float(avg_ranking_df.loc[i, 'confidence'])
                 avg_score = (pairwise_score + alphafold_score) / 2
                 avg_scores += [avg_score]
                 avg_rank = (int(avg_ranking_df.loc[i, 'pairwise_rank']) + int(
@@ -212,13 +227,15 @@ class Multimer_structure_evaluation_pipeline:
             avg_ranking_df.reset_index(inplace=True, drop=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
-            avg_ranking_df.to_csv(output_dir + '/pairwise_af_avg.ranking')
-            result_dict["pairwise_af_avg"] = output_dir + '/pairwise_af_avg.ranking'
+
+            result_file = os.path.join(output_dir, 'pairwise_af_avg.ranking')
+            avg_ranking_df.to_csv(result_file)
+            result_dict["pairwise_af_avg"] = result_file
 
         if "multieva" in self.run_methods and "bfactor" in self.run_methods:
             pairwise_ranking_df = pd.read_csv(result_dict["multieva"])
             ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
-            pairwise_ranking_df['model'] = pairwise_ranking_df['Name'] + '.pdb'
+            pairwise_ranking_df['model'] = pairwise_ranking_df['Name']
             print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
             print(pairwise_ranking_df)
@@ -243,7 +260,9 @@ class Multimer_structure_evaluation_pipeline:
             avg_ranking_df.reset_index(inplace=True, drop=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
-            avg_ranking_df.to_csv(output_dir + '/pairwise_bfactor_avg.ranking')
-            result_dict["pairwise_bfactor_avg"] = output_dir + '/pairwise_bfactor_avg.ranking'
+
+            result_file = os.path.join(output_dir, 'pairwise_bfactor_avg.ranking')
+            avg_ranking_df.to_csv(result_file)
+            result_dict["pairwise_bfactor_avg"] = result_file
 
         return result_dict

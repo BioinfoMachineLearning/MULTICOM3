@@ -13,22 +13,22 @@ def get_complex_alignments_by_method(monomers, concatenate_method, aln_dir):
     a3ms_path = []
     for monomer in monomers:
         if concatenate_method == 'uniclust_oxmatch_a3m':
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniclust30.a3m"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniclust30.a3m"
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
         elif concatenate_method.find('_uniref_a3m') > 0:
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref30.a3m"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniref30.a3m"
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
         elif concatenate_method.find('_uniref_sto') > 0:
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniref90.sto"
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
         elif concatenate_method.find('_uniprot_sto') > 0:
-            monomer_a3m = f"{aln_dir}/{monomer}/{monomer}_uniprot.sto"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniprot.sto"
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
@@ -75,7 +75,7 @@ class Multimer_structure_prediction_homo_pipeline_v2:
                                 'default+structure_based_template',
                                 'default+sequence_based_template_pdb',
                                 'default+sequence_based_template_complex_pdb',
-                                'default+alphafold_model_templates',
+                                # 'default+alphafold_model_templates',
                                 'uniclust_oxmatch_a3m',
                                 'pdb_interact_uniref_a3m',
                                 'species_interact_uniref_a3m',
@@ -83,7 +83,7 @@ class Multimer_structure_prediction_homo_pipeline_v2:
                                 'species_interact_uniref_a3m+structure_based_template',
                                 'species_interact_uniref_a3m+sequence_based_template_pdb',
                                 'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
-                                'species_interact_uniref_a3m+alphafold_model_templates',
+                                # 'species_interact_uniref_a3m+alphafold_model_templates',
                                 'species_interact_uniref_sto',
                                 'species_interact_uniprot_sto']
         else:
@@ -128,7 +128,7 @@ class Multimer_structure_prediction_homo_pipeline_v2:
                     aln_dir,
                     output_dir):
 
-        outdir = f"{output_dir}/default_img"
+        outdir = os.path.join(output_dir, "default_img")
         if not complete_result(outdir, 5 * int(self.params['num_multimer_predictions_per_model'])):
             monomers = []
             img_default_a3ms = []
@@ -136,11 +136,11 @@ class Multimer_structure_prediction_homo_pipeline_v2:
             for chain_id in chain_id_map:
                 monomer = chain_id
                 monomers += [monomer]
-                img_a3m = f"{aln_dir}/{monomer}/{monomer}.a3m"
-                default_a3m = f"{output_dir}/default_multimer/msas/{chain_id}/monomer_final.a3m"
-                combine_a3ms([default_a3m, img_a3m], f"{aln_dir}/{monomer}/{monomer}_default_img.a3m")
-                img_default_a3ms += [f"{aln_dir}/{monomer}/{monomer}_default_img.a3m"]
-                template_stos += [f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"]
+                img_a3m = os.path.join(aln_dir, monomer, f"{monomer}.a3m")
+                default_a3m = os.path.join(output_dir, 'default_multimer', 'msas', chain_id, "monomer_final.a3m")
+                combine_a3ms([default_a3m, img_a3m], os.path.join(aln_dir, monomer, f"{monomer}_default_img.a3m"))
+                img_default_a3ms += [os.path.join(aln_dir, monomer, f"{monomer}_default_img.a3m")]
+                template_stos += [os.path.join(aln_dir, monomer, f"{monomer}_uniref90.sto")]
 
             makedir_if_not_exists(outdir)
 
@@ -171,7 +171,7 @@ class Multimer_structure_prediction_homo_pipeline_v2:
         makedir_if_not_exists(output_dir)
 
         # run alphafold default pipeline:
-        outdir = f"{output_dir}/default_multimer"
+        outdir = os.path.join(output_dir, "default_multimer")
         monomers = [chain_id for chain_id in chain_id_map]
         if not complete_result(outdir, 5 * int(self.params['num_multimer_predictions_per_model'])):
             os.chdir(self.params['alphafold_program_dir'])
@@ -181,22 +181,22 @@ class Multimer_structure_prediction_homo_pipeline_v2:
             uniprot_stos = []
             for chain_id in chain_id_map:
                 monomer = chain_id
-                monomer_bfd_uniref_a3m = f"{aln_dir}/{monomer}/{monomer}_uniref30_bfd.a3m"
+                monomer_bfd_uniref_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniref30_bfd.a3m")
                 if not os.path.exists(monomer_bfd_uniref_a3m):
                     raise Exception(f"Cannot find bfd and uniclust a3m for {monomer}: {monomer_bfd_uniref_a3m}")
                 bfd_uniref_a3ms += [monomer_bfd_uniref_a3m]
 
-                monomer_mgnify_sto = f"{aln_dir}/{monomer}/{monomer}_mgnify.sto"
+                monomer_mgnify_sto = os.path.join(aln_dir, monomer, f"{monomer}_mgnify.sto")
                 if not os.path.exists(monomer_mgnify_sto):
                     raise Exception(f"Cannot find mgnify sto for {monomer}: {monomer_mgnify_sto}")
                 mgnify_stos += [monomer_mgnify_sto]
 
-                monomer_uniref90_sto = f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"
+                monomer_uniref90_sto = os.path.join(aln_dir, monomer, f"{monomer}_uniref90.sto")
                 if not os.path.exists(monomer_uniref90_sto):
                     raise Exception(f"Cannot find uniref90 sto for {monomer}: {monomer_uniref90_sto}")
                 uniref90_stos += [monomer_uniref90_sto]
 
-                monomer_uniprot_sto = f"{aln_dir}/{monomer}/{monomer}_uniprot.sto"
+                monomer_uniprot_sto = os.path.join(aln_dir, monomer, f"{monomer}_uniprot.sto")
                 if not os.path.exists(monomer_uniprot_sto):
                     raise Exception(f"Cannot find uniprot sto for {monomer}: {monomer_uniprot_sto}")
                 uniprot_stos += [monomer_uniprot_sto]
@@ -224,12 +224,12 @@ class Multimer_structure_prediction_homo_pipeline_v2:
         template_stos = []
         for chain_id in chain_id_map:
             monomer = chain_id
-            monomer_template_sto = f"{aln_dir}/{monomer}/{monomer}_uniref90.sto"
+            monomer_template_sto = os.path.join(aln_dir, monomer, f"{monomer}_uniref90.sto")
             if not os.path.exists(monomer_template_sto):
                 raise Exception(f"Cannot find template stos for {monomer}: {monomer_template_sto}")
             template_stos += [monomer_template_sto]
 
-            default_alphafold_monomer_a3m = f"{output_dir}/default_multimer/msas/{chain_id}/monomer_final.a3m"
+            default_alphafold_monomer_a3m = os.path.join(output_dir, 'default_multimer', 'msas', chain_id, "monomer_final.a3m")
             if not os.path.exists(default_alphafold_monomer_a3m):
                 raise Exception(
                     f"Cannot find default alphafold alignments for {monomer}: {default_alphafold_monomer_a3m}")
@@ -248,14 +248,13 @@ class Multimer_structure_prediction_homo_pipeline_v2:
             if concatenate_method == "default":
                 a3m_paths = default_alphafold_monomer_a3ms
             else:
-                msa_pair_file = f"{complex_aln_dir}/{concatenate_method}/{concatenate_method}_interact.csv"
+                msa_pair_file = os.path.join(complex_aln_dir, concatenate_method, concatenate_method + '_interact.csv')
                 if len(pd.read_csv(msa_pair_file)) <= 1:
                     continue
-                a3m_paths = [f"{complex_aln_dir}/{concatenate_method}/{monomer}_con.a3m"
-                             for monomer in monomers]
+                a3m_paths = [os.path.join(complex_aln_dir, concatenate_method, f"{monomer}_con.a3m") for monomer in monomers]
                 print(a3m_paths)
 
-            outdir = f"{output_dir}/{self.method2dir[method]}"
+            outdir = os.path.join(output_dir, self.method2dir[method])
 
             if complete_result(outdir, 5 * int(self.params['num_multimer_predictions_per_model'])):
                 continue
@@ -277,33 +276,37 @@ class Multimer_structure_prediction_homo_pipeline_v2:
                 base_cmd += f"--template_stos {','.join(template_stos)} "
 
             elif template_method == "structure_based_template":
-                template_file = f"{template_dir}/struct_temp/structure_templates.csv"
+                template_file = os.path.join(template_dir, "struct_temp", "structure_templates.csv")
+                struct_atom_dir = os.path.join(template_dir, "struct_temp", "templates")
                 if len(pd.read_csv(template_file)) == 0:
                     continue
                 base_cmd += f"--temp_struct_csv {template_file} "
-                base_cmd += f"--struct_atom_dir {template_dir}/struct_temp/templates "
+                base_cmd += f"--struct_atom_dir {struct_atom_dir} "
 
             elif template_method == "sequence_based_template_pdb":
-                template_file = f"{template_dir}/pdb_seq/sequence_templates.csv"
+                template_file = os.path.join(template_dir, "pdb_seq", "sequence_templates.csv")
+                struct_atom_dir = os.path.join(template_dir, "pdb_seq", "templates")
                 if len(pd.read_csv(template_file)) == 0:
                     continue
                 base_cmd += f"--temp_struct_csv {template_file} "
-                base_cmd += f"--struct_atom_dir {template_dir}/pdb_seq/templates "
+                base_cmd += f"--struct_atom_dir {struct_atom_dir} "
+
 
             elif template_method == "sequence_based_template_complex_pdb":
-                template_file = f"{template_dir}/complex_pdb_seq/sequence_templates.csv"
+                template_file = os.path.join(template_dir, "complex_pdb_seq", "sequence_templates.csv")
+                struct_atom_dir = os.path.join(template_dir, "complex_pdb_seq", "templates")
                 if len(pd.read_csv(template_file)) == 0:
                     continue
                 base_cmd += f"--temp_struct_csv {template_file} "
-                base_cmd += f"--struct_atom_dir {template_dir}/complex_pdb_seq/templates "
+                base_cmd += f"--struct_atom_dir {struct_atom_dir} "
 
             elif template_method == "sequence_based_template_pdb70":
-                template_file = f"{template_dir}/pdb70_seq/sequence_templates.csv"
+                template_file = os.path.join(template_dir, "pdb70_seq", "sequence_templates.csv")
                 if len(pd.read_csv(template_file)) == 0:
                     continue
                 template_hits_files = []
                 for monomer in monomers:
-                    template_hits_file = f"{template_dir}/pdb70_seq/{monomer}/output.hhr"
+                    template_hits_file = os.path.join(template_dir, "pdb70_seq", monomer, "output.hhr")
                     if not os.path.exists(template_hits_file):
                         raise Exception(f"Cannot find template hit file for {monomer}: {template_hits_file}")
                     template_hits_files += [template_hits_file]
@@ -313,7 +316,7 @@ class Multimer_structure_prediction_homo_pipeline_v2:
             elif template_method == "alphafold_model_templates":
                 monomer_paths = []
                 for monomer in monomers:
-                    monomer_path = f"{monomer_model_dir}/{monomer}/default"
+                    monomer_path = os.path.join(monomer_model_dir, monomer, "default")
                     if not os.path.exists(monomer_path):
                         raise Exception(f"Cannot find monomer directory for {monomer}: {monomer_path}")
                     monomer_paths += [monomer_path]

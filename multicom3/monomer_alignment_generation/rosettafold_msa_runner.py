@@ -73,14 +73,15 @@ class RosettaFold_Msa_runner:
             '-d', str(self.uniref30_database_path),
             '-d', str(self.bfd_database_path)]
 
-        tmp_dir = outpath + '/hhblits'
+        tmp_dir = os.path.join(outpath, 'hhblits')
 
         if not os.path.exists(tmp_dir):
             os.makedirs(tmp_dir)
 
         for evalue in self.e_values:
-            if not os.path.exists(f"{tmp_dir}/t000_.{evalue}.a3m"):
-                cmd = cmd_prefix + ['-oa3m', f"{tmp_dir}/t000_.{evalue}.a3m",
+            evalue_out_file = os.path.join(tmp_dir, f"t000_.{evalue}.a3m")
+            if not os.path.exists(evalue_out_file):
+                cmd = cmd_prefix + ['-oa3m', evalue_out_file,
                                     '-e', evalue,
                                     '-v', '0']
                 logging.info('Launching subprocess "%s"', ' '.join(cmd))
@@ -105,12 +106,12 @@ class RosettaFold_Msa_runner:
                          "50": 4000}
 
             for coverage in loop_dict:
-
+                evalue_cov_out_file = os.path.join(tmp_dir, f"t000_.{evalue}.id90cov{coverage}.a3m")
                 cmd = [self.hhfilter_binary_path,
                        '-id', '90',
                        '-cov', coverage,
-                       '-i', f'{tmp_dir}/t000_.{evalue}.a3m',
-                       '-o', f'{tmp_dir}/t000_.{evalue}.id90cov{coverage}.a3m']
+                       '-i', evalue_out_file,
+                       '-o', evalue_cov_out_file]
 
                 logging.info('Launching subprocess "%s"', ' '.join(cmd))
 
@@ -130,13 +131,13 @@ class RosettaFold_Msa_runner:
                     raise RuntimeError('HHfilter failed\nstdout:\n%s\n\nstderr:\n%s\n' % (
                         stdout.decode('utf-8'), stderr[:500_000].decode('utf-8')))
 
-                ret_msg = os.popen(f'grep -c "^>" {tmp_dir}/t000_.{evalue}.id90cov{coverage}.a3m').read()
+                ret_msg = os.popen(f'grep -c "^>" {evalue_cov_out_file}').read()
 
                 num = int(ret_msg.rstrip())
 
                 if num > loop_dict[coverage]:
-                    os.system(f"cp {tmp_dir}/t000_.{evalue}.id90cov{coverage}.a3m {output_a3m_path}")
+                    os.system(f"cp {evalue_cov_out_file} {output_a3m_path}")
                     return dict(a3m=output_a3m_path)
 
-        os.system(f"cp {tmp_dir}/t000_.{evalue}.id90cov{coverage}.a3m {output_a3m_path}")
+        os.system(f"cp {evalue_cov_out_file} {output_a3m_path}")
         return dict(a3m=output_a3m_path)

@@ -23,15 +23,16 @@ def rm_if_exists(directory):
 
 def direct_download(tool, address, tools_dir):  ####Tools don't need to be configured after downloading and configuring
     os.chdir(tools_dir)
-    if not os.path.exists(tools_dir+"/"+tool):
-        rm_if_exists(tools_dir+"/"+tool)
+    tool_dir = os.path.join(tools_dir, tool)
+    if not os.path.exists(tool_dir):
+        rm_if_exists(tool_dir)
         os.system("wget "+address)
-        print("Decompressing "+tools_dir+"/"+tool)
+        print("Decompressing "+tool_dir)
         os.system("tar -zxf "+tool+".tar.gz && rm "+tool+".tar.gz")
-        os.system("chmod -R 755 "+tools_dir+"/"+tool)
-        print("Downloading "+tools_dir+"/"+tool+"....Done")
+        os.system("chmod -R 755 "+tool_dir)
+        print("Downloading "+tool_dir+"....Done")
     else:
-        print(tool+" has been installed "+tools_dir+"/"+tool+"....Skip....")
+        print(tool+" has been installed "+tool_dir+"....Skip....")
 
 
 if __name__ == '__main__':
@@ -58,14 +59,16 @@ if __name__ == '__main__':
     os.chdir(tools_dir)
     tools_lst = ["DockQ", "foldseek", "mmalign", "pairwiseQA", "tmalign", "tmscore", "deepmsa", "colabfold", "hhsuite-3.2.0"]
     for tool in tools_lst:
-        if os.path.exists(log_dir+"/"+tool+".done"):
-            print(log_dir+"/"+tool+" installed....skip")
+        logfile = os.path.join(log_dir, tool + '.done')
+        if os.path.exists(logfile):
+            print(os.path.join(log_dir, tool) +" installed....skip")
         else:
-            os.system("touch "+log_dir+"/"+tool+".running")
+            runfile = os.path.join(log_dir, tool + '.running')
+            os.system(f"touch {runfile}")
             address = "http://sysbio.rnet.missouri.edu/multicom_cluster/multicom3_db_tools/tools/"+tool+".tar.gz"
             direct_download(tool, address, tools_dir)
-            os.system("mv "+log_dir+"/"+tool+".running "+log_dir+"/"+tool+".done")
-            print(log_dir+"/"+tool+" installed")
+            os.system(f"mv {runfile} {logfile}")
+            print(os.path.join(log_dir, tool) + " installed")
 
     ### (2) Download databases
     os.chdir(database_dir)
@@ -82,23 +85,25 @@ if __name__ == '__main__':
     db_lst = ["af_pdbs","Metaclust_2018_06","myg_uniref100_04_2020","pdb_complex","pdb_sort90","string","uniprot2pdb"]
     for db in db_lst:
         print("Download "+db)
-        if os.path.exists(database_dir + '/' + db):
+        if os.path.exists(os.path.join(database_dir, db)):
             continue
         direct_download(db,"http://sysbio.rnet.missouri.edu/multicom_cluster/multicom3_db_tools/databases/"+db+".tar.gz",database_dir)
 
     #### Download uniclust30_2018_08_hhsuite
     print("Download uniclust30_2018_08_hhsuite\n")
-    if not os.path.exists(database_dir + '/uniclust30_2018_08'):
+    if not os.path.exists(os.path.join(database_dir, 'uniclust30_2018_08')):
         direct_download("uniclust30_2018_08_hhsuite","https://gwdu111.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_2018_08_hhsuite.tar.gz",database_dir)
 
     #### Download ColabFold database
     print("Download ColabFold database\n")
-    if not os.path.exists(database_dir + '/colabfold'):
-        os.makedirs(database_dir + '/colabfold')
-        os.system(f"sh {tools_dir}/colabfold/setup_databases.sh {database_dir}/colabfold")
+    colabfold_db_dir = os.path.join(database_dir, 'colabfold')
+    if not os.path.exists(colabfold_db_dir):
+        os.makedirs(colabfold_db_dir)
+        download_script = os.path.join(tools_dir, "colabfold/setup_databases.sh")
+        os.system(f"sh {download_script} {colabfold_db_dir}")
 
     ### (3) copy the alphafold-addon scripts
-    alphafold_addon_dir = install_dir + '/alphafold_addon'
+    alphafold_addon_dir = os.path.join(install_dir, 'alphafold_addon')
     if not os.path.exists(alphafold_addon_dir):
         raise Exception(f"Cannot find alphafold_addon_dir: {alphafold_addon_dir}")
     
@@ -109,9 +114,9 @@ if __name__ == '__main__':
                         }
 
     for srcfile in src_to_trg_dict:
-        trgfile = af_dir + '/' + src_to_trg_dict[srcfile]
+        trgfile = os.path.join(args.af_dir, src_to_trg_dict[srcfile])
         if os.path.exists(trgfile):
             os.system(f'rm -rf {trgfile}')
-        os.system(f"cp -r {alphafold_addon_dir}/{srcfile} {trgfile}")
+        os.system(f"cp -r {os.path.join(alphafold_addon_dir, srcfile)} {trgfile}")
 
     print("\nConfiguration....Done")

@@ -85,7 +85,7 @@ def make_chain_id_map_unrelaxed(sequences, descriptions):
 def complete_result(outputdir, model_count):
     complete = True
     for i in range(0, model_count):
-        model = f'{outputdir}/ranked_{i}.pdb'
+        model = os.path.join(outputdir, f'ranked_{i}.pdb')
         if not os.path.exists(model):
             complete = False
             break

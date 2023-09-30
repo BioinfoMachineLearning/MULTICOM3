@@ -48,10 +48,10 @@ def main(argv):
 
     makedir_if_not_exists(FLAGS.output_dir)
 
-    N1_outdir = FLAGS.output_dir + '/N1_monomer_alignments_generation'
-    N1_outdir_img = FLAGS.output_dir + '/N1_monomer_alignments_generation_img'
-    N2_outdir = FLAGS.output_dir + '/N2_monomer_template_search'
-    N3_outdir = FLAGS.output_dir + '/N3_monomer_structure_generation'
+    N1_outdir = os.path.join(FLAGS.output_dir, 'N1_monomer_alignments_generation')
+    N1_outdir_img = os.path.join(FLAGS.output_dir, 'N1_monomer_alignments_generation_img') 
+    N2_outdir = os.path.join(FLAGS.output_dir, 'N2_monomer_template_search')
+    N3_outdir = os.path.join(FLAGS.output_dir, 'N3_monomer_structure_generation')
     img_msas = {}
 
     print("#################################################################################################")
@@ -71,36 +71,36 @@ def main(argv):
     for chain_id in chain_id_map:
         monomer_id = chain_id
         monomer_sequence = chain_id_map[chain_id].sequence
+        monomer_fasta = os.path.join(FLAGS.output_dir, monomer_id + ".fasta")
 
         if monomer_sequence not in processed_seuqences:
-
-            with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
+            with open(monomer_fasta, "w") as fw:
                 write_fasta({chain_id: monomer_sequence}, fw)
-            N1_monomer_outdir = N1_outdir + '/' + monomer_id
+            N1_monomer_outdir = os.path.join(N1_outdir, monomer_id)
             makedir_if_not_exists(N1_monomer_outdir)
-            result = run_monomer_msa_pipeline(f"{FLAGS.output_dir}/{monomer_id}.fasta", N1_monomer_outdir, params)
+            result = run_monomer_msa_pipeline(monomer_fasta, N1_monomer_outdir, params)
             if result is None:
                 raise RuntimeError(f"Program failed in step 1: monomer {monomer_id} alignment generation")
 
             if FLAGS.run_img:
-                N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
+                N1_monomer_outdir_img = os.path.join(N1_outdir_img, monomer_id)
                 makedir_if_not_exists(N1_monomer_outdir_img)
                 img_msas[chain_id] = run_monomer_msa_pipeline_img(params=params,
-                                                                fasta=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                fasta=monomer_fasta,
                                                                 outdir=N1_monomer_outdir_img)
 
-            N2_monomer_outdir = N2_outdir + '/' + monomer_id
+            N2_monomer_outdir = os.path.join(N2_outdir, monomer_id)
             makedir_if_not_exists(N2_monomer_outdir)
             template_file = run_monomer_template_search_pipeline(targetname=monomer_id, sequence=monomer_id,
-                                                                 a3m=f"{N1_monomer_outdir}/{monomer_id}_uniref90.sto",
+                                                                 a3m=os.path.join(N1_monomer_outdir, monomer_id + "_uniref90.sto"),
                                                                  outdir=N2_monomer_outdir, params=params)
             if template_file is None:
                 raise RuntimeError(f"Program failed in step 2: monomer {monomer_id} template search")
 
-            N3_monomer_outdir = N3_outdir + '/' + monomer_id
+            N3_monomer_outdir = os.path.join(N3_outdir, monomer_id)
             makedir_if_not_exists(N3_monomer_outdir)
             if not run_monomer_structure_generation_pipeline_v2(params=params,
-                                                                fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                fasta_path=monomer_fasta,
                                                                 alndir=N1_monomer_outdir,
                                                                 templatedir=N2_monomer_outdir,
                                                                 outdir=N3_monomer_outdir):
@@ -108,34 +108,34 @@ def main(argv):
 
             processed_seuqences[monomer_sequence] = monomer_id
         else:
-            with open(f"{FLAGS.output_dir}/{monomer_id}.fasta", "w") as fw:
+            with open(monomer_fasta, "w") as fw:
                 write_fasta({chain_id: monomer_sequence}, fw)
-            N1_monomer_outdir = N1_outdir + '/' + monomer_id
+            N1_monomer_outdir = os.path.join(N1_outdir, monomer_id)
             makedir_if_not_exists(N1_monomer_outdir)
 
-            copy_same_sequence_msas(srcdir=f"{N1_outdir}/{processed_seuqences[monomer_sequence]}",
+            copy_same_sequence_msas(srcdir=os.path.join(N1_outdir, processed_seuqences[monomer_sequence]),
                                     trgdir=N1_monomer_outdir,
                                     srcname=processed_seuqences[monomer_sequence],
                                     trgname=monomer_id)
 
-            N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
+            N1_monomer_outdir_img = os.path.join(N1_outdir_img, monomer_id)
             makedir_if_not_exists(N1_monomer_outdir_img)
 
-            N2_monomer_outdir = N2_outdir + '/' + monomer_id
+            N2_monomer_outdir = os.path.join(N2_outdir, monomer_id)
             makedir_if_not_exists(N2_monomer_outdir)
 
             # make a copy
-            N3_monomer_outdir = N3_outdir + '/' + monomer_id
+            N3_monomer_outdir = os.path.join(N3_outdir, monomer_id)
 
             if not os.path.exists(N3_monomer_outdir):
-                os.system(f"cp -r {N3_outdir}/{processed_seuqences[monomer_sequence]} {N3_monomer_outdir}")
+                os.system("cp -r " + os.path.join(N3_outdir, processed_seuqences[monomer_sequence]) + " " + N3_monomer_outdir)
 
     print("#################################################################################################")
 
     print("#################################################################################################")
     print("4. Start to generate complex alignments")
 
-    N4_outdir = FLAGS.output_dir + '/N4_monomer_alignments_concatenation'
+    N4_outdir = os.path.join(FLAGS.output_dir, 'N4_monomer_alignments_concatenation')
     makedir_if_not_exists(N4_outdir)
 
     try:
@@ -155,7 +155,7 @@ def main(argv):
 
     print("5. Start to search complex templates based on monomer structures")
 
-    N5_outdir = FLAGS.output_dir + '/N5_monomer_templates_concatenation'
+    N5_outdir = os.path.join(FLAGS.output_dir, 'N5_monomer_templates_concatenation')
 
     run_monomer_templates_concatenation_pipeline(multimers=[chain_id for chain_id in chain_id_map],
                                          monomer_aln_dir=N1_outdir,
@@ -167,7 +167,8 @@ def main(argv):
     print("#################################################################################################")
 
     print("6. Start to generate complex multimer structures")
-    N6_outdir = FLAGS.output_dir + '/N6_multimer_structure_generation'
+    N6_outdir = os.path.join(FLAGS.output_dir, 'N6_multimer_structure_generation')
+
     makedir_if_not_exists(N6_outdir)
 
     run_methods = ['default',
@@ -232,51 +233,51 @@ def main(argv):
                     if os.path.exists(img_msas[chain_id]):
                         print("Found img alignment, start to run monomer model generation again")
 
-                        N1_monomer_outdir_img = N1_outdir_img + '/' + monomer_id
-                        os.system(f"cp {N1_outdir}/{monomer_id}/{monomer_id}_uniref90.sto {N1_monomer_outdir_img}")
+                        N1_monomer_outdir_img = os.path.join(N1_outdir_img, monomer_id)
+                        os.system("cp " + os.path.join(N1_outdir, monomer_id, monomer_id + "_uniref90.sto") + " "  + N1_monomer_outdir_img)
 
                         if not run_monomer_structure_generation_pipeline_v2(params=params,
                                                                             run_methods=['img', 'img+seq_template'],
-                                                                            fasta_path=f"{FLAGS.output_dir}/{monomer_id}.fasta",
+                                                                            fasta_path=os.path.join(FLAGS.output_dir, monomer_id+".fasta"),
                                                                             alndir=N1_monomer_outdir_img,
-                                                                            templatedir=N2_outdir + '/' + monomer_id,
-                                                                            outdir=N3_outdir + '/' + monomer_id):
+                                                                            templatedir=os.path.join(N2_outdir, monomer_id),
+                                                                            outdir=os.path.join(N3_outdir, monomer_id)):
                             print("Program failed in step 3: monomer structure generation")
                         processed_seuqences[monomer_sequence] = monomer_id
                         img_processed_list += [chain_id]
                 else:
-                    copy_same_sequence_msas(srcdir=f"{N1_outdir}_img/{processed_seuqences[monomer_sequence]}",
-                                            trgdir=f"{N1_outdir}_img/{monomer_id}",
+                    copy_same_sequence_msas(srcdir=os.path.join(f"{N1_outdir}_img", processed_seuqences[monomer_sequence]),
+                                            trgdir=os.path.join(f"{N1_outdir}_img", monomer_id),
                                             srcname=processed_seuqences[monomer_sequence],
                                             trgname=monomer_id)
 
                     # make a copy
-                    N3_monomer_outdir = N3_outdir + '/' + monomer_id
+                    N3_monomer_outdir = os.path.join(N3_outdir, monomer_id)
 
                     if os.path.exists(N3_monomer_outdir):
                         os.system(f"rm -rf {N3_monomer_outdir}")
 
                     makedir_if_not_exists(N3_monomer_outdir)
-                    os.system(f"cp -r {N3_outdir}/{processed_seuqences[monomer_sequence]} {N3_monomer_outdir}")
+                    os.system("cp -r " + os.path.join(N3_outdir, processed_seuqences[monomer_sequence]) + " " + N3_monomer_outdir)
 
             # sleep for 5 mins
             time.sleep(300)
 
     print("7. Start to evaluate monomer models")
 
-    N7_outdir = FLAGS.output_dir + '/N7_monomer_structure_evaluation'
+    N7_outdir = os.path.join(FLAGS.output_dir, 'N7_monomer_structure_evaluation')
     monomer_qas_res = {}
     processed_seuqences = {}
     for chain_id_idx, chain_id in enumerate(chain_id_map):
         monomer_id = chain_id
         monomer_sequence = chain_id_map[chain_id].sequence
         if monomer_sequence not in processed_seuqences:
-            N7_monomer_outdir = N7_outdir + '/' + monomer_id
+            N7_monomer_outdir = os.path.join(N7_outdir, monomer_id)
             makedir_if_not_exists(N7_monomer_outdir)
             result = run_monomer_evaluation_pipeline(params=params,
                                                      targetname=monomer_id,
-                                                     fasta_file=f"{FLAGS.output_dir}/{monomer_id}.fasta",
-                                                     input_monomer_dir=N3_outdir + '/' + monomer_id,
+                                                     fasta_file=os.path.join(FLAGS.output_dir, f"{monomer_id}.fasta"),
+                                                     input_monomer_dir=os.path.join(N3_outdir, monomer_id),
                                                      input_multimer_dir=N6_outdir,
                                                      outputdir=N7_monomer_outdir, generate_egnn_models=True)
             if result is None:
@@ -285,10 +286,10 @@ def main(argv):
             processed_seuqences[monomer_sequence] = monomer_id
         else:
             # make a copy
-            N7_monomer_outdir = N7_outdir + '/' + monomer_id
-            os.system(f"cp -r {N7_outdir}/{processed_seuqences[monomer_sequence]} {N7_monomer_outdir}")
-            for msa in os.listdir(N7_monomer_outdir + '/msa'):
-                os.system(f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' {N7_monomer_outdir}/msa/{msa}")
+            N7_monomer_outdir = os.path.join(N7_outdir, monomer_id)
+            os.system("cp -r " + os.path.join(N7_outdir, processed_seuqences[monomer_sequence]) + " " + N7_monomer_outdir)
+            for msa in os.listdir(os.path.join(N7_monomer_outdir, 'msa')):
+                os.system(f"sed -i 's/>{processed_seuqences[monomer_sequence]}/>{monomer_id}/g' " + os.path.join(N7_monomer_outdir, 'msa', msa))
             monomer_qas_res[monomer_id] = copy.deepcopy(monomer_qas_res[processed_seuqences[monomer_sequence]])
 
     print("#################################################################################################")
@@ -305,8 +306,8 @@ def main(argv):
             monomer_id = chain_id
             monomer_ranking = pd.read_csv(monomer_qas_res[monomer_id]['apollo_monomer'])
             pdb_name = monomer_ranking.loc[i, 'model']
-            monomer_pdb_dirs[chain_id] = f"{N7_outdir}/{monomer_id}/pdb/{pdb_name}"
-            monomer_alphafold_a3ms[chain_id] = f"{N7_outdir}/{monomer_id}/msa/{pdb_name.replace('.pdb', '.a3m')}"
+            monomer_pdb_dirs[chain_id] = os.path.join(N7_outdir, monomer_id, 'pdb', pdb_name)
+            monomer_alphafold_a3ms[chain_id] =  os.path.join(N7_outdir, monomer_id, 'msa', pdb_name.replace('.pdb', '.a3m'))
         pipeline_inputs += [foldseek_iterative_monomer_input(monomer_pdb_dirs=monomer_pdb_dirs,
                                                              monomer_alphafold_a3ms=monomer_alphafold_a3ms)]
 
@@ -323,7 +324,7 @@ def main(argv):
 
     print("9. Start to evaluate multimer models")
 
-    N8_outdir = FLAGS.output_dir + '/N8_multimer_structure_evaluation'
+    N8_outdir = os.path.join(FLAGS.output_dir, 'N8_multimer_structure_evaluation')
     multimer_qa_result = run_multimer_evaluation_pipeline(fasta_path=FLAGS.fasta_path,
                                                           params=params,
                                                           chain_id_map=chain_id_map,
@@ -335,7 +336,7 @@ def main(argv):
 
     print("10. Start to refine multimer models based on the qa rankings")
 
-    N9_outdir = FLAGS.output_dir + '/N9_multimer_structure_refinement'
+    N9_outdir = os.path.join(FLAGS.output_dir, 'N9_multimer_structure_refinement')
 
     makedir_if_not_exists(N9_outdir)
     ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
@@ -345,15 +346,13 @@ def main(argv):
         pdb_name = ref_ranking.loc[i, 'model']
         msa_paths = {}
         for chain_id in chain_id_map:
-            msa_paths[chain_id] = dict(
-                paired_msa=f"{N8_outdir}/msa/{chain_id}/{pdb_name.replace('.pdb', '')}.paired.a3m",
-                monomer_msa=f"{N8_outdir}/msa/{chain_id}/{pdb_name.replace('.pdb', '')}.monomer.a3m")
+            msa_paths[chain_id] = dict(paired_msa=os.path.join(N8_outdir, 'msa', chain_id, pdb_name.replace('.pdb', '') + ".paired.a3m"),
+                                       monomer_msa=os.path.join(N8_outdir, 'msa', chain_id, pdb_name.replace('.pdb', '') + ".monomer.a3m"))
 
         refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
                                                                                     fasta_path=FLAGS.fasta_path,
-                                                                                    pdb_path=N8_outdir + '/pdb/' + pdb_name,
-                                                                                    pkl_path=N8_outdir + '/pkl/' + pdb_name.replace(
-                                                                                        '.pdb', '.pkl'),
+                                                                                    pdb_path=os.path.join(N8_outdir, 'pdb', pdb_name),
+                                                                                    pkl_path=os.path.join(N8_outdir, 'pkl', pdb_name.replace('.pdb', '.pkl')),
                                                                                     msa_paths=msa_paths)
         refine_inputs += [refine_input]
 

@@ -181,9 +181,11 @@ class Monomer_iterative_refinement_pipeline:
         for i in range(len(templates)):
             template_pdb = templates.loc[i, 'target']
             if template_pdb.find('.pdb.gz') > 0:
-                os.system(f"cp {self.params['foldseek_af_database_dir']}/{template_pdb} {outdir}")
+                template_path = os.path.join(self.params['foldseek_af_database_dir'], template_pdb)
+                os.system(f"cp {template_path} {outdir}")
             else:
-                os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb} {outdir}")
+                template_path = os.path.join(self.params['foldseek_pdb_database_dir'], template_pdb)
+                os.system(f"cp {template_path} {outdir}")
             os.system(f"gunzip -f {template_pdb}")
 
     def search_single(self, fasta_path, pdb_path, pkl_path, msa_path, outdir):
@@ -210,12 +212,12 @@ class Monomer_iterative_refinement_pipeline:
 
         for num_iteration in range(self.max_iteration):
             os.chdir(cwd)
-            current_work_dir = f"{outdir}/iteration{num_iteration + 1}"
+            current_work_dir = os.path.join(outdir, f"iteration{num_iteration + 1}")
             makedir_if_not_exists(current_work_dir)
 
-            start_pdb = f"{current_work_dir}/start.pdb"
-            start_msa = f"{current_work_dir}/start.a3m"
-            start_pkl = f"{current_work_dir}/start.pkl"
+            start_pdb = os.path.join(current_work_dir, "start.pdb")
+            start_msa = os.path.join(current_work_dir, "start.a3m")
+            start_pkl = os.path.join(current_work_dir, "start.pkl")
 
             os.system(f"cp {ref_start_pdb} {start_pdb}")
             os.system(f"cp {ref_start_msa} {start_msa}")
@@ -226,33 +228,35 @@ class Monomer_iterative_refinement_pipeline:
 
             model_iteration_scores += [ref_avg_lddt]
 
-            out_model_dir = f"{current_work_dir}/alphafold"
+            out_model_dir = os.path.join(current_work_dir, "alphafold")
             if not complete_result(out_model_dir, 5 * int(self.params['num_monomer_predictions_per_model'])):
 
-                foldseek_res = self.search_templates(inpdb=start_pdb, outdir=current_work_dir + '/foldseek')
+                foldseek_res = self.search_templates(inpdb=start_pdb, outdir=os.path.join(current_work_dir, 'foldseek'))
 
-                if not self.check_and_rank_templates(foldseek_res, f"{current_work_dir}/structure_templates.csv",
+                if not self.check_and_rank_templates(foldseek_res, os.path.join(current_work_dir, "structure_templates.csv"),
                                                      query_sequence):
                     print(f"Cannot find any templates in iteration {num_iteration + 1}")
                     break
 
                 self.generate_msa_from_templates(fasta_file=fasta_path,
-                                                 template_file=f"{current_work_dir}/structure_templates.csv",
+                                                 template_file=os.path.join(current_work_dir, "structure_templates.csv"),
                                                  start_msa=start_msa,
-                                                 outfile=f"{current_work_dir}/iteration{num_iteration + 1}.a3m")
+                                                 outfile=os.path.join(current_work_dir, f"iteration{num_iteration + 1}.a3m"))
 
-                out_template_dir = f"{current_work_dir}/template_pdbs"
+                out_template_dir = os.path.join(current_work_dir, "template_pdbs")
                 makedir_if_not_exists(out_template_dir)
-                self.copy_atoms_and_unzip(template_csv=f"{current_work_dir}/structure_templates.csv",
+                self.copy_atoms_and_unzip(template_csv=os.path.join(current_work_dir, "structure_templates.csv"),
                                           outdir=out_template_dir)
 
                 makedir_if_not_exists(out_model_dir)
+                custom_msa = os.path.join(current_work_dir, f"iteration{num_iteration + 1}.a3m")
+                temp_struct_csv = os.path.join(current_work_dir, "structure_templates.csv")
                 cmd = f"python {self.params['alphafold_program']} " \
                       f"--fasta_path {fasta_path} " \
                       f"--env_dir {self.params['alphafold_env_dir']} " \
                       f"--database_dir {self.params['alphafold_database_dir']} " \
-                      f"--custom_msa {current_work_dir}/iteration{num_iteration + 1}.a3m " \
-                      f"--temp_struct_csv {current_work_dir}/structure_templates.csv " \
+                      f"--custom_msa {custom_msa} " \
+                      f"--temp_struct_csv {temp_struct_csv} " \
                       f"--struct_atom_dir {out_template_dir} " \
                       f"--monomer_num_ensemble {self.params['monomer_num_ensemble']} " \
                       f"--monomer_num_recycle {self.params['monomer_num_recycle']} " \
@@ -265,7 +269,7 @@ class Monomer_iterative_refinement_pipeline:
                 except Exception as e:
                     print(e)
 
-            new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+            new_ranking_json_file = os.path.join(out_model_dir, "ranking_debug.json")
             new_ranking_json = json.loads(open(new_ranking_json_file).read())
             max_lddt_score = new_ranking_json["plddts"][list(new_ranking_json["order"])[0]]
 
@@ -274,10 +278,10 @@ class Monomer_iterative_refinement_pipeline:
             print(f"plddt after: {max_lddt_score}")
             if max_lddt_score > ref_avg_lddt:
                 print("Continue to refine")
-                ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                ref_start_pdb = os.path.join(out_model_dir, "ranked_0.pdb")
                 model_name = list(new_ranking_json["order"])[0]
-                ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
-                ref_start_msa = f"{out_model_dir}/msas/monomer_final.a3m"
+                ref_start_pkl = os.path.join(out_model_dir, f"result_{model_name}.pkl")
+                ref_start_msa = os.path.join(out_model_dir, 'msas', "monomer_final.a3m")
                 print('##################################################')
                 if num_iteration + 1 >= self.max_iteration:
                     print("Reach maximum iteration")
@@ -285,10 +289,10 @@ class Monomer_iterative_refinement_pipeline:
             else:
                 # keep the models in iteration 1 even through the plddt score decreases
                 if num_iteration == 0:
-                    ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                    ref_start_pdb = os.path.join(out_model_dir, "ranked_0.pdb")
                     model_name = list(new_ranking_json["order"])[0]
-                    ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
-                    ref_start_msa = f"{out_model_dir}/msas/monomer_final.a3m"
+                    ref_start_pkl = os.path.join(out_model_dir, f"result_{model_name}.pkl")
+                    ref_start_msa = os.path.join(out_model_dir, 'msas', "monomer_final.a3m")
                     model_iteration_scores += [max_lddt_score]
                 break
 
@@ -297,16 +301,15 @@ class Monomer_iterative_refinement_pipeline:
 
         print(model_iteration_scores)
         df = pd.DataFrame(model_iteration_scores)
-        df.to_csv(outdir + '/summary.csv')
+        df.to_csv(os.path.join(outdir, 'summary.csv'))
 
-        final_model_dir = outdir + '/final'
+        final_model_dir = os.path.join(outdir, 'final')
 
         makedir_if_not_exists(final_model_dir)
 
-        os.system(f"cp {ref_start_pdb} {final_model_dir}/final.pdb")
-        os.system(f"cp {ref_start_pkl} {final_model_dir}/final.pkl")
-        os.system(f"cp {ref_start_msa} {final_model_dir}/final.a3m")
-
+        os.system("cp " + ref_start_pdb + " " + os.path.join(final_model_dir, "final.pdb"))
+        os.system("cp " + ref_start_pkl + " " + os.path.join(final_model_dir, "final.pkl"))
+        os.system("cp " + ref_start_msa + " " + os.path.join(final_model_dir, "final.a3m"))
         os.chdir(cwd)
 
         return final_model_dir

@@ -13,12 +13,14 @@ import pathlib
 def run_msa_tool(inparams):
     msa_runner, input_fasta_path, msa_out_path, msa_out_name, msa_key = inparams
     """Runs an MSA tool, checking if output already exists first."""
-    if not os.path.exists(msa_out_path + '/' + msa_out_name) or len(open(msa_out_path + '/' + msa_out_name).readlines()) == 0:
-        workdir = msa_out_path + '/' + msa_key
+    msa_out_file = os.path.join(msa_out_path, msa_out_name)
+    if not os.path.exists(msa_out_file) or len(open(msa_out_file).readlines()) == 0:
+        workdir = os.path.join(msa_out_path, msa_key)
         makedir_if_not_exists(workdir)
-        result = msa_runner.query(input_fasta_path, workdir + '/' + msa_out_name)
-        os.system(f"cp {workdir}/{msa_out_name} {msa_out_path}/{msa_out_name}")
-    return msa_key, msa_out_path + '/' + msa_out_name
+        temp_msa_out_file = os.path.join(workdir, msa_out_name)
+        result = msa_runner.query(input_fasta_path, temp_msa_out_file)
+        os.system(f"cp {temp_msa_out_file} {msa_out_file}")
+    return msa_key, msa_out_file
 
 
 class Monomer_alignment_generation_pipeline:

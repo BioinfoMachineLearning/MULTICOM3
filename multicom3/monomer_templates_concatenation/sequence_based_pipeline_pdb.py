@@ -199,13 +199,13 @@ class Complex_sequence_based_template_search_pipeline:
                         hit_name = self.find_matches_between_pdbcodes(hit1_name, hit2_name)
                         # print(hit1_name)
                         if len(hit_name) > 0:
-                            if not os.path.exists(self.template_hmm_dir + '/' + hit_name + '.hmm'):
+                            hmm_file = os.path.join(self.template_hmm_dir, hit_name + '.hmm')
+                            if not os.path.exists(hmm_file):
                                 print(f"cannot find {hit_name}.hmm in {self.template_hmm_dir}")
                                 continue
-                            hit = self.align_template(
-                                monomer_inputs[i].hmm_path,
-                                self.template_hmm_dir + '/' + hit_name + '.hmm',
-                                outdir)
+                            hit = self.align_template(monomer_inputs[i].hmm_path,
+                                                      hmm_file,
+                                                      outdir)
 
                     if hit is None:
                         continue
@@ -296,15 +296,16 @@ class Complex_sequence_based_template_search_pipeline:
 
         for monomer_input in monomer_inputs:
 
-            monomer_outdir = outdir + '/' + monomer_input.name
+            monomer_outdir = os.path.join(outdir, monomer_input.name)
 
             makedir_if_not_exists(monomer_outdir)
 
             pdb_hits_out_path = os.path.join(monomer_outdir, 'output.hhr')
             if os.path.exists(pdb_hits_out_path):
                 pdb_templates_result = open(pdb_hits_out_path).read()
-                monomer_input.msa_path = monomer_outdir + '/' + monomer_input.name + '.a3m'
-                monomer_input.hmm_path = monomer_outdir + '/' + monomer_input.name + '.hmm'
+                monomer_input.msa_path = os.path.join(outdir, monomer_input.name + '.a3m')
+                monomer_input.hmm_path = os.path.join(outdir, monomer_input.name + '.hmm')
+
             else:
                 with open(monomer_input.msa_path) as f:
                     msa_for_templates = f.read()
@@ -313,12 +314,12 @@ class Complex_sequence_based_template_search_pipeline:
                         msa_for_templates = parsers.remove_empty_columns_from_stockholm_msa(msa_for_templates)
                         msa_for_templates = parsers.convert_stockholm_to_a3m(msa_for_templates)
 
-                        with open(monomer_outdir + '/' + monomer_input.name + '.a3m', 'w') as fw:
+                        with open(os.path.join(monomer_outdir, monomer_input.name + '.a3m'), 'w') as fw:
                             fw.write(msa_for_templates)
 
-                        monomer_input.msa_path = monomer_outdir + '/' + monomer_input.name + '.a3m'
+                        monomer_input.msa_path = os.path.join(monomer_outdir, monomer_input.name + '.a3m')
 
-                    monomer_input.hmm_path = monomer_outdir + '/' + monomer_input.name + '.hmm'
+                    monomer_input.hmm_path = os.path.join(monomer_outdir, monomer_input.name + '.hmm')
                     os.system(f"{self.hhmake_program} -i {monomer_input.msa_path} -o {monomer_input.hmm_path}")
                     with open(monomer_input.hmm_path) as f:
                         msa_for_templates = f.read()
@@ -373,18 +374,19 @@ class Complex_sequence_based_template_search_pipeline:
             concatenated_pd_v2 = concatenated_pd_v2.append(prev_pd_v2)
 
         concatenated_pd.reset_index(inplace=True, drop=True)
-        concatenated_pd.to_csv(outdir + '/sequence_templates.csv')
+        concatenated_pd.to_csv(os.path.join(outdir, 'sequence_templates.csv'))
         concatenated_pd_v2.reset_index(inplace=True, drop=True)
-        concatenated_pd_v2.to_csv(outdir + '/sequence_templates_v2.csv')
+        concatenated_pd_v2.to_csv(os.path.join(outdir, 'sequence_templates_v2.csv'))
 
         cwd = os.getcwd()
-        template_dir = outdir + '/templates'
+        template_dir = os.path.join(outdir, 'templates')
         makedir_if_not_exists(template_dir)
         os.chdir(template_dir)
         for i in range(len(concatenated_pd)):
             for j in range(len(monomer_inputs)):
                 template_pdb = concatenated_pd.loc[i, f'template{j + 1}'].split()[0]
-                os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")
+                template_path = os.path.join(self.atom_dir, template_pdb + '.atom.gz')
+                os.system(f"cp {template_path} .")
                 os.system(f"gunzip -f {template_pdb}.atom.gz")
 
         for i in range(len(concatenated_pd_v2)):
@@ -392,5 +394,6 @@ class Complex_sequence_based_template_search_pipeline:
                 template_name = concatenated_pd_v2.loc[i, f'template{j + 1}']
                 if not pd.isna(template_name):
                     template_pdb = template_name.split()[0]
-                    os.system(f"cp {self.atom_dir}/{template_pdb}.atom.gz .")
+                    template_path = os.path.join(self.atom_dir, template_pdb + '.atom.gz')
+                    os.system(f"cp {template_path} .")
                     os.system(f"gunzip -f {template_pdb}.atom.gz")

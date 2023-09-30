@@ -40,7 +40,7 @@ class ColabFold_Msa_runner:
 
         outpath = os.path.dirname(os.path.abspath(output_a3m_path))
 
-        tmp_dir = outpath + '/colabfold'
+        tmp_dir = os.path.join(outpath, 'colabfold')
 
         if not os.path.exists(tmp_dir):
             os.makedirs(tmp_dir)
@@ -50,7 +50,7 @@ class ColabFold_Msa_runner:
             self.colabfold_search_binary_path,
             input_fasta_path,
             self.colabfold_databases,
-            tmp_dir + '/search_result'
+            os.path.join(tmp_dir, 'search_result')
         ]
 
         logging.info('Colabfold subprocess "%s"', ' '.join(cmd))
@@ -73,11 +73,12 @@ class ColabFold_Msa_runner:
 
         os.system(f"python {self.colabfold_split_msas_binary_path} {tmp_dir}/search_result {tmp_dir}/msas")
 
-        if not os.path.exists(f"{tmp_dir}/msas/{targetname}.a3m"):
+        out_temp_msa = os.path.join(tmp_dir, 'msas', targetname + ".a3m")
+        if not os.path.exists(out_temp_msa):
             raise RuntimeError(f"Cannot find the generated a3m file for {targetname}")
 
         # need to remove the first line
-        open(output_a3m_path, 'w').writelines(open(f"{tmp_dir}/msas/{targetname}.a3m").readlines()[1:])
+        open(output_a3m_path, 'w').writelines(open(out_temp_msa).readlines()[1:])
         # os.system(f"cp {tmp_dir}/msas/{targetname}.a3m {output_a3m_path}")
         os.system(f"rm -rf {tmp_dir}")
         return dict(a3m=output_a3m_path)

@@ -138,78 +138,71 @@ class Monomer_structure_evaluation_pipeline:
         pdb_count = len(os.listdir(pdbdir))
 
         if "alphafold" in self.run_methods:
-            # if os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
-            #     df = pd.read_csv(output_dir_abs + '/alphafold_ranking.csv')
-            #     if len(df) != pdb_count:
-            #         os.system(f"rm {output_dir_abs}/alphafold_ranking.csv")
-
-            # if not os.path.exists(output_dir_abs + '/alphafold_ranking.csv'):
             alphafold_ranking = self.alphafold_qa.run(pkldir)
-            alphafold_ranking.to_csv(output_dir_abs + '/alphafold_ranking.csv')
-            result_dict["alphafold"] = output_dir_abs + '/alphafold_ranking.csv'
+            ranking_file = os.path.join(output_dir_abs, 'alphafold_ranking.csv')
+            alphafold_ranking.to_csv(ranking_file)
+            result_dict["alphafold"] =ranking_file
 
-            # if not os.path.exists(output_dir_abs + '/alphafold_ranking_monomer.csv'):
             monomer_indices = [i for i in range(len(alphafold_ranking)) if
                                alphafold_ranking.loc[i, 'model'] in pdbs_from_monomer]
             alphafold_ranking_monomer = copy.deepcopy(alphafold_ranking.iloc[monomer_indices])
             alphafold_ranking_monomer.reset_index(inplace=True, drop=True)
-            alphafold_ranking_monomer.to_csv(output_dir_abs + '/alphafold_ranking_monomer.csv')
-            result_dict["alphafold_monomer"] = output_dir_abs + '/alphafold_ranking_monomer.csv'
+            ranking_file = os.path.join(output_dir_abs, 'alphafold_ranking_monomer.csv')
+            alphafold_ranking_monomer.to_csv(ranking_file)
+            result_dict["alphafold_monomer"] = ranking_file
 
-            # if not os.path.exists(output_dir_abs + '/alphafold_ranking_multimer.csv'):
             monomer_indices = [i for i in range(len(alphafold_ranking)) if
                                alphafold_ranking.loc[i, 'model'] in pdbs_from_multimer]
             alphafold_ranking_multimer = copy.deepcopy(alphafold_ranking.iloc[monomer_indices])
             alphafold_ranking_multimer.reset_index(inplace=True, drop=True)
-            alphafold_ranking_multimer.to_csv(output_dir_abs + '/alphafold_ranking_multimer.csv')
-            result_dict["alphafold_multimer"] = output_dir_abs + '/alphafold_ranking_multimer.csv'
+            ranking_file = os.path.join(output_dir_abs, 'alphafold_ranking_multimer.csv')
+            alphafold_ranking_multimer.to_csv(ranking_file)
+            result_dict["alphafold_multimer"] = ranking_file
 
         if "apollo" in self.run_methods:
-            if os.path.exists(output_dir_abs + '/pairwise_ranking.tm'):
-                df = read_qa_txt_as_df(output_dir_abs + '/pairwise_ranking.tm')
+            ranking_file = os.path.join(output_dir_abs, 'pairwise_ranking.tm')
+            if os.path.exists(ranking_file):
+                df = read_qa_txt_as_df(ranking_file)
                 if len(df) != pdb_count:
-                    os.system(f"rm {output_dir_abs}/pairwise_ranking.tm")
+                    os.system(f"rm {ranking_file}")
 
-            if not os.path.exists(output_dir_abs + '/pairwise_ranking.tm'):
+            if not os.path.exists(ranking_file):
                 os.chdir(output_dir_abs)
                 with open("model.list", 'w') as fw:
                     for pdb in os.listdir(pdbdir):
-                        fw.write(f"pdb/{pdb}\n")
+                        fw.write(os.path.join('pdb', pdb) + "\n")
                 print(f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
                 os.system(
                     f"{self.parwise_qa} model.list {fasta_file} {self.tmscore} . pairwise_ranking")
-            result_dict["apollo"] = output_dir_abs + '/pairwise_ranking.tm'
-            pairwise_ranking_df = read_qa_txt_as_df(output_dir_abs + '/pairwise_ranking.tm')
+            result_dict["apollo"] = ranking_file
+            pairwise_ranking_df = read_qa_txt_as_df(ranking_file)
             monomer_indices = [i for i in range(len(pairwise_ranking_df)) if
                                pairwise_ranking_df.loc[i, 'model'] in pdbs_from_monomer]
             pairwise_ranking_monomer = copy.deepcopy(pairwise_ranking_df.iloc[monomer_indices])
             pairwise_ranking_monomer.reset_index(inplace=True, drop=True)
-            pairwise_ranking_monomer.to_csv(output_dir_abs + '/pairwise_ranking_monomer.csv')
-            result_dict["apollo_monomer"] = output_dir_abs + '/pairwise_ranking_monomer.csv'
+            ranking_file = os.path.join(output_dir_abs, 'pairwise_ranking_monomer.csv')
+            pairwise_ranking_monomer.to_csv(ranking_file)
+            result_dict["apollo_monomer"] = ranking_file
        
         if "bfactor" in self.run_methods:
-            # if os.path.exists(output_dir_abs + '/bfactor_ranking.csv'):
-            #     df = pd.read_csv(output_dir_abs + '/bfactor_ranking.csv')
-            #     if len(df) != pdb_count:
-            #         os.system(f"rm {output_dir_abs}/bfactor_ranking.csv")
-            # if not os.path.exists(output_dir_abs + '/bfactor_ranking.csv'):
+            ranking_file = os.path.join(output_dir_abs, 'bfactor_ranking.csv')
             bfactor_ranking = self.bfactorqa.run(input_dir=pdbdir)
-            bfactor_ranking.to_csv(output_dir_abs + '/bfactor_ranking.csv')
-            result_dict["bfactor"] = output_dir_abs + '/bfactor_ranking.csv'
+            bfactor_ranking.to_csv(ranking_file)
+            result_dict["bfactor"] = ranking_file
 
         if "apollo" in self.run_methods and "alphafold" in self.run_methods:
             pairwise_ranking_df = read_qa_txt_as_df(result_dict["apollo"])
             ranks = [i + 1 for i in range(len(pairwise_ranking_df))]
-            print(ranks)
+            # print(ranks)
             pairwise_ranking_df['pairwise_rank'] = ranks
-            print(pairwise_ranking_df)
+            # print(pairwise_ranking_df)
             alphafold_ranking_df = pd.read_csv(result_dict['alphafold'])
             ranks = [i + 1 for i in range(len(alphafold_ranking_df))]
             alphafold_ranking_df['alphafold_rank'] = ranks
             avg_ranking_df = pairwise_ranking_df.merge(alphafold_ranking_df, how="inner", on='model')
             avg_scores = []
             avg_rankings = []
-            print(avg_ranking_df)
+            # print(avg_ranking_df)
             for i in range(len(avg_ranking_df)):
                 pairwise_score = float(avg_ranking_df.loc[i, 'score'])
                 alphafold_score = float(avg_ranking_df.loc[i, 'plddt_avg']) / 100
@@ -224,22 +217,25 @@ class Monomer_structure_evaluation_pipeline:
             avg_ranking_df.reset_index(inplace=True, drop=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="index"), axis=1, inplace=True)
             avg_ranking_df.drop(avg_ranking_df.filter(regex="Unnamed"), axis=1, inplace=True)
-            avg_ranking_df.to_csv(output_dir_abs + '/pairwise_af_avg.ranking')
-            result_dict["pairwise_af_avg"] = output_dir_abs + '/pairwise_af_avg.ranking'
+            ranking_file = os.path.join(output_dir_abs, 'pairwise_af_avg.ranking')
+            avg_ranking_df.to_csv(ranking_file)
+            result_dict["pairwise_af_avg"] = ranking_file
 
             monomer_indices = [i for i in range(len(avg_ranking_df)) if
                                avg_ranking_df.loc[i, 'model'] in pdbs_from_monomer]
             avg_ranking_df_monomer = copy.deepcopy(avg_ranking_df.iloc[monomer_indices])
             avg_ranking_df_monomer.reset_index(inplace=True, drop=True)
-            avg_ranking_df_monomer.to_csv(output_dir_abs + '/pairwise_af_avg_monomer.ranking')
-            result_dict["pairwise_af_avg_monomer"] = output_dir_abs + '/pairwise_af_avg_monomer.ranking'
+            ranking_file = os.path.join(output_dir_abs, 'pairwise_af_avg_monomer.ranking')
+            avg_ranking_df_monomer.to_csv(ranking_file)
+            result_dict["pairwise_af_avg_monomer"] = ranking_file
 
             monomer_indices = [i for i in range(len(avg_ranking_df)) if
                                avg_ranking_df.loc[i, 'model'] in pdbs_from_multimer]
             avg_ranking_df_multimer = copy.deepcopy(avg_ranking_df.iloc[monomer_indices])
             avg_ranking_df_multimer.reset_index(inplace=True, drop=True)
-            avg_ranking_df_multimer.to_csv(output_dir_abs + '/pairwise_af_avg_multimer.ranking')
-            result_dict["pairwise_af_avg_multimer"] = output_dir_abs + '/pairwise_af_avg_multimer.ranking'
+            ranking_file = os.path.join(output_dir_abs, 'pairwise_af_avg_multimer.ranking')
+            avg_ranking_df_multimer.to_csv(ranking_file)
+            result_dict["pairwise_af_avg_multimer"] = ranking_file
 
         os.chdir(cwd)
 
@@ -253,31 +249,31 @@ class Monomer_structure_evaluation_pipeline:
 
         makedir_if_not_exists(output_dir)
 
-        pdbdir = output_dir + '/pdb'
+        pdbdir = os.path.join(output_dir, 'pdb')
         clean_dir(pdbdir)
 
-        pdbdir_monomer = output_dir + '/pdb_monomer'
+        pdbdir_monomer = os.path.join(output_dir, 'pdb_monomer')
         makedir_if_not_exists(pdbdir_monomer)
 
-        pdbdir_multimer = output_dir + '/pdb_multimer'
+        pdbdir_multimer = os.path.join(output_dir, 'pdb_multimer')
         makedir_if_not_exists(pdbdir_multimer)
 
-        pkldir = output_dir + '/pkl'
+        pkldir = os.path.join(output_dir, 'pkl')
         clean_dir(pkldir)
 
-        pkldir_monomer = output_dir + '/pkl_monomer'
+        pkldir_monomer = os.path.join(output_dir, 'pkl_monomer')
         makedir_if_not_exists(pkldir_monomer)
 
-        pkldir_multimer = output_dir + '/pkl_multimer'
+        pkldir_multimer = os.path.join(output_dir, 'pkl_multimer')
         makedir_if_not_exists(pkldir_multimer)
 
-        msadir = output_dir + '/msa'
+        msadir = os.path.join(output_dir, 'msa')
         clean_dir(msadir)
 
-        msadir_monomer = output_dir + '/msa_monomer'
+        msadir_monomer = os.path.join(output_dir, 'msa_monomer')
         makedir_if_not_exists(msadir_monomer)
 
-        msadir_multimer = output_dir + '/msa_multimer'
+        msadir_multimer = os.path.join(output_dir, 'msa_multimer')
         makedir_if_not_exists(msadir_multimer)
 
         pdbs_with_dist = []
@@ -285,65 +281,68 @@ class Monomer_structure_evaluation_pipeline:
         pdbs_from_monomer = []
         if os.path.exists(monomer_model_dir):
             for method in os.listdir(monomer_model_dir):
-                ranking_json_file = f"{monomer_model_dir}/{method}/ranking_debug.json"
+                ranking_json_file = os.path.join(monomer_model_dir, method, "ranking_debug.json")
                 ranking_json = json.loads(open(ranking_json_file).read())
                 for i in range(model_count):
-                    os.system(f"cp {monomer_model_dir}/{method}/ranked_{i}.pdb {pdbdir_monomer}/{method}_{i}.pdb")
+                    pdbname = f"{method}_{i}"
+                    ranked_pdb = os.path.join(monomer_model_dir, method, f"ranked_{i}.pdb")
+                    trg_pdb = os.path.join(pdbdir_monomer, f"{pdbname}.pdb")
+                    os.system(f"cp {ranked_pdb} {trg_pdb}")
 
                     model_name = list(ranking_json["order"])[i]
-                    has_distogram = extract_pkl(src_pkl=f"{monomer_model_dir}/{method}/result_{model_name}.pkl",
-                                                output_pkl=f"{pkldir_monomer}/{method}_{i}.pkl")
-                    os.system(
-                        f"cp {monomer_model_dir}/{method}/msas/monomer_final.a3m {msadir_monomer}/{method}_{i}.a3m")
-                    pdbs_from_monomer += [f"{method}_{i}.pdb"]
+                    src_pkl = os.path.join(monomer_model_dir, method, f"result_{model_name}.pkl")
+                    output_pkl = os.path.join(pkldir_monomer, f"{pdbname}.pkl")
+                    has_distogram = extract_pkl(src_pkl=src_pkl, output_pkl=output_pkl)
 
-                    os.system(f"ln -s {pdbdir_monomer}/{method}_{i}.pdb {pdbdir}/{method}_{i}.pdb")
-                    os.system(f"ln -s {pkldir_monomer}/{method}_{i}.pkl {pkldir}/{method}_{i}.pkl")
-                    os.system(f"ln -s {msadir_monomer}/{method}_{i}.a3m {msadir}/{method}_{i}.a3m")
+                    src_msa = os.path.join(monomer_model_dir, method, 'msas', "monomer_final.a3m")
+                    trg_msa = os.path.join(msadir_monomer, f"{pdbname}.a3m")
+                    os.system(f"cp {src_msa} {trg_msa}")
+                    pdbs_from_monomer += [f"{pdbname}.pdb"]
+
+                    os.system("ln -s " + os.path.join(pdbdir_monomer, pdbname+".pdb") + " " + os.path.join(pdbdir, pdbname+".pdb"))
+                    os.system("ln -s " + os.path.join(pkldir_monomer, pdbname+".pkl") + " " + os.path.join(pkldir, pdbname+".pkl"))
+                    os.system("ln -s " + os.path.join(msadir_monomer, pdbname+".a3m") + " " + os.path.join(msadir, pdbname+".a3m"))
 
                     if has_distogram:
-                        pdbs_with_dist += [f"{method}_{i}.pdb"]
+                        pdbs_with_dist += [f"{pdbname}.pdb"]
 
         pdbs_from_multimer = []
         if os.path.exists(multimer_model_dir):
             for method in os.listdir(multimer_model_dir):
-                ranking_json_file = f"{multimer_model_dir}/{method}/ranking_debug.json"
+                ranking_json_file = os.path.join(multimer_model_dir, method, "ranking_debug.json")
                 if not os.path.exists(ranking_json_file):
                     continue
                 ranking_json = json.loads(open(ranking_json_file).read())
                 for i in range(model_count):
-                    complex_pdb = f"{multimer_model_dir}/{method}/ranked_{i}.pdb"
+                    complex_pdb = os.path.join(multimer_model_dir, method, f"ranked_{i}.pdb")
                     if os.path.exists(complex_pdb):
                         chain_pdb_dict = extract_monomer_pdbs(complex_pdb=complex_pdb,
                                                               sequence=query_sequence,
-                                                              output_prefix=f"{pdbdir_multimer}/{method}_{i}")
-                        print(chain_pdb_dict)
+                                                              output_prefix=os.path.join(pdbdir_multimer, f"{method}_{i}"))
+                        # print(chain_pdb_dict)
                         for chain_id in chain_pdb_dict:
                             pdbname = chain_pdb_dict[chain_id]['pdbname']
-                            print(pdbname)
+                            # print(pdbname)
                             model_name = list(ranking_json["order"])[i]
                             has_distogram = False
-                            src_pkl = f"{multimer_model_dir}/{method}/result_{model_name}.pkl"
+                            src_pkl = os.path.join(multimer_model_dir, method, f"result_{model_name}.pkl")
                             if os.path.exists(src_pkl):
-                                has_distogram = extract_pkl(
-                                        src_pkl=f"{multimer_model_dir}/{method}/result_{model_name}.pkl",
-                                        residue_start=chain_pdb_dict[chain_id]['chain_start'],
-                                        residue_end=chain_pdb_dict[chain_id]['chain_end'],
-                                        output_pkl=pkldir_multimer + '/' + pdbname.replace('.pdb', '.pkl'))
-
-                            os.system(f"cp {multimer_model_dir}/{method}/msas/{chain_id}/monomer_final.a3m "
-                                      f"{msadir_multimer}/{pdbname.replace('.pdb', '.a3m')}")
+                                has_distogram = extract_pkl(src_pkl=src_pkl,
+                                                            residue_start=chain_pdb_dict[chain_id]['chain_start'],
+                                                            residue_end=chain_pdb_dict[chain_id]['chain_end'],
+                                                            output_pkl=os.path.join(pkldir_multimer, pdbname.replace('.pdb', '.pkl')))
+                            
+                            src_msa = os.path.join(multimer_model_dir, method, 'msas', chain_id, 'monomer_final.a3m')
+                            os.system(f"cp {src_msa} {os.path.join(msadir_multimer, pdbname.replace('.pdb', '.a3m'))}")
 
                             # print(f"start: {residue_start}, end:{residue_end}")
                             pdbs_from_multimer += [pdbname]
 
-                            os.system(f"ln -s {pdbdir_multimer}/{pdbname} {pdbdir}/{pdbname}")
-                            os.system(
-                                f"ln -s {pkldir_multimer}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}"
-                                f" {pkldir}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')}")
-                            os.system(
-                                f"ln -s {msadir_multimer}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')} "
-                                f"{msadir}/{chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')}")
+                            os.system("ln -s " + os.path.join(pdbdir_multimer, pdbname) + " " + os.path.join(pdbdir, pdbname))
+                            os.system("ln -s " + os.path.join(pkldir_multimer, chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')) + " " +
+                                      os.path.join(pkldir, chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.pkl')))
+                            os.system("ln -s " + os.path.join(msadir_multimer, chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')) + " " +
+                                      os.path.join(msadir, chain_pdb_dict[chain_id]['pdbname'].replace('.pdb', '.a3m')))
 
                             if has_distogram:
                                 pdbs_with_dist += [pdbname]
@@ -358,9 +357,9 @@ class Monomer_structure_evaluation_pipeline:
 
         makedir_if_not_exists(output_dir)
 
-        pdbdir = output_dir + '/pdb'
-        pkldir = output_dir + '/pkl'
-        msadir = output_dir + '/msa'
+        pdbdir = os.path.join(output_dir, 'pdb')
+        pkldir = os.path.join(output_dir, 'pkl')
+        msadir = os.path.join(output_dir, 'msa')
 
         if not os.path.exists(pdbdir + "_monomer"):
             pdbs_from_monomer = []

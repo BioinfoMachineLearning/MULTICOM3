@@ -33,20 +33,17 @@ class IMG_Msa_runner:
 
         targetname = open(input_fasta_path).readlines()[0].rstrip('\n').lstrip('>')
 
-        if not os.path.exists(outpath + '/img.running'):
+        logfile = os.path.join(outpath, 'img.running')
+        if not os.path.exists(logfile):
+            tmpdir = os.path.join(outpath, 'tmp')
             cmd = f"python {self.binary_path} " \
                   f"{input_fasta_path} " \
                   f"-hhblitsdb={self.bfd_database_path} " \
                   f"-jackhmmerdb={self.img_database_path}  " \
                   f"-hmmsearchdb={self.metaclust_database_path}:{self.mgnify_database_path}:{self.uniref90_database_path} " \
-                  f"-outdir={outpath} -tmpdir={outpath}/tmp -ncpu=8  &> {outpath}/img.running &"
+                  f"-outdir={outpath} -tmpdir={tmpdir} -ncpu=8  &> {logfile} &"
 
             print(cmd)
             os.system(cmd)
-        #
-        # if not os.path.exist(f'{outpath}/{targetname}.a3m'):
-        #     raise Exception(f"Deepmsa failed: {cmd}")
-        #
-        # os.system(f"cp {outpath}/{targetname}.a3m {output_a3m_path}")
 
-        return f"{outpath}/{targetname}.a3m"
+        return os.path.join(outpath, targetname+".a3m")

@@ -7,7 +7,7 @@ import pandas as pd
 
 def run_command(inparams):
     mmalign_program, input_dir, pdb1, pdb2 = inparams
-    cmd = mmalign_program + ' ' + input_dir + '/' + pdb1 + ' ' + input_dir + '/' + pdb2 + " | grep TM-score | awk '{print $2}' "
+    cmd = mmalign_program + ' ' + os.path.join(input_dir, pdb1) + ' ' + os.path.join(input_dir, pdb2) + " | grep TM-score | awk '{print $2}' "
     # print(cmd)
     tmscore_contents = os.popen(cmd).read().split('\n')
     tmscore = float(tmscore_contents[1].rstrip('\n'))

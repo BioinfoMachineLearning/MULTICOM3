@@ -94,8 +94,8 @@ def cal_tmalign(tmalign_program, inpdb, nativepdb, tmpdir):
 
     os.makedirs(tmpdir)
 
-    src_pdb = tmpdir + '/src.pdb'
-    native_pdb = tmpdir + '/native.pdb'
+    src_pdb = os.path.join(tmpdir, 'src.pdb')
+    native_pdb = os.path.join(tmpdir, 'native.pdb')
 
     with open(src_pdb, 'w') as fw:
         for line in open(inpdb):
@@ -128,16 +128,18 @@ def split_pdb(complex_pdb, outdir):
         chain_name = line[21]
         if pre_chain is None:
             pre_chain = chain_name
-            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+            chain_pdb = os.path.join(outdir, chain_name + '.pdb')
+            fw = open(chain_pdb, 'w')
             fw.write(line)
-            chain_pdbs[chain_name] = outdir + '/' + chain_name + '.pdb'
+            chain_pdbs[chain_name] = chain_pdb
         elif chain_name == pre_chain:
             fw.write(line)
         else:
             fw.close()
-            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+            chain_pdb = os.path.join(outdir, chain_name + '.pdb')
+            fw = open(chain_pdb, 'w')
             fw.write(line)
-            chain_pdbs[chain_name] = outdir + '/' + chain_name + '.pdb'
+            chain_pdbs[chain_name] = chain_pdb
             pre_chain = chain_name
     fw.close()
     return chain_pdbs
@@ -155,17 +157,19 @@ def split_pdb_unrelax2relax(complex_pdb, outdir):
         chain_name = line[21]
         if pre_chain is None:
             pre_chain = chain_name
-            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+            chain_pdb = os.path.join(outdir, chain_name + '.pdb')
+            fw = open(chain_pdb, 'w')
             fw.write(line)
-            chain_pdbs[PDB_CHAIN_IDS[chain_idx]] = outdir + '/' + chain_name + '.pdb'
+            chain_pdbs[PDB_CHAIN_IDS[chain_idx]] = chain_pdb
         elif chain_name == pre_chain:
             fw.write(line)
         else:
             fw.close()
-            fw = open(outdir + '/' + chain_name + '.pdb', 'w')
+            chain_pdb = os.path.join(outdir, chain_name + '.pdb')
+            fw = open(chain_pdb, 'w')
             fw.write(line)
             chain_idx += 1
-            chain_pdbs[PDB_CHAIN_IDS[chain_idx]] = outdir + '/' + chain_name + '.pdb'
+            chain_pdbs[PDB_CHAIN_IDS[chain_idx]] = chain_pdb
             pre_chain = chain_name
     fw.close()
     return chain_pdbs
@@ -385,10 +389,11 @@ def assess_complex_templates(chain_id_map, template_infos, gap=0):
 
 
 def cal_sequence_identity_mmseq2(mmseq_program, fasta1, fasta2, tmpdir):
-    cmd = f"{mmseq_program} easy-search {fasta1} {fasta2} {tmpdir}/alnRes_{chain1}_{chain2} {tmpdir} " \
+    aln_res = os.path.join(tmpdir, f"alnRes_{chain1}_{chain2}")
+    cmd = f"{mmseq_program} easy-search {fasta1} {fasta2} {aln_res} {tmpdir} " \
           + '--format-output "query,target,pident,qstart,qend,qaln,tstart,tend,taln" --alignment-mode 3 >/dev/null 2>&1'
     os.system(cmd)
-    contents = open(f"{tmpdir}/alnRes_{chain1}_{chain2}").readlines()
+    contents = open(aln_res).readlines()
     seqid = 0
     if len(contents) > 0:
         line = contents[0].rstrip('\n')
@@ -417,14 +422,16 @@ def assess_complex_templates_homo(chain_id_map, template_infos, mmseq_program, t
                                                       chain_id_map=chain_id_map,
                                                       gap=gap):
                         return False
-                with open(f"{tmpdir}/{i}_{template}.fasta", 'w') as fw:
+                i_fasta = os.path.join(tmpdir, f"{i}_{template}.fasta")
+                j_fasta = os.path.join(tmpdir, f"{j}_{template}.fasta")
+
+                with open(i_fasta, 'w') as fw:
                     fw.write(f">{i}_{template}\n{same_template_infos[template][i]['aln_temp'].replace('-', '')}")
 
-                with open(f"{tmpdir}/{j}_{template}.fasta", 'w') as fw:
+                with open(j_fasta, 'w') as fw:
                     fw.write(f">{j}_{template}\n{same_template_infos[template][j]['aln_temp'].replace('-', '')}")
 
-                if cal_sequence_identity_mmseq2(mmseq_program, f"{tmpdir}/{i}_{template}.fasta"
-                                                f"{tmpdir}/{j}_{template}.fasta", tmpdir) < seqid:
+                if cal_sequence_identity_mmseq2(mmseq_program, i_fasta, j_fasta, tmpdir) < seqid:
                     return False
     return True
 

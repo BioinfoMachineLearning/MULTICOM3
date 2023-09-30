@@ -70,7 +70,7 @@ def main(argv):
     makedir_if_not_exists(N2_outdir)
 
     template_file = run_monomer_template_search_pipeline(params=params, targetname=targetname, sequence=sequence,
-                                                         a3m=f"{N1_outdir}/{targetname}_uniref90.sto", outdir=N2_outdir)
+                                                         a3m=os.path.join(N1_outdir, targetname+"_uniref90.sto"), outdir=N2_outdir)
 
     if template_file is None:
         raise RuntimeError("Program failed in step 2: monomer template search")
@@ -98,7 +98,7 @@ def main(argv):
 
         print("Found img alignment, start to run monomer model generation again")
 
-        os.system(f"cp {N1_outdir}/{targetname}_uniref90.sto {N1_outdir_img}")
+        os.system("cp " + os.path.join(N1_outdir, targetname + "_uniref90.sto") + " " + N1_outdir_img)
         if not run_monomer_structure_generation_pipeline_v2(params=params,
                                                             run_methods=['img', 'img+seq_template'],
                                                             fasta_path=FLAGS.fasta_path,
@@ -144,11 +144,9 @@ def main(argv):
     for i in range(5):
         pdb_name = ref_ranking_avg.loc[i, 'model']
         refine_input = iterative_refine_pipeline.refinement_input(fasta_path=FLAGS.fasta_path,
-                                                                  pdb_path=N4_outdir + '/pdb/' + pdb_name,
-                                                                  pkl_path=N4_outdir + '/pkl/' + pdb_name.replace(
-                                                                      '.pdb', '.pkl'),
-                                                                  msa_path=N4_outdir + '/msa/' + pdb_name.replace(
-                                                                      '.pdb', '.a3m'))
+                                                                  pdb_path=os.path.join(N4_outdir, 'pdb', pdb_name),
+                                                                  pkl_path=os.path.join(N4_outdir, 'pkl', pdb_name.replace('.pdb', '.pkl')),
+                                                                  msa_path=os.path.join(N4_outdir, 'msa', pdb_name.replace('.pdb', '.a3m')))
         refine_inputs += [refine_input]
 
     final_dir = N5_outdir_avg + '_final'

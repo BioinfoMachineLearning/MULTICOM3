@@ -21,7 +21,7 @@ class Alphafold_pkl_qa:
             if pkl.index('.pkl') < 0:
                 continue
             ranking = {'model': pkl.replace('.pkl', '.pdb')}
-            with open(input_dir + '/' + pkl, 'rb') as f:
+            with open(os.path.join(input_dir, pkl), 'rb') as f:
                 prediction_result = pickle.load(f)
                 if 'plddt_avg' in self.methods:
                     ranking['plddt_avg'] = np.mean(prediction_result['plddt'])

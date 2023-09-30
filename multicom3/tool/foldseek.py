@@ -69,13 +69,14 @@ class Foldseek:
 
         for database in self.databases:
             database_name = pathlib.Path(database).stem
-            if not os.path.exists(f'{outdir}/aln.m8_{database_name}'):
+            outfile = os.path.join(outdir, f'aln.m8_{database_name}')
+            if not os.path.exists(outfile):
                 cmd = [self.binary_path,
                        'easy-search',
                        input_path,
                        database,
-                       f'{outdir}/aln.m8_{database_name}',
-                       outdir + '/tmp',
+                       outfile,
+                       os.path.join(outdir, 'tmp'),
                        '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                        '--format-mode', '4',
                        '--max-seqs', str(maxseq),
@@ -92,23 +93,25 @@ class Foldseek:
                     raise RuntimeError(
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-            evalue_df = evalue_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
+            
+            evalue_df = evalue_df.append(pd.read_csv(outfile, sep='\t'))
 
         evalue_df = evalue_df.sort_values(by='evalue')
         evalue_df.reset_index(inplace=True, drop=True)
-        evalue_df.to_csv(f"{outdir}/evalue.m8", sep='\t')
+        evalue_df.to_csv(os.path.join(outdir, "evalue.m8"), sep='\t')
 
         if len(evalue_df) < progressive_threshold:
             # search the database using tmalign mode
             for database in self.databases:
                 database_name = pathlib.Path(database).stem
-                if not os.path.exists(f'{outdir}/aln.m8_{database_name}.tm'):
+                outfile = os.path.join(outdir, f'aln.m8_{database_name}.tm')
+                if not os.path.exists(outfile):
                     cmd = [self.binary_path,
                            'easy-search',
                            input_path,
                            database,
-                           f'{outdir}/aln.m8_{database_name}.tm',
-                           outdir + '/tmp',
+                           outfile,
+                           os.path.join(outdir, 'tmp'),
                            '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                            '--format-mode', '4',
                            '--alignment-type', '1',
@@ -126,16 +129,16 @@ class Foldseek:
                         raise RuntimeError(
                             'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                                 stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-                tmscore_df = tmscore_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}.tm', sep='\t'))
+                tmscore_df = tmscore_df.append(pd.read_csv(outfile, sep='\t'))
 
             tmscore_df = tmscore_df.sort_values(by='evalue', ascending=False)
             tmscore_df.reset_index(inplace=True, drop=True)
-            tmscore_df.to_csv(f"{outdir}/tmscore.m8", sep='\t')
+            tmscore_df.to_csv(os.path.join(outdir, "tmscore.m8"), sep='\t')
 
         result_df = result_df.append(evalue_df)
         result_df = result_df.append(tmscore_df)
         result_df.reset_index(inplace=True, drop=True)
-        result_df.to_csv(f"{outdir}/result.m8", sep='\t')
+        result_df.to_csv(os.path.join(outdir, "result.m8"), sep='\t')
 
         return {'local_alignment': evalue_df,
                 'global_alignment': tmscore_df,
@@ -152,13 +155,14 @@ class Foldseek:
         # search the database using tmalign mode
         for database in self.databases:
             database_name = pathlib.Path(database).stem
-            if not os.path.exists(f'{outdir}/aln.m8_{database_name}.tm'):
+            outfile = os.path.join(outdir, f'aln.m8_{database_name}.tm')
+            if not os.path.exists(outfile):
                 cmd = [self.binary_path,
                        'easy-search',
                        input_path,
                        database,
-                       f'{outdir}/aln.m8_{database_name}.tm',
-                       outdir + '/tmp',
+                       outfile,
+                       os.path.join(outdir, 'tmp'),
                        '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                        '--format-mode', '4',
                        '--alignment-type', '1',
@@ -176,11 +180,11 @@ class Foldseek:
                     raise RuntimeError(
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}.tm', sep='\t'))
+            result_df = result_df.append(pd.read_csv(outfile, sep='\t'))
 
         result_df = result_df.sort_values(by='evalue', ascending=False)
         result_df.reset_index(inplace=True, drop=True)
-        result_df.to_csv(f"{outdir}/tmscore.m8", sep='\t')
+        result_df.to_csv(os.path.join(outdir, "tmscore.m8"), sep='\t')
 
         return result_df
 
@@ -194,13 +198,14 @@ class Foldseek:
 
         for database in self.databases:
             database_name = pathlib.Path(database).stem
-            if not os.path.exists(f'{outdir}/aln.m8_{database_name}'):
+            outfile = os.path.join(outdir, f'aln.m8_{database_name}')
+            if not os.path.exists(outfile):
                 cmd = [self.binary_path,
                        'easy-search',
                        input_path,
                        database,
-                       f'{outdir}/aln.m8_{database_name}',
-                       outdir + '/tmp',
+                       outfile,
+                       os.path.join(outdir, 'tmp'),
                        '--format-output', 'query,target,qaln,taln,qstart,qend,tstart,tend,evalue,alnlen',
                        '--format-mode', '4',
                        '--max-seqs', str(maxseq),
@@ -217,11 +222,11 @@ class Foldseek:
                     raise RuntimeError(
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-            result_df = result_df.append(pd.read_csv(f'{outdir}/aln.m8_{database_name}', sep='\t'))
+            result_df = result_df.append(pd.read_csv(outfile, sep='\t'))
 
         result_df = result_df.sort_values(by='evalue')
         result_df.reset_index(inplace=True, drop=True)
-        result_df.to_csv(f"{outdir}/result.m8", sep='\t')
+        result_df.to_csv(os.path.join(outdir, "result.m8"), sep='\t')
 
         empty_df = pd.DataFrame(
             columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])

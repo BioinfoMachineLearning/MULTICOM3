@@ -33,7 +33,7 @@ class Bfactor_qa:
         avg_bfactors = []
         for pdb in os.listdir(input_dir):
             models += [pdb]
-            avg_bfactors += [get_avg_factor(input_dir + '/' + pdb)]
+            avg_bfactors += [get_avg_factor(os.path.join(input_dir, pdb))]
 
         ranking_df = pd.DataFrame({'model': models, 'bfactor': avg_bfactors})
         ranking_df = ranking_df.sort_values(by=['bfactor'], ascending=False, ignore_index=True)

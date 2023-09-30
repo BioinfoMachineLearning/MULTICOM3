@@ -142,22 +142,22 @@ def write_concatenated_alignment(paired_rows, alignments):
 
 
 def write_multimer_a3ms(pair_ids, alignments, outdir, method, is_homomers=False):
-    outdir = outdir + '/' + method
+    outdir = os.path.join(outdir, method)
 
     makedir_if_not_exists(outdir)
 
     sequences_full, sequences_monomers, pair_ids = write_concatenated_alignment(pair_ids, alignments)
 
-    pair_ids.to_csv(f"{outdir}/{method}_interact.csv", index=False)
+    pair_ids.to_csv(os.path.join(outdir, f"{method}_interact.csv"), index=False)
 
-    complex_alignment_file = f"{outdir}/{method}.a3m"
+    complex_alignment_file = os.path.join(outdir, f"{method}.a3m")
     with open(complex_alignment_file, "w") as of:
         write_a3m(sequences_full, of)
 
     # save the alignment files
     monomer_alignment_files = []
     for monomer_id in sequences_monomers:
-        mon_alignment_file = f"{outdir}/{monomer_id}_con.a3m"
+        mon_alignment_file = os.path.join(outdir, f"{monomer_id}_con.a3m")
         with open(mon_alignment_file, "w") as of:
             write_a3m(sequences_monomers[monomer_id], of)
         monomer_alignment_files += [mon_alignment_file]
@@ -196,7 +196,7 @@ def write_multimer_a3ms(pair_ids, alignments, outdir, method, is_homomers=False)
         # print(homomers_sequences)
 
         for monomer_id in homomers_sequences:
-            mon_alignment_file = f"{outdir}/{monomer_id}_con.a3m"
+            mon_alignment_file = os.path.join(outdir, f"{monomer_id}_con.a3m")
             with open(mon_alignment_file, "a") as of:
                 for i in range(len(homomers_sequences[monomer_id]['headers'])):
                     of.write(f">{homomers_sequences[monomer_id]['headers'][i]}\n"
@@ -335,8 +335,8 @@ def concatenate_alignments(inparams):
                                                                                     'uniprot_distance_uniprot_sto',
                                                                                     is_homomers)
                     print(f"uniprot_distance_uniprot_sto: {len(pair_ids)} pairs")
-
-        os.system(f"touch {outdir}/DONE")
+        
+        os.system("touch " + os.path.join(outdir, "DONE"))
 
     except Exception as e:
         print(e)

@@ -140,27 +140,25 @@ class Multimer_iterative_refinement_pipeline:
             if len(complex_templates_df_filtered) > self.max_template_count:
                 break
 
-        msa_out_path = outpath  # + '/msas'
+        msa_out_path = outpath
         makedir_if_not_exists(msa_out_path)
 
         out_multimer_msas = []
         out_monomer_msas = []
         for chain_idx, chain_id in enumerate(chain_id_map):
-            start_multimer_msa = start_msa_path + '/' + chain_id + '.start.multimer.a3m'
+            start_multimer_msa = os.path.join(start_msa_path, chain_id + '.start.multimer.a3m')
             fasta_chunks = (f">{chain_template_msas[chain_id]['desc'][i]}\n{chain_template_msas[chain_id]['seq'][i]}"
                             for i in range(len(chain_template_msas[chain_id]['desc'])))
             with open(start_multimer_msa + '.temp', 'w') as fw:
                 fw.write('\n'.join(fasta_chunks) + '\n')
-            combine_a3ms([start_multimer_msa, f"{start_multimer_msa}.temp"],
-                         f"{msa_out_path}/{chain_id}.iteration{iteration}.multimer.a3m")
-            out_multimer_msas += [
-                f"{msa_out_path}/{chain_id}.iteration{iteration}.multimer.a3m"]
+            
+            out_multimer_msa = os.path.join(msa_out_path, f"{chain_id}.iteration{iteration}.multimer.a3m")
+            combine_a3ms([start_multimer_msa, f"{start_multimer_msa}.temp"], out_multimer_msa)
+            out_multimer_msas += [out_multimer_msa]
 
-            os.system(f"cp {start_msa_path}/{chain_id}.start.monomer.a3m "
-                      f"{msa_out_path}/{chain_id}.iteration{iteration}.monomer.a3m")
-
-            out_monomer_msas += [
-                f"{msa_out_path}/{chain_id}.iteration{iteration}.monomer.a3m"]
+            out_monomer_msa = os.path.join(msa_out_path, f"{chain_id}.iteration{iteration}.monomer.a3m")
+            os.system("cp " + os.path.join(start_msa_path, chain_id + ".start.monomer.a3m") + " " + out_monomer_msa)
+            out_monomer_msas += [out_monomer_msa]
 
         interact_dict = {}
         msa_len = -1
@@ -173,16 +171,17 @@ class Multimer_iterative_refinement_pipeline:
                 raise Exception(f"The length of each msas are not equal! {out_multimer_msas}")
             interact_dict[f'index_{i + 1}'] = [j for j in range(msa_len)]
         interact_df = pd.DataFrame(interact_dict)
-        interact_csv = outpath + f'/interaction.iteration{iteration}.csv'
+        interact_csv = os.path.join(outpath, f'interaction.iteration{iteration}.csv')
         interact_df.to_csv(interact_csv)
 
         top_template_files = []
         for template_result, chain_id in zip(template_results, chain_id_map):
+            top_template_file = os.path.join(outpath, f"{chain_id}.top{self.max_template_count}")
             check_and_rank_monomer_templates_local_and_global(template_result=template_result,
-                                                              outfile=f"{outpath}/{chain_id}.top{self.max_template_count}",
+                                                              outfile=top_template_file,
                                                               query_sequence=chain_id_map[chain_id].sequence,
                                                               max_template_count=self.max_template_count)
-            top_template_files += [f"{outpath}/{chain_id}.top{self.max_template_count}"]
+            top_template_files += [top_template_file]
         return top_template_files, out_monomer_msas, out_multimer_msas, interact_csv
 
     def copy_atoms_and_unzip(self, templates, outdir):
@@ -190,9 +189,11 @@ class Multimer_iterative_refinement_pipeline:
         for i in range(len(templates)):
             template_pdb = templates.loc[i, 'target']
             if template_pdb.find('.pdb.gz') > 0:
-                os.system(f"cp {self.params['foldseek_af_database_dir']}/{template_pdb} {outdir}")
+                template_path = os.path.join(self.params['foldseek_af_database_dir'], template_pdb)
+                os.system(f"cp {template_path} {outdir}")
             else:
-                os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb} {outdir}")
+                template_path = os.path.join(self.params['foldseek_pdb_database_dir'], template_pdb)
+                os.system(f"cp {template_path} {outdir}")
             os.system(f"gunzip -f {template_pdb}")
 
 
@@ -204,7 +205,7 @@ class Multimer_iterative_refinement_pipeline:
 
         print(f"Processing {targetname}")
 
-        outdir = os.path.abspath(outdir) + "/"
+        outdir = os.path.abspath(outdir)
 
         makedir_if_not_exists(outdir)
 
@@ -220,12 +221,12 @@ class Multimer_iterative_refinement_pipeline:
 
         for num_iteration in range(self.max_iteration):
             os.chdir(cwd)
-            current_work_dir = f"{outdir}/iteration{num_iteration + 1}"
+            current_work_dir = os.path.join(outdir, f"iteration{num_iteration + 1}")
             makedir_if_not_exists(current_work_dir)
 
-            start_pdb = f"{current_work_dir}/start.pdb"
-            start_pkl = f"{current_work_dir}/start.pkl"
-            start_msa_path = f"{current_work_dir}/start_msas"
+            start_pdb = os.path.join(current_work_dir, "start.pdb")
+            start_pkl = os.path.join(current_work_dir, "start.pkl")
+            start_msa_path = os.path.join(current_work_dir, "start_msas")
             if os.path.exists(start_msa_path):
                 os.system(f"rm -rf {start_msa_path}")
             makedir_if_not_exists(start_msa_path)
@@ -234,17 +235,17 @@ class Multimer_iterative_refinement_pipeline:
                 ref_avg_lddt = float(pickle.load(f)['ranking_confidence'])
 
             for chain_id in ref_start_msa_paths:
-                os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
-                          f"{start_msa_path}/{chain_id}.start.multimer.a3m")
-                os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
-                          f"{start_msa_path}/{chain_id}.start.monomer.a3m")
+                os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} " +
+                          os.path.join(start_msa_path, chain_id+".start.multimer.a3m"))
+                os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} " + 
+                          os.path.join(start_msa_path, chain_id+".start.monomer.a3m"))
 
             os.system(f"cp {ref_start_pdb} {start_pdb}")
             os.system(f"cp {ref_start_pkl} {start_pkl}")
 
             model_iteration_scores += [ref_avg_lddt]
 
-            out_model_dir = f"{current_work_dir}/alphafold"
+            out_model_dir = os.path.join(current_work_dir, "alphafold")
 
             if not complete_result(out_model_dir, 5 * int(self.params['num_multimer_predictions_per_model'])):
 
@@ -252,7 +253,7 @@ class Multimer_iterative_refinement_pipeline:
 
                 template_results = []
 
-                out_template_dir = current_work_dir + '/templates'
+                out_template_dir = os.path.join(current_work_dir, "templates")
                 makedir_if_not_exists(out_template_dir)
 
                 for chain_id in chain_pdbs:
@@ -260,22 +261,20 @@ class Multimer_iterative_refinement_pipeline:
                     if chain_id not in chain_id_map:
                         raise Exception("Multimer fasta file and model doesn't match!")
 
-                    monomer_work_dir = current_work_dir + '/' + chain_id
+                    monomer_work_dir = os.path.join(current_work_dir, chain_id)
                     makedir_if_not_exists(monomer_work_dir)
-                    os.system(
-                        f"mv {chain_pdbs[chain_id]} {monomer_work_dir}/{chain_id}.pdb")
+
+                    chain_pdb = os.path.join(monomer_work_dir, chain_id+".pdb")
+                    os.system(f"mv {chain_pdbs[chain_id]} {chain_pdb}")
                     foldseek_res = search_templates_foldseek(
                         foldseek_program=self.params['foldseek_program'],
                         databases=[self.params['foldseek_pdb_database'], self.params['foldseek_af_database']],
-                        inpdb=f"{monomer_work_dir}/{chain_id}.pdb",
-                        outdir=monomer_work_dir + '/foldseek')
+                        inpdb=chain_pdb,
+                        outdir=os.path.join(monomer_work_dir, 'foldseek'))
 
                     if len(foldseek_res['all_alignment']) == 0:
-                        print(
-                            f"Cannot find any templates for {chain_id} in iteration {num_iteration + 1}")
+                        print(f"Cannot find any templates for {chain_id} in iteration {num_iteration + 1}")
                         break
-
-                    # os.system(f"cp {foldseek_res} {monomer_work_dir}/structure_templates.csv")
 
                     template_results += [foldseek_res]
 
@@ -341,7 +340,7 @@ class Multimer_iterative_refinement_pipeline:
                 except Exception as e:
                     print(e)
 
-            new_ranking_json_file = f"{out_model_dir}/ranking_debug.json"
+            new_ranking_json_file = os.path.join(out_model_dir, "ranking_debug.json")
             new_ranking_json = json.loads(open(new_ranking_json_file).read())
             max_lddt_score = new_ranking_json["iptm+ptm"][list(new_ranking_json["order"])[0]]
 
@@ -350,14 +349,13 @@ class Multimer_iterative_refinement_pipeline:
             print(f"plddt after: {max_lddt_score}")
             if max_lddt_score > ref_avg_lddt:
                 print("Continue to refine")
-                ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                ref_start_pdb = os.path.join(out_model_dir, "ranked_0.pdb")
                 model_name = list(new_ranking_json["order"])[0]
-                ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
+                ref_start_pkl = os.path.join(out_model_dir, f"result_{model_name}.pkl") 
                 ref_start_msa_paths = {}
                 for chain_id in chain_id_map:
-                    ref_start_msa_paths[chain_id] = dict(
-                            paired_msa=f"{out_model_dir}/msas/{chain_id}.paired.a3m",
-                            monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+                    ref_start_msa_paths[chain_id] = dict(paired_msa=os.path.join(out_model_dir, f"msas/{chain_id}.paired.a3m",
+                                                         monomer_msa=os.path.join(out_model_dir, "msas", chain_id, "monomer_final.a3m"))
 
                 print('##################################################')
                 if num_iteration + 1 >= self.max_iteration:
@@ -366,14 +364,13 @@ class Multimer_iterative_refinement_pipeline:
             else:
                 # keep the models in iteration 1 even through the plddt score decreases
                 if num_iteration == 0:
-                    ref_start_pdb = f"{out_model_dir}/ranked_0.pdb"
+                    ref_start_pdb = os.path.join(out_model_dir, "ranked_0.pdb")
                     model_name = list(new_ranking_json["order"])[0]
-                    ref_start_pkl = f"{out_model_dir}/result_{model_name}.pkl"
+                    ref_start_pkl = os.path.join(out_model_dir, f"result_{model_name}.pkl") 
                     ref_start_msa_paths = {}
                     for chain_id in chain_id_map:
-                        ref_start_msa_paths[chain_id] = dict(
-                            paired_msa=f"{out_model_dir}/msas/{chain_id}.paired.a3m",
-                            monomer_msa=f"{out_model_dir}/msas/{chain_id}/monomer_final.a3m")
+                        ref_start_msa_paths[chain_id] = dict(paired_msa=os.path.join(out_model_dir, f"msas/{chain_id}.paired.a3m",
+                                                         monomer_msa=os.path.join(out_model_dir, "msas", chain_id, "monomer_final.a3m"))
                     model_iteration_scores += [max_lddt_score]
                 break
 
@@ -383,18 +380,18 @@ class Multimer_iterative_refinement_pipeline:
 
         print(model_iteration_scores)
         df = pd.DataFrame(model_iteration_scores)
-        df.to_csv(outdir + '/summary.csv')
+        df.to_csv(os.path.join(outdir, 'summary.csv'))
 
-        final_model_dir = outdir + '/final'
+        final_model_dir = os.path.join(outdir, 'final')
         makedir_if_not_exists(final_model_dir)
-        os.system(f"cp {ref_start_pdb} {final_model_dir}/final.pdb")
-        os.system(f"cp {ref_start_pkl} {final_model_dir}/final.pkl")
+        os.system(f"cp {ref_start_pdb} " + os.path.join(final_model_dir, "final.pdb"))
+        os.system(f"cp {ref_start_pkl} " + os.path.join(final_model_dir, "final.pkl"))
 
         for chain_id in chain_id_map:
-            os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} "
-                      f"{final_model_dir}/{chain_id}.paired.a3m")
-            os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} "
-                      f"{final_model_dir}/{chain_id}.monomer.a3m")
+            os.system(f"cp {ref_start_msa_paths[chain_id]['paired_msa']} " +
+                      os.path.join(final_model_dir, chain_id + ".paired.a3m"))
+            os.system(f"cp {ref_start_msa_paths[chain_id]['monomer_msa']} " +
+                      os.path.join(final_model_dir, chain_id + ".monomer.a3m"))
 
         os.chdir(cwd)
 

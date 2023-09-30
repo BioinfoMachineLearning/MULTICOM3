@@ -80,20 +80,20 @@ class Complex_structure_based_template_search_pipeline:
 
     def search(self, monomer_sequences, monomers_pdbs, outdir, is_homodimer=False):
 
-        outdir = os.path.abspath(outdir) + "/"
+        outdir = os.path.abspath(outdir)
 
         makedir_if_not_exists(outdir)
 
         prev_df = None
         monomer_template_results = []
         for i, monomer in enumerate(monomers_pdbs):
-            monomer_work_dir = outdir + '/' + pathlib.Path(monomer).stem
+            monomer_work_dir = os.path.join(outdir, pathlib.Path(monomer).stem)
             makedir_if_not_exists(monomer_work_dir)
             foldseek_df = search_templates_foldseek(
                 foldseek_program=self.params['foldseek_program'],
                 databases=[self.params['foldseek_pdb_database']],
                 inpdb=monomer,
-                outdir=monomer_work_dir + '/foldseek')
+                outdir=os.path.join(monomer_work_dir, 'foldseek'))
             curr_df = create_template_df(foldseek_df, monomer_sequences[i])
             monomer_template_results += [curr_df]
 
@@ -231,18 +231,18 @@ class Complex_structure_based_template_search_pipeline:
                     prev_pd = prev_pd.merge(curr_pd, how="inner", on='index')
                     prev_pd_v2 = prev_pd_v2.merge(curr_pd, how="outer", on='index')
 
-            prev_pd.to_csv(outdir + "/structure_templates.csv", index=False)
-            prev_pd_v2.to_csv(outdir + "/structure_templates_v2.csv", index=False)
+            prev_pd.to_csv(os.path.join(outdir, "structure_templates.csv"), index=False)
+            prev_pd_v2.to_csv(os.path.join(outdir, "structure_templates_v2.csv"), index=False)
         else:
-            prev_df_sorted_filtered.head(100).to_csv(outdir + "/structure_templates.csv", index=False)
+            prev_df_sorted_filtered.head(100).to_csv(os.path.join(outdir, "structure_templates.csv"), index=False)
 
         print("The structure based template searching for dimers has finished!")
 
-        os.system(f"rm -rf {outdir}/tmscore")
+        os.system("rm -rf " + os.path.join(outdir, 'tmscore'))
 
-        prev_df_sorted_filtered = pd.read_csv(outdir + "/structure_templates.csv")
+        prev_df_sorted_filtered = pd.read_csv(os.path.join(outdir, "structure_templates.csv"))
         cwd = os.getcwd()
-        template_dir = outdir + '/templates'
+        template_dir = os.path.join(outdir, 'templates')
         makedir_if_not_exists(template_dir)
         os.chdir(template_dir)
         for i in range(len(prev_df_sorted_filtered)):
@@ -251,12 +251,13 @@ class Complex_structure_based_template_search_pipeline:
                 os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb}.atom.gz .")
                 os.system(f"gunzip -f {template_pdb}.atom.gz")
 
-        if os.path.exists(outdir + "/structure_templates_v2.csv"):
-            prev_df_sorted_filtered = pd.read_csv(outdir + "/structure_templates_v2.csv")
+        if os.path.exists(os.path.join(outdir, "structure_templates_v2.csv")):
+            prev_df_sorted_filtered = pd.read_csv(os.path.join(outdir, "structure_templates_v2.csv"))
             for i in range(len(prev_df_sorted_filtered)):
                 for j in range(len(monomers_pdbs)):
                     template_name = prev_df_sorted_filtered.loc[i, f'template{j + 1}']
                     if not pd.isna(template_name):
                         template_pdb = template_name.split()[0]
-                        os.system(f"cp {self.params['foldseek_pdb_database_dir']}/{template_pdb}.atom.gz .")
+                        template_path = os.path.join(self.params['foldseek_pdb_database_dir'], template_pdb + '.atom.gz')
+                        os.system(f"cp {template_path} .")
                         os.system(f"gunzip -f {template_pdb}.atom.gz")
