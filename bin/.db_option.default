@@ -74,11 +74,24 @@ alphafold_default_program = run_alphafold_pre.py
 monomer_num_ensemble = 1
 monomer_num_recycle = 3
 num_monomer_predictions_per_model = 1
+monomer_model_preset = monomer
 
 # AlphaFold-Multimer parameters
 multimer_num_ensemble = 1
 multimer_num_recycle = 3
 num_multimer_predictions_per_model = 5
+multimer_model_preset = multimer
+
+# Common parameters
+alphafold_benchmark = True
+use_gpu_relax = True
+
+# ALL = 0, BEST = 1, NONE = 2
+models_to_relax = 0
+
+max_template_date = 9999-06-01
+
+pdb_release_date_file = INSTALLDIR_DATABASES/pdb_release_date_filtered.csv
 
 ######################Monomer template search option#################################
 

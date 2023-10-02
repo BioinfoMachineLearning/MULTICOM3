@@ -201,7 +201,7 @@ def make_msa_features(msas: Sequence[parsers.Msa], msa_output_dir: str, msa_save
     features['num_alignments'] = np.array([num_alignments] * num_res, dtype=np.int32)
     features['msa_species_identifiers'] = np.array(species_ids, dtype=np.object_)
 
-    with open(msa_output_dir + '/' + msa_save_path, 'w') as fw:
+    with open(os.path.join(msa_output_dir, msa_save_path), 'w') as fw:
         for (desc, seq) in zip(seen_desc, seen_sequences):
             fw.write(f'>{desc}\n{seq}\n')
 
@@ -212,10 +212,13 @@ def save_paired_msas(chain_id_map, all_chain_features, msa_output_dir):
     # all_chain_features keys and pair rows order: A_1, A_2, B_1, B_2 ....
     # chain_id_map: keys: A, B, C, D
     paired_rows = None
-    if not os.path.exists(f"{msa_output_dir}/pair_msas.npy"):
+
+    paired_npy = os.path.join(msa_output_dir, 'pair_msas.npy')
+
+    if not os.path.exists(paired_npy):
         return paired_rows
 
-    with open(f"{msa_output_dir}/pair_msas.npy", 'rb') as f:
+    with open(paired_npy, 'rb') as f:
         paired_rows = np.load(f)
 
     # Group the chains by sequence
@@ -249,7 +252,7 @@ def save_paired_msas(chain_id_map, all_chain_features, msa_output_dir):
                 seen_desc += [final_msa.descriptions[sequence_index]]
                 seen_sequences += [final_msa.sequences[sequence_index]]
 
-        with open(f"{msa_output_dir}/{chain_reorder[chain_num]}.paired.a3m", 'w') as fw:
+        with open(os.path.join(msa_output_dir, chain_reorder[chain_num] + ".paired.a3m"), 'w') as fw:
             for (desc, seq) in zip(seen_desc, seen_sequences):
                 fw.write(f'>{desc}\n{seq}\n')
 

@@ -72,7 +72,7 @@ flags.DEFINE_string('struct_atom_dir', None, 'Path of template file directory')
 flags.DEFINE_string('output_dir', None, 'Output directory')
 flags.DEFINE_string('env_dir', None, 'Alphafold virtual environment directory')
 flags.DEFINE_string('database_dir', None, 'Alphafold databse directory')
-# flags.DEFINE_string('max_template_date', None, 'Max template date')
+flags.DEFINE_string('max_template_date', '9999-06-01', 'Maximum template date')
 flags.DEFINE_boolean('notemplate', False, 'Whether to use template')
 flags.DEFINE_integer('num_multimer_predictions_per_model', 2, 'How many '
                                                               'predictions (each with a different random seed) will be '
@@ -91,6 +91,31 @@ flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.ALL, ModelsToRelax,
                         'distracting stereochemical violations but might help '
                         'in case you are having issues with the relaxation '
                         'stage.')
+
+flags.DEFINE_enum('model_preset', 'multimer',
+                  ['multimer'],
+                  'Choose preset model configuration - the monomer model, '
+                  'the monomer model with extra ensembling, monomer model with '
+                  'pTM head, or multimer model')
+flags.DEFINE_boolean('benchmark', False, 'Run multiple JAX model evaluations '
+                     'to obtain a timing that excludes the compilation time, '
+                     'which should be more indicative of the time required for '
+                     'inferencing many proteins.')
+flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.ALL, ModelsToRelax,
+                        'The models to run the final relaxation step on. '
+                        'If `all`, all models are relaxed, which may be time '
+                        'consuming. If `best`, only the most confident model '
+                        'is relaxed. If `none`, relaxation is not run. Turning '
+                        'off relaxation might result in predictions with '
+                        'distracting stereochemical violations but might help '
+                        'in case you are having issues with the relaxation '
+                        'stage.')
+flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
+                     'Relax on GPU can be much faster than CPU, so it is '
+                     'recommended to enable if possible. GPUs must be available'
+                     ' if this setting is enabled.')
+
+
 FLAGS = flags.FLAGS
 
 MAX_TEMPLATE_HITS = 20
@@ -118,7 +143,15 @@ def read_fasta(fileobj):
 
     yield current_id, current_sequence
 
-
+def _reorder_chains(pdbstring):
+    new_pdbstring = []
+    for line in pdbstring:
+        if line.startswith('ATOM'):
+            chain_id = line[21]
+            new_pdbstring += [line[:21] + PDB_CHAIN_IDS[PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+        else:
+            new_pdbstring += [line]
+    return new_pdbstring
 
 def _check_flag(flag_name: str,
                 other_flag_name: str,
@@ -298,7 +331,7 @@ def predict_structure(
             if model_name in relaxed_pdbs:
                 f.write(relaxed_pdbs[model_name])
             else:
-                f.write(unrelaxed_pdbs[model_name])
+                f.write(_reorder_chains(unrelaxed_pdbs[model_name]))
 
     ranking_output_path = os.path.join(output_dir, 'ranking_debug.json')
     with open(ranking_output_path, 'w') as f:
@@ -344,7 +377,7 @@ def main(argv):
 
         template_featurizer = templates.HmmsearchHitFeaturizer(
             mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
-            max_template_date='9999-06-01',
+            max_template_date=FLAGS.max_template_date,
             max_hits=template_max_hits,
             kalign_binary_path=FLAGS.env_dir + '/kalign',
             release_dates_path=None,
@@ -356,7 +389,7 @@ def main(argv):
             databases=[FLAGS.database_dir + '/pdb70/pdb70'])
         template_featurizer = templates.HhsearchHitFeaturizer(
             mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
-            max_template_date='9999-06-01',
+            max_template_date=FLAGS.max_template_date,
             max_hits=template_max_hits,
             kalign_binary_path=FLAGS.env_dir + '/kalign',
             release_dates_path=None,
@@ -366,7 +399,6 @@ def main(argv):
     if FLAGS.temp_struct_csv is not None:
         template_featurizer = templates_custom.CustomizedComplexHitFeaturizer(
             input_atom_dir=FLAGS.struct_atom_dir,
-            # '/home/bml_casp15/update_complex_dbs/databases/Complex/work/pdbs_in_complex/',
             max_hits=template_max_hits,
             kalign_binary_path=FLAGS.env_dir + '/kalign')
         custom_inputs.temp_struct_csv = FLAGS.temp_struct_csv
@@ -397,7 +429,7 @@ def main(argv):
                 custom_inputs.template_hits_files[seq_id] = FLAGS.template_hits_files[i]
 
     model_runners = {}
-    model_names = config.MODEL_PRESETS['multimer']
+    model_names = config.MODEL_PRESETS[FLAGS.model_preset]
 
     num_predictions_per_model = FLAGS.num_multimer_predictions_per_model
     for model_name in model_names:
@@ -423,7 +455,7 @@ def main(argv):
         stiffness=RELAX_STIFFNESS,
         exclude_residues=RELAX_EXCLUDE_RESIDUES,
         max_outer_iterations=RELAX_MAX_OUTER_ITERATIONS,
-        use_gpu=False)
+        use_gpu=FLAGS.use_gpu_relax)
 
     print(os.path.exists(custom_inputs.temp_struct_csv))
     if os.path.exists(custom_inputs.temp_struct_csv):

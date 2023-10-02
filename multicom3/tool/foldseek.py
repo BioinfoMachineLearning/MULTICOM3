@@ -33,7 +33,10 @@ class Foldseek:
     def __init__(self,
                  *,
                  binary_path: str,
-                 databases: Sequence[str]):
+                 pdb_database: str,
+                 max_template_date: datetime.datetime,
+                 release_dates: Mapping[str, datetime.datetime],
+                 other_databases: Sequence[str] = []):
         """Initializes the Python HHsearch wrapper.
 
     Args:
@@ -48,9 +51,12 @@ class Foldseek:
       RuntimeError: If HHsearch binary not found within the path.
     """
         self.binary_path = binary_path
-        self.databases = databases
+        self.pdb_database = pdb_database
+        self.other_databases = other_databases
+        self._release_dates = release_dates
+        self._max_template_date = max_template_date
 
-        for database_path in self.databases:
+        for database_path in self.other_databases:
             if not glob.glob(database_path + '_*'):
                 logging.error('Could not find HHsearch database %s', database_path)
                 raise ValueError(f'Could not find HHsearch database {database_path}')
@@ -67,7 +73,8 @@ class Foldseek:
         tmscore_df = pd.DataFrame(
             columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
 
-        for database in self.databases:
+        databases = [self.pdb_database] + self.other_databases
+        for database in databases:
             database_name = pathlib.Path(database).stem
             outfile = os.path.join(outdir, f'aln.m8_{database_name}')
             if not os.path.exists(outfile):
@@ -94,6 +101,21 @@ class Foldseek:
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
             
+            if database == self.pdb_database:
+                keep_indices = []
+                pdb_df = pd.read_csv(outfile, sep='\t')
+                for i in range(len(pdb_df)):
+                    target = pdb_df.loc[i, 'target']
+                    if target.lower()[:4] in self._release_dates:
+                        hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
+                        if hit_release_date < max_template_date:
+                            keep_indices += [i]
+
+                pdb_df_filtered = pdb_df.iloc[keep_indices]
+                pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
+                pdb_df_filtered.reset_index(inplace=True, drop=True)
+                pdb_df_filtered.to_csv(outfile,, sep='\t')
+
             evalue_df = evalue_df.append(pd.read_csv(outfile, sep='\t'))
 
         evalue_df = evalue_df.sort_values(by='evalue')
@@ -129,8 +151,24 @@ class Foldseek:
                         raise RuntimeError(
                             'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                                 stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
-                tmscore_df = tmscore_df.append(pd.read_csv(outfile, sep='\t'))
 
+                if database == self.pdb_database:
+                    keep_indices = []
+                    pdb_df = pd.read_csv(outfile, sep='\t')
+                    for i in range(len(pdb_df)):
+                        target = pdb_df.loc[i, 'target']
+                        if target.lower()[:4] in self._release_dates:
+                            hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
+                            if hit_release_date < max_template_date:
+                                keep_indices += [i]
+
+                    pdb_df_filtered = pdb_df.iloc[keep_indices]
+                    pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
+                    pdb_df_filtered.reset_index(inplace=True, drop=True)
+                    pdb_df_filtered.to_csv(outfile,, sep='\t')
+
+                tmscore_df = tmscore_df.append(pd.read_csv(outfile, sep='\t'))
+            
             tmscore_df = tmscore_df.sort_values(by='evalue', ascending=False)
             tmscore_df.reset_index(inplace=True, drop=True)
             tmscore_df.to_csv(os.path.join(outdir, "tmscore.m8"), sep='\t')
@@ -153,7 +191,8 @@ class Foldseek:
             columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
 
         # search the database using tmalign mode
-        for database in self.databases:
+        databases = [self.pdb_database] + self.other_databases
+        for database in databases:
             database_name = pathlib.Path(database).stem
             outfile = os.path.join(outdir, f'aln.m8_{database_name}.tm')
             if not os.path.exists(outfile):
@@ -180,6 +219,22 @@ class Foldseek:
                     raise RuntimeError(
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
+
+            if database == self.pdb_database:
+                keep_indices = []
+                pdb_df = pd.read_csv(outfile, sep='\t')
+                for i in range(len(pdb_df)):
+                    target = pdb_df.loc[i, 'target']
+                    if target.lower()[:4] in self._release_dates:
+                        hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
+                        if hit_release_date < max_template_date:
+                            keep_indices += [i]
+
+                pdb_df_filtered = pdb_df.iloc[keep_indices]
+                pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
+                pdb_df_filtered.reset_index(inplace=True, drop=True)
+                pdb_df_filtered.to_csv(outfile,, sep='\t')
+
             result_df = result_df.append(pd.read_csv(outfile, sep='\t'))
 
         result_df = result_df.sort_values(by='evalue', ascending=False)
@@ -196,7 +251,8 @@ class Foldseek:
         result_df = pd.DataFrame(
             columns=['query', 'target', 'qaln', 'taln', 'qstart', 'qend', 'tstart', 'tend', 'evalue', 'alnlen'])
 
-        for database in self.databases:
+        databases = [self.pdb_database] + self.other_databases
+        for database in databases:
             database_name = pathlib.Path(database).stem
             outfile = os.path.join(outdir, f'aln.m8_{database_name}')
             if not os.path.exists(outfile):
@@ -222,6 +278,22 @@ class Foldseek:
                     raise RuntimeError(
                         'Foldseek failed:\nstdout:\n%s\n\nstderr:\n%s\n' % (
                             stdout.decode('utf-8'), stderr[:100_000].decode('utf-8')))
+
+            if database == self.pdb_database:
+                keep_indices = []
+                pdb_df = pd.read_csv(outfile, sep='\t')
+                for i in range(len(pdb_df)):
+                    target = pdb_df.loc[i, 'target']
+                    if target.lower()[:4] in self._release_dates:
+                        hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
+                        if hit_release_date < max_template_date:
+                            keep_indices += [i]
+
+                pdb_df_filtered = pdb_df.iloc[keep_indices]
+                pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
+                pdb_df_filtered.reset_index(inplace=True, drop=True)
+                pdb_df_filtered.to_csv(outfile,, sep='\t')
+
             result_df = result_df.append(pd.read_csv(outfile, sep='\t'))
 
         result_df = result_df.sort_values(by='evalue')

@@ -6,7 +6,7 @@ from multicom3.common.util import makedir_if_not_exists, check_dirs
 import pandas as pd
 import dataclasses
 import numpy as np
-from multicom3.monomer_templates_concatenation.sequence_based_pipeline import assess_hhsearch_hit
+from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import assess_hhsearch_hit, PrefilterError
 from multicom3.monomer_templates_concatenation.parsers import TemplateHit
 from multicom3.monomer_structure_refinement.util import build_alignment_indices, PrefilterError
 
@@ -611,8 +611,7 @@ def check_and_rank_complex_templates(chain_id_map, template_results, max_templat
                                   hit_sequence=template_result['local_alignment'].loc[i, 'taln'],
                                   indices_query=build_alignment_indices(
                                       template_result['local_alignment'].loc[i, 'qaln'],
-                                      template_result['local_alignment'].loc[
-                                          i, 'qstart']),
+                                      template_result['local_alignment'].loc[i, 'qstart']),
                                   indices_hit=build_alignment_indices(
                                       template_result['local_alignment'].loc[i, 'taln'],
                                       template_result['local_alignment'].loc[i, 'tstart']),

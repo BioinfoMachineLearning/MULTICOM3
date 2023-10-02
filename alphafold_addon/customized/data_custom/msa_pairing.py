@@ -81,7 +81,8 @@ def create_paired_features(
         else:
             paired_chains_to_paired_row_indices = pair_sequences(chains)
         paired_rows = reorder_paired_rows(paired_chains_to_paired_row_indices)
-        np.save(f'{msa_output_dir}/pair_msas.npy', paired_rows)
+        paired_npy = os.path.join(msa_output_dir, 'pair_msas.npy')
+        np.save(paired_npy, paired_rows)
         for chain_num, chain in enumerate(chains):
             new_chain = {k: v for k, v in chain.items() if '_all_seq' not in k}
             for feature_name in chain_keys:

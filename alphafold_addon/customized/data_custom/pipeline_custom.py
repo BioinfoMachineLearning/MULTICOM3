@@ -112,7 +112,7 @@ def make_msa_features(msas: Sequence[parsers.Msa], msa_output_dir: str, msa_save
     features['num_alignments'] = np.array([num_alignments] * num_res, dtype=np.int32)
     features['msa_species_identifiers'] = np.array(species_ids, dtype=np.object_)
 
-    with open(msa_output_dir + '/' + msa_save_path, 'w') as fw:
+    with open(os.path.join(msa_output_dir, msa_save_path), 'w') as fw:
         for (desc, seq) in zip(seen_desc, seen_sequences):
             fw.write(f'>{desc}\n{seq}\n')
 

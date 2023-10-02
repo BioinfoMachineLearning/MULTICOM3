@@ -37,12 +37,12 @@ def direct_download(tool, address, tools_dir):  ####Tools don't need to be confi
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dbdir', type=str, required=True)
+    parser.add_argument('--multicom3db_dir', type=str, required=True)
     args = parser.parse_args()
 
     # Set directory of multicom databases and tools
     install_dir = os.path.dirname(os.path.realpath(__file__))
-    database_dir = args.dbdir
+    database_dir = os.path.abspath(args.multicom3db_dir)
     tools_dir = os.path.join(install_dir, "tools")
     af_dir = os.path.join(tools_dir, "alphafold-v2.3.2")
     bin_dir = os.path.join(install_dir, "bin")
@@ -97,10 +97,14 @@ if __name__ == '__main__':
     #### Download ColabFold database
     print("Download ColabFold database\n")
     colabfold_db_dir = os.path.join(database_dir, 'colabfold')
-    if not os.path.exists(colabfold_db_dir):
-        os.makedirs(colabfold_db_dir)
-        download_script = os.path.join(tools_dir, "colabfold/setup_databases.sh")
-        os.system(f"sh {download_script} {colabfold_db_dir}")
+    os.makedirs(colabfold_db_dir, exist_ok=True)
+    download_script = os.path.join(tools_dir, "colabfold/setup_databases.sh")
+    os.system(f"sh {download_script} {colabfold_db_dir}")
+
+    #### Download pdb_release_date_filtered.csv
+    os.chdir(database_dir)
+    if not os.path.exists("pdb_release_date_filtered.csv"):
+        os.system("wget http://sysbio.rnet.missouri.edu/multicom_cluster/multicom3_db_tools/databases/pdb_release_date_filtered.csv")
 
     ### (3) copy the alphafold-addon scripts
     alphafold_addon_dir = os.path.join(install_dir, 'alphafold_addon')
@@ -114,7 +118,7 @@ if __name__ == '__main__':
                         }
 
     for srcfile in src_to_trg_dict:
-        trgfile = os.path.join(args.af_dir, src_to_trg_dict[srcfile])
+        trgfile = os.path.join(af_dir, src_to_trg_dict[srcfile])
         if os.path.exists(trgfile):
             os.system(f'rm -rf {trgfile}')
         os.system(f"cp -r {os.path.join(alphafold_addon_dir, srcfile)} {trgfile}")

@@ -6,32 +6,11 @@ from multicom3.common.util import makedir_if_not_exists, check_dirs
 import pandas as pd
 from multiprocessing import Pool
 from multicom3.monomer_templates_concatenation import parsers
+from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import assess_hhsearch_hit, PrefilterError
 from multicom3.tool import hhsearch
 from multicom3.tool import hhalign
 import dataclasses
 import numpy as np
-
-
-# Prefilter exceptions.
-class PrefilterError(Exception):
-    """A base class for template prefilter exceptions."""
-
-
-class DateError(PrefilterError):
-    """An error indicating that the hit date was after the max allowed date."""
-
-
-class AlignRatioError(PrefilterError):
-    """An error indicating that the hit align ratio to the query was too small."""
-
-
-class DuplicateError(PrefilterError):
-    """An error indicating that the hit was an exact subsequence of the query."""
-
-
-class LengthError(PrefilterError):
-    """An error indicating that the hit was too short."""
-
 
 @dataclasses.dataclass(frozen=False)
 class monomer_template_input:
@@ -61,34 +40,6 @@ def create_df(hits):
     return pd.DataFrame(row_list)
 
 
-def assess_hhsearch_hit(
-        hit: parsers.TemplateHit,
-        query_sequence: str,
-        max_subsequence_ratio: float = 0.95,
-        min_align_ratio: float = 0.1) -> bool:
-    aligned_cols = hit.aligned_cols
-    align_ratio = aligned_cols / len(query_sequence)
-
-    template_sequence = hit.hit_sequence.replace('-', '')
-    length_ratio = float(len(template_sequence)) / len(query_sequence)
-
-    duplicate = (template_sequence in query_sequence and
-                 length_ratio > max_subsequence_ratio)
-
-    if align_ratio <= min_align_ratio:
-        raise AlignRatioError('Proportion of residues aligned to query too small. '
-                              f'Align ratio: {align_ratio}.')
-
-    if duplicate:
-        raise DuplicateError('Template is an exact subsequence of query with large '
-                             f'coverage. Length ratio: {length_ratio}.')
-
-    if len(template_sequence) < 10:
-        raise LengthError(f'Template too short. Length: {len(template_sequence)}.')
-
-    return True
-
-
 class Complex_sequence_based_template_search_pipeline:
 
     def __init__(self, params):
@@ -106,6 +57,10 @@ class Complex_sequence_based_template_search_pipeline:
         self.hhmake_program = params['hhmake_program']
 
         self.pdb_seqs_dir = params['pdb_seqs_dir']
+
+        release_date_df = pd.read_csv(params['pdb_release_date_file'])
+        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def find_matches_between_pdbcodes(self, monomer_code1, monomer_code2):
 
@@ -153,7 +108,7 @@ class Complex_sequence_based_template_search_pipeline:
         for hit in monomer_template_results[0]:
             if check_hit:
                 try:
-                    assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[0].seq)
+                    assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[0].seq, max_template_date=self._max_template_date, release_dates=self._release_dates)
                 except PrefilterError as e:
                     msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                     print(msg)
@@ -195,7 +150,7 @@ class Complex_sequence_based_template_search_pipeline:
 
                     if check_hit:
                         try:
-                            assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq)
+                            assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq, max_template_date=self._max_template_date, release_dates=self._release_dates)
                         except PrefilterError as e:
                             msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                             print(msg)
@@ -327,7 +282,7 @@ class Complex_sequence_based_template_search_pipeline:
                     if f"{hit.name.split()[0]}_{hit.hit_sequence}" in seen_templates_sequences:
                         continue
                     try:
-                        assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq)
+                        assess_hhsearch_hit(hit=hit, query_sequence=monomer_inputs[i].seq, max_template_date=self._max_template_date, release_dates=self._release_dates)
                     except PrefilterError as e:
                         msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                         print(msg)

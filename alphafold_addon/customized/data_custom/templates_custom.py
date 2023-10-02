@@ -848,14 +848,14 @@ class CustomizedComplexHitFeaturizer:
                 complex_hit_template_names += [row[f'template{i + 1}']]
                 complex_hit_template_sequences += [row[f'aln_temp{i + 1}'].replace('_', '')]
 
-                ori_atom_file = self._input_atom_dir + '/' + hit.template_name + '.atom'
+                ori_atom_file = os.path.join(self._input_atom_dir, hit.template_name + '.atom')
                 if not os.path.exists(ori_atom_file):
-                    ori_atom_file = self._input_atom_dir + '/' + hit.template_name.replace('.gz', '')
+                    ori_atom_file = os.path.join(self._input_atom_dir, hit.template_name.replace('.gz', ''))
 
                 # add chain info to the original atom file
                 add_chain_info_to_atom_file(infile=ori_atom_file,
                                             chainid=hit.template_chain,
-                                            outfile=template_output_dir + '/' + hit.template_name + '.atom')
+                                            outfile=os.path.join(template_output_dir, hit.template_name + '.atom'))
 
             complex_hit = CustomizedComplexTemplateHit(template_name='_'.join(complex_hit_template_names),
                                                        template_sequence=''.join(complex_hit_template_sequences),
@@ -986,9 +986,9 @@ class CustomizedComplexMonomerHitFeaturizer:
                                                 qend=len(chain_id_map[chainid].sequence),
                                                 from_predicted_structure=True)
 
-                    add_chain_info_to_atom_file(infile=self._monomer_model_paths[i] + f'/ranked_{n}.pdb',
+                    add_chain_info_to_atom_file(infile=os.path.join(self._monomer_model_paths[i], f'ranked_{n}.pdb'),
                                                 chainid=hit.template_chain,
-                                                outfile=template_output_dir + '/' + hit.template_name + '.atom')
+                                                outfile=os.path.join(template_output_dir, hit.template_name + '.atom'))
 
                     result = _process_single_hit(query_sequence=chain_id_map[chainid].sequence,
                                                  monomer_hit=hit,
@@ -1081,21 +1081,21 @@ class CustomizedMonomerHitFeaturizer:
 
             if from_pdb:
                 # add chain info to the original atom file
-                ori_atom_file = self._input_pdb_dir + '/' + hit.template_name + '.atom'
+                ori_atom_file = os.path.join(self._input_pdb_dir, hit.template_name + '.atom')
                 if not os.path.exists(ori_atom_file):
-                    ori_atom_file = self._input_pdb_dir + '/' + hit.template_name.replace('.atom.gz', '') + '.atom'
+                    ori_atom_file = os.path.join(self._input_pdb_dir, hit.template_name.replace('.gz', ''))
 
                 add_chain_info_to_atom_file(infile=ori_atom_file,
                                             chainid=hit.template_chain,
-                                            outfile=template_pdb_dir + '/' + hit.template_name + '.atom')
+                                            outfile=os.path.join(template_pdb_dir, hit.template_name + '.atom'))
             else:
-                atom_file = f"{self._input_pdb_dir}/{hit.template_name}.pdb"
+                atom_file = os.path.join(self._input_pdb_dir, hit.template_name + ".pdb")
                 if not os.path.exists(atom_file):
-                    atom_file = f"{self._input_pdb_dir}/{hit.template_name}.atom"
+                    atom_file = os.path.join(self._input_pdb_dir, hit.template_name + ".atom")
 
                 add_chain_info_to_atom_file(infile=atom_file,
                                             chainid=hit.template_chain,
-                                            outfile=template_pdb_dir + '/' + hit.template_name + '.atom')
+                                            outfile=os.path.join(template_pdb_dir, hit.template_name + '.atom'))
 
             result = _process_single_hit(query_sequence=query_sequence,
                                          monomer_hit=hit,
@@ -1167,9 +1167,9 @@ class CustomizedMonomerHitFeaturizer:
 
             # add chain info to the original atom file
 
-            add_chain_info_to_atom_file(infile=self._input_pdb_dir + f'/ranked_{n}.pdb',
+            add_chain_info_to_atom_file(infile=os.path.join(self._input_pdb_dir, f'ranked_{n}.pdb'),
                                         chainid=hit.template_chain,
-                                        outfile=template_pdb_dir + '/' + hit.template_name + '.atom')
+                                        outfile=os.path.join(template_pdb_dir, hit.template_name + '.atom'))
 
             result = _process_single_hit(query_sequence=query_sequence,
                                          monomer_hit=hit,

@@ -125,6 +125,19 @@ class Multimer_structure_prediction_pipeline_v2:
 
         result_dirs = []
 
+
+        common_parameters =   f"--fasta_path={fasta_path} " \
+                              f"--env_dir={self.params['alphafold_env_dir']} " \
+                              f"--database_dir={self.params['alphafold_database_dir']} " \
+                              f"--multimer_num_ensemble={self.params['multimer_num_ensemble']} " \
+                              f"--multimer_num_recycle={self.params['multimer_num_recycle']} " \
+                              f"--num_multimer_predictions_per_model={self.params['num_multimer_predictions_per_model']} " \
+                              f"--model_preset={self.params['multimer_model_preset']} " \
+                              f"--benchmark={self.params['alphafold_benchmark']} " \
+                              f"--use_gpu_relax={self.params['use_gpu_relax']} " \
+                              f"--models_to_relax={self.params['models_to_relax']} " \
+                              f"--max_template_date={self.params['max_template_date']} "
+
         while True:
             # run alphafold default pipeline:
             outdir = os.path.join(output_dir, "default_multimer")
@@ -157,18 +170,13 @@ class Multimer_structure_prediction_pipeline_v2:
                         raise Exception(f"Cannot find uniprot sto for {monomer}: {monomer_uniprot_sto}")
                     uniprot_stos += [monomer_uniprot_sto]
 
-                cmd = f"python {self.params['alphafold_default_program']} " \
-                      f"--fasta_path {fasta_path} " \
-                      f"--bfd_uniref_a3ms {','.join(bfd_uniref_a3ms)} " \
-                      f"--mgnify_stos {','.join(mgnify_stos)} " \
-                      f"--uniref90_stos {','.join(uniref90_stos)} " \
-                      f"--uniprot_stos {','.join(uniprot_stos)} " \
-                      f"--env_dir {self.params['alphafold_env_dir']} " \
-                      f"--database_dir {self.params['alphafold_database_dir']} " \
-                      f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
-                      f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
-                      f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
-                      f"--output_dir {outdir} "
+                cmd = f"python {self.params['alphafold_default_program']} " +
+                      common_parameters + 
+                      f"--bfd_uniref_a3ms={','.join(bfd_uniref_a3ms)} " \
+                      f"--mgnify_stos={','.join(mgnify_stos)} " \
+                      f"--uniref90_stos={','.join(uniref90_stos)} " \
+                      f"--uniprot_stos={','.join(uniprot_stos)} " \
+                      f"--output_dir={outdir} "
 
                 if notemplates:
                     cmd += "--notemplates=true"
@@ -245,16 +253,11 @@ class Multimer_structure_prediction_pipeline_v2:
 
                 outdir = os.path.join(output_dir, self.method2dir[method])
 
-                base_cmd = f"python {self.params['alphafold_multimer_program']} " \
-                           f"--fasta_path {fasta_path} " \
-                           f"--monomer_a3ms {','.join(default_alphafold_monomer_a3ms)} " \
-                           f"--multimer_a3ms {','.join(a3m_paths)} " \
-                           f"--msa_pair_file {msa_pair_file} " \
-                           f"--env_dir {self.params['alphafold_env_dir']} " \
-                           f"--database_dir {self.params['alphafold_database_dir']} " \
-                           f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
-                           f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
-                           f"--multimer_num_recycle {self.params['multimer_num_recycle']} "
+                base_cmd = f"python {self.params['alphafold_multimer_program']} " + 
+                           common_parameters + 
+                           f"--monomer_a3ms={','.join(default_alphafold_monomer_a3ms)} " \
+                           f"--multimer_a3ms={','.join(a3m_paths)} " \
+                           f"--msa_pair_file={msa_pair_file} " \
 
                 if template_method == "":
                     base_cmd += f"--template_stos {','.join(template_stos)} "
@@ -269,8 +272,8 @@ class Multimer_structure_prediction_pipeline_v2:
                             continue
                         outdir += '_v2'
 
-                    base_cmd += f"--temp_struct_csv {template_file} "
-                    base_cmd += f"--struct_atom_dir {struct_atom_dir} "
+                    base_cmd += f"--temp_struct_csv={template_file} "
+                    base_cmd += f"--struct_atom_dir={struct_atom_dir} "
 
                 elif template_method == "sequence_based_template_pdb":
                     template_file = os.path.join(template_dir, "pdb_seq", "sequence_templates.csv")
@@ -280,8 +283,8 @@ class Multimer_structure_prediction_pipeline_v2:
                         if len(pd.read_csv(template_file)) == 0:
                             continue
                         outdir += '_v2'
-                    base_cmd += f"--temp_struct_csv {template_file} "
-                    base_cmd += f"--struct_atom_dir {struct_atom_dir} "
+                    base_cmd += f"--temp_struct_csv={template_file} "
+                    base_cmd += f"--struct_atom_dir={struct_atom_dir} "
 
                 elif template_method == "sequence_based_template_complex_pdb":
                     template_file = os.path.join(template_dir, "complex_pdb_seq", "sequence_templates.csv")
@@ -291,8 +294,8 @@ class Multimer_structure_prediction_pipeline_v2:
                         if len(pd.read_csv(template_file)) == 0:
                             continue
                         outdir += '_v2'
-                    base_cmd += f"--temp_struct_csv {template_file} "
-                    base_cmd += f"--struct_atom_dir {struct_atom_dir} "
+                    base_cmd += f"--temp_struct_csv={template_file} "
+                    base_cmd += f"--struct_atom_dir={struct_atom_dir} "
 
                 elif template_method == "sequence_based_template_pdb70":
                     template_file = os.path.join(template_dir, "pdb70_seq", "sequence_templates.csv")
@@ -307,8 +310,8 @@ class Multimer_structure_prediction_pipeline_v2:
                         if not os.path.exists(template_hits_file):
                             raise Exception(f"Cannot find template hit file for {monomer}: {template_hits_file}")
                         template_hits_files += [template_hits_file]
-                    base_cmd += f"--temp_seq_pair_file {template_file} "
-                    base_cmd += f"--template_hits_files {','.join(template_hits_files)} "
+                    base_cmd += f"--temp_seq_pair_file={template_file} "
+                    base_cmd += f"--template_hits_files={','.join(template_hits_files)} "
 
                 elif template_method == "alphafold_model_templates":
                     monomer_paths = []
@@ -317,9 +320,9 @@ class Multimer_structure_prediction_pipeline_v2:
                         if not os.path.exists(monomer_path):
                             raise Exception(f"Cannot find monomer directory for {monomer}: {monomer_path}")
                         monomer_paths += [monomer_path]
-                    base_cmd += f"--monomer_model_paths {','.join(monomer_paths)} "
+                    base_cmd += f"--monomer_model_paths={','.join(monomer_paths)} "
                     
-                base_cmd += f"--output_dir {outdir} "
+                base_cmd += f"--output_dir={outdir} "
 
                 if notemplates:
                     base_cmd += "--notemplates=true"  

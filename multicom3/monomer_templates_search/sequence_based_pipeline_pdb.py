@@ -56,8 +56,11 @@ def create_df(targetname, hits):
 def assess_hhsearch_hit(
         hit: parsers.TemplateHit,
         query_sequence: str,
+        max_template_date: datetime.datetime,
+        release_dates: Mapping[str, datetime.datetime],
         max_subsequence_ratio: float = 0.95,
         min_align_ratio: float = 0.1) -> bool:
+
     aligned_cols = hit.aligned_cols
     align_ratio = aligned_cols / len(query_sequence)
 
@@ -66,6 +69,15 @@ def assess_hhsearch_hit(
 
     duplicate = (template_sequence in query_sequence and
                  length_ratio > max_subsequence_ratio)
+
+    if max_template_date is not None and release_dates is not None:
+        if hit.name.lower()[:4] in release_date:
+            hit_release_date = datetime.datetime.strptime(release_dates[hit.name.lower()[:4]], '%Y-%m-%d')
+            if hit_release_date > max_template_date:
+                raise DateError(f'Date ({release_dates[hit.name.lower()[:4]}) > max template date '
+                                f'({max_template_date}).')
+        else:
+            raise DateError(f'Cannot find release date for ({hit.name.lower()[:4]}).')
 
     if align_ratio <= min_align_ratio:
         raise AlignRatioError('Proportion of residues aligned to query too small. '
@@ -95,6 +107,10 @@ class monomer_sequence_based_template_search_pipeline:
         self.pdbdir = params['pdb_sort90_atom_dir']
 
         self.hhmake_program = params['hhmake_program']
+
+        release_date_df = pd.read_csv(params['pdb_release_date_file'])
+        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def copy_atoms_and_unzip(self, templates, outdir):
         os.chdir(outdir)
@@ -137,7 +153,7 @@ class monomer_sequence_based_template_search_pipeline:
         curr_template_hits = []
         for hit in pdb_template_hits:
             try:
-                assess_hhsearch_hit(hit=hit, query_sequence=sequence)
+                assess_hhsearch_hit(hit=hit, query_sequence=sequence, max_template_date=self._max_template_date, release_dates=self._release_dates)
             except PrefilterError as e:
                 msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                 print(msg)

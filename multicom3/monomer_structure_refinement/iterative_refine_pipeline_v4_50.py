@@ -9,7 +9,7 @@ import dataclasses
 from multicom3.tool.foldseek import *
 import pickle
 import numpy as np
-from multicom3.monomer_templates_concatenation.sequence_based_pipeline import assess_hhsearch_hit, PrefilterError
+from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import assess_hhsearch_hit, PrefilterError
 from multicom3.monomer_templates_concatenation.parsers import TemplateHit
 from multicom3.monomer_structure_refinement.util import *
 from multicom3.common.protein import complete_result
@@ -24,13 +24,18 @@ class Monomer_iterative_refinement_pipeline:
 
         self.max_template_count = max_template_count
 
+        release_date_df = pd.read_csv(params['pdb_release_date_file'])
+        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
+
     def search_templates(self, inpdb, outdir):
         makedir_if_not_exists(outdir)
         foldseek_program = self.params['foldseek_program']
         foldseek_pdb_database = self.params['foldseek_pdb_database']
         foldseek_af_database = self.params['foldseek_af_database']
-        foldseek_runner = Foldseek(binary_path=foldseek_program,
-                                   databases=[foldseek_pdb_database, foldseek_af_database])
+        foldseek_runner = Foldseek(binary_path=foldseek_program, pdb_database=foldseek_pdb_database,
+                                   max_template_date=self._max_template_date, release_dates=self._release_dates,
+                                   other_databases=[foldseek_af_database])
         return foldseek_runner.query(pdb=inpdb, outdir=outdir, progressive_threshold=2000)
 
     def check_and_rank_templates(self, template_result, outfile, query_sequence):
@@ -43,8 +48,7 @@ class Monomer_iterative_refinement_pipeline:
                               query=template_result['local_alignment'].loc[i, 'qaln'],
                               hit_sequence=template_result['local_alignment'].loc[i, 'taln'],
                               indices_query=build_alignment_indices(template_result['local_alignment'].loc[i, 'qaln'],
-                                                                    template_result['local_alignment'].loc[
-                                                                        i, 'qstart']),
+                                                                    template_result['local_alignment'].loc[i, 'qstart']),
                               indices_hit=build_alignment_indices(template_result['local_alignment'].loc[i, 'taln'],
                                                                   template_result['local_alignment'].loc[i, 'tstart']),
                               sum_probs=0.0)
@@ -252,16 +256,21 @@ class Monomer_iterative_refinement_pipeline:
                 custom_msa = os.path.join(current_work_dir, f"iteration{num_iteration + 1}.a3m")
                 temp_struct_csv = os.path.join(current_work_dir, "structure_templates.csv")
                 cmd = f"python {self.params['alphafold_program']} " \
-                      f"--fasta_path {fasta_path} " \
-                      f"--env_dir {self.params['alphafold_env_dir']} " \
-                      f"--database_dir {self.params['alphafold_database_dir']} " \
-                      f"--custom_msa {custom_msa} " \
-                      f"--temp_struct_csv {temp_struct_csv} " \
-                      f"--struct_atom_dir {out_template_dir} " \
-                      f"--monomer_num_ensemble {self.params['monomer_num_ensemble']} " \
-                      f"--monomer_num_recycle {self.params['monomer_num_recycle']} " \
+                      f"--fasta_path={fasta_path} " \
+                      f"--env_dir={self.params['alphafold_env_dir']} " \
+                      f"--database_dir={self.params['alphafold_database_dir']} " \
+                      f"--monomer_num_ensemble={self.params['monomer_num_ensemble']} " \
+                      f"--monomer_num_recycle={self.params['monomer_num_recycle']} " \
                       f"--num_monomer_predictions_per_model {self.params['num_monomer_predictions_per_model']} " \
-                      f"--output_dir {out_model_dir}"
+                      f"--model_preset={self.params['monomer_model_preset']} " \
+                      f"--benchmark={self.params['alphafold_benchmark']} " \
+                      f"--use_gpu_relax={self.params['use_gpu_relax']} " \
+                      f"--models_to_relax={self.params['models_to_relax']} " \
+                      f"--max_template_date={self.params['max_template_date']} "
+                      f"--custom_msa={custom_msa} " \
+                      f"--temp_struct_csv={temp_struct_csv} " \
+                      f"--struct_atom_dir={out_template_dir} " \
+                      f"--output_dir={out_model_dir}"
 
                 try:
                     os.chdir(self.params['alphafold_program_dir'])

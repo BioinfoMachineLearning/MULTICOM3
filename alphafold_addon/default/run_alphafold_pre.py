@@ -72,7 +72,7 @@ flags.DEFINE_string('env_dir', None, 'AlphaFold python environment directory')
 
 flags.DEFINE_string('database_dir', None, 'AlphaFold database directory')
 
-flags.DEFINE_string('max_template_date', None, 'Maximum template release date '
+flags.DEFINE_string('max_template_date', '9999-06-01', 'Maximum template release date '
                                                'to consider. Important if folding historical test sets.')
 
 flags.DEFINE_boolean('run_relax', True, 'Whether to run the final relaxation '
@@ -98,6 +98,20 @@ flags.DEFINE_integer('num_monomer_predictions_per_model', 1, 'How many '
                                                               'models then there will be 10 predictions per input. '
                                                               'Note: this FLAG only applies if model_preset=monomer')
 
+flags.DEFINE_integer('monomer_num_ensemble', 1, 'Number of ensemble for generating monomer models')
+flags.DEFINE_integer('monomer_num_recycle', 3, 'Number of recycles for generating monomer models')
+flags.DEFINE_integer('multimer_num_ensemble', 1, 'Number of ensemble for generating multimer models')
+flags.DEFINE_integer('multimer_num_recycle', 20, 'Number of recycles for generating multimer models')
+
+flags.DEFINE_enum('model_preset', 'multimer',
+                  ['multimer'],
+                  'Choose preset model configuration - the monomer model, '
+                  'the monomer model with extra ensembling, monomer model with '
+                  'pTM head, or multimer model')
+flags.DEFINE_boolean('benchmark', False, 'Run multiple JAX model evaluations '
+                     'to obtain a timing that excludes the compilation time, '
+                     'which should be more indicative of the time required for '
+                     'inferencing many proteins.')
 flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.ALL, ModelsToRelax,
                         'The models to run the final relaxation step on. '
                         'If `all`, all models are relaxed, which may be time '
@@ -107,11 +121,10 @@ flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.ALL, ModelsToRelax,
                         'distracting stereochemical violations but might help '
                         'in case you are having issues with the relaxation '
                         'stage.')
-
-flags.DEFINE_integer('monomer_num_ensemble', 1, 'Number of ensemble for generating monomer models')
-flags.DEFINE_integer('monomer_num_recycle', 3, 'Number of recycles for generating monomer models')
-flags.DEFINE_integer('multimer_num_ensemble', 1, 'Number of ensemble for generating multimer models')
-flags.DEFINE_integer('multimer_num_recycle', 20, 'Number of recycles for generating multimer models')
+flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
+                     'Relax on GPU can be much faster than CPU, so it is '
+                     'recommended to enable if possible. GPUs must be available'
+                     ' if this setting is enabled.')
 
 FLAGS = flags.FLAGS
 
@@ -137,6 +150,15 @@ def read_fasta(fastafile):
     seqs[current_id] = current_sequence
     return seqs
 
+def _reorder_chains(pdbstring):
+    new_pdbstring = []
+    for line in pdbstring:
+        if line.startswith('ATOM'):
+            chain_id = line[21]
+            new_pdbstring += [line[:21] + PDB_CHAIN_IDS[PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+        else:
+            new_pdbstring += [line]
+    return new_pdbstring
 
 def _check_flag(flag_name: str,
                 other_flag_name: str,
@@ -311,7 +333,7 @@ def predict_structure(
             if model_name in relaxed_pdbs:
                 f.write(relaxed_pdbs[model_name])
             else:
-                f.write(unrelaxed_pdbs[model_name])
+                f.write(_reorder_chains(unrelaxed_pdbs[model_name]))
 
     ranking_output_path = os.path.join(output_dir, 'ranking_debug.json')
     with open(ranking_output_path, 'w') as f:
@@ -343,7 +365,7 @@ def main(argv):
 
         template_featurizer = templates.HmmsearchHitFeaturizer(
             mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
-            max_template_date='9999-06-01',
+            max_template_date=FLAGS.max_template_date,
             max_hits=MAX_TEMPLATE_HITS,
             kalign_binary_path=FLAGS.env_dir + '/kalign',
             release_dates_path=None,
@@ -356,7 +378,7 @@ def main(argv):
 
         template_featurizer = templates.HhsearchHitFeaturizer(
             mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
-            max_template_date='9999-06-01',
+            max_template_date=FLAGS.max_template_date,
             max_hits=MAX_TEMPLATE_HITS,
             kalign_binary_path=FLAGS.env_dir + '/kalign',
             release_dates_path=None,
@@ -448,7 +470,7 @@ def main(argv):
             data_pipeline=data_pipeline,
             model_runners=model_runners,
             amber_relaxer=amber_relaxer,
-            benchmark=False,
+            benchmark=FLAGS.benchmark,
             random_seed=random_seed,
             models_to_relax=FLAGS.models_to_relax)
 

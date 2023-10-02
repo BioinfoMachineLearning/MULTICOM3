@@ -145,16 +145,21 @@ class Multimer_structure_prediction_homo_pipeline_v2:
             makedir_if_not_exists(outdir)
 
             base_cmd = f"python {self.params['alphafold_multimer_program']} " \
-                       f"--fasta_path {fasta_path} " \
-                       f"--monomer_a3ms {','.join(img_default_a3ms)} " \
-                       f"--multimer_a3ms {','.join(img_default_a3ms)} " \
-                       f"--template_stos {','.join(template_stos)} " \
-                       f"--env_dir {self.params['alphafold_env_dir']} " \
-                       f"--database_dir {self.params['alphafold_database_dir']} " \
-                       f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
-                       f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
-                       f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
-                       f"--output_dir {outdir} "
+                       f"--fasta_path={fasta_path} " \
+                       f"--env_dir={self.params['alphafold_env_dir']} " \
+                       f"--database_dir={self.params['alphafold_database_dir']} " \
+                       f"--multimer_num_ensemble={self.params['multimer_num_ensemble']} " \
+                       f"--multimer_num_recycle={self.params['multimer_num_recycle']} " \
+                       f"--num_multimer_predictions_per_model={self.params['num_multimer_predictions_per_model']} " \
+                       f"--model_preset={self.params['multimer_model_preset']} " \
+                       f"--benchmark={self.params['alphafold_benchmark']} " \
+                       f"--use_gpu_relax={self.params['use_gpu_relax']} " \
+                       f"--models_to_relax={self.params['models_to_relax']} " \
+                       f"--max_template_date={self.params['max_template_date']} " \ 
+                       f"--monomer_a3ms={','.join(img_default_a3ms)} " \
+                       f"--multimer_a3ms={','.join(img_default_a3ms)} " \
+                       f"--template_stos={','.join(template_stos)} " \
+                       f"--output_dir={outdir} "
 
             print(base_cmd)
             os.system(base_cmd)
@@ -169,6 +174,18 @@ class Multimer_structure_prediction_homo_pipeline_v2:
                 output_dir):
 
         makedir_if_not_exists(output_dir)
+
+        common_parameters =   f"--fasta_path={fasta_path} " \
+                              f"--env_dir={self.params['alphafold_env_dir']} " \
+                              f"--database_dir={self.params['alphafold_database_dir']} " \
+                              f"--multimer_num_ensemble={self.params['multimer_num_ensemble']} " \
+                              f"--multimer_num_recycle={self.params['multimer_num_recycle']} " \
+                              f"--num_multimer_predictions_per_model={self.params['num_multimer_predictions_per_model']} " \
+                              f"--model_preset={self.params['multimer_model_preset']} " \
+                              f"--benchmark={self.params['alphafold_benchmark']} " \
+                              f"--use_gpu_relax={self.params['use_gpu_relax']} " \
+                              f"--models_to_relax={self.params['models_to_relax']} " \
+                              f"--max_template_date={self.params['max_template_date']} "   
 
         # run alphafold default pipeline:
         outdir = os.path.join(output_dir, "default_multimer")
@@ -201,18 +218,13 @@ class Multimer_structure_prediction_homo_pipeline_v2:
                     raise Exception(f"Cannot find uniprot sto for {monomer}: {monomer_uniprot_sto}")
                 uniprot_stos += [monomer_uniprot_sto]
 
-            cmd = f"python {self.params['alphafold_default_program']} " \
-                  f"--fasta_path {fasta_path} " \
-                  f"--bfd_uniref_a3ms {','.join(bfd_uniref_a3ms)} " \
-                  f"--mgnify_stos {','.join(mgnify_stos)} " \
-                  f"--uniref90_stos {','.join(uniref90_stos)} " \
-                  f"--uniprot_stos {','.join(uniprot_stos)} " \
-                  f"--env_dir {self.params['alphafold_env_dir']} " \
-                  f"--database_dir {self.params['alphafold_database_dir']} " \
-                  f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
-                  f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
-                  f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
-                  f"--output_dir {outdir}"
+            cmd = f"python {self.params['alphafold_default_program']} " + 
+                  common_parameters + 
+                  f"--bfd_uniref_a3ms={','.join(bfd_uniref_a3ms)} " \
+                  f"--mgnify_stos={','.join(mgnify_stos)} " \
+                  f"--uniref90_stos={','.join(uniref90_stos)} " \
+                  f"--uniprot_stos={','.join(uniprot_stos)} " \
+                  f"--output_dir={outdir}"
 
             print(cmd)
             os.system(cmd)
@@ -261,16 +273,11 @@ class Multimer_structure_prediction_homo_pipeline_v2:
 
             makedir_if_not_exists(outdir)
 
-            base_cmd = f"python {self.params['alphafold_multimer_program']} " \
-                       f"--fasta_path {fasta_path} " \
-                       f"--monomer_a3ms {','.join(a3m_paths)} " \
-                       f"--multimer_a3ms {','.join(a3m_paths)} " \
-                       f"--env_dir {self.params['alphafold_env_dir']} " \
-                       f"--database_dir {self.params['alphafold_database_dir']} " \
-                       f"--num_multimer_predictions_per_model {self.params['num_multimer_predictions_per_model']} " \
-                       f"--multimer_num_ensemble {self.params['multimer_num_ensemble']} " \
-                       f"--multimer_num_recycle {self.params['multimer_num_recycle']} " \
-                       f"--output_dir {outdir} "
+            base_cmd = f"python {self.params['alphafold_multimer_program']} " + 
+                       common_parameters + 
+                       f"--monomer_a3ms={','.join(a3m_paths)} " \
+                       f"--multimer_a3ms={','.join(a3m_paths)} " \
+                       f"--output_dir={outdir} "
 
             if template_method == "":
                 base_cmd += f"--template_stos {','.join(template_stos)} "
