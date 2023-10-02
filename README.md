@@ -62,6 +62,7 @@ git clone --recursive https://github.com/BioinfoMachineLearning/MULTICOM3
 
     ```bash
     pip3 install -r docker/requirements.txt
+    conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
     ```
 
 5.  Make sure that the output directory exists (the default is `/tmp/multicom3`)
