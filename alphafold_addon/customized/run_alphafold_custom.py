@@ -115,13 +115,20 @@ RELAX_MAX_OUTER_ITERATIONS = 3
 
 def _reorder_chains(pdbstring):
     new_pdbstring = []
-    for line in pdbstring:
-        if line.startswith('ATOM'):
+    first_chain_id = None
+    for line in pdbstring.split('\n'):
+        if line.startswith('ATOM') or line.startswith('TER'):
             chain_id = line[21]
-            new_pdbstring += [line[:21] + PDB_CHAIN_IDS[PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+            if first_chain_id is None:
+                first_chain_id = chain_id
+            if first_chain_id != "A":
+                new_pdbstring += [line[:21] + protein.PDB_CHAIN_IDS[protein.PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+            else:
+                new_pdbstring += [line]
         else:
             new_pdbstring += [line]
-    return new_pdbstring
+    return '\n'.join(new_pdbstring)
+
 
 def _check_flag(flag_name: str,
                 other_flag_name: str,
@@ -341,31 +348,32 @@ def main(argv):
     template_featurizer = None
     if not custom_inputs.notemplate:
         template_searcher = hhsearch.HHSearch(
-            binary_path=FLAGS.env_dir + '/hhsearch',
-            databases=[FLAGS.database_dir + '/pdb70/pdb70'])
+            binary_path=os.path.join(FLAGS.env_dir, 'hhsearch'),
+            databases=[os.path.join(FLAGS.database_dir, 'pdb70/pdb70')])
+        
         template_featurizer = templates.HhsearchHitFeaturizer(
-            mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
+            mmcif_dir=os.path.join(FLAGS.database_dir, 'pdb_mmcif/mmcif_files'),
             max_template_date=FLAGS.max_template_date,
             max_hits=MAX_TEMPLATE_HITS,
-            kalign_binary_path=FLAGS.env_dir + '/kalign',
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'),
             release_dates_path=None,
-            obsolete_pdbs_path=FLAGS.database_dir + '/pdb_mmcif/obsolete.dat')
+            obsolete_pdbs_path=os.path.join(FLAGS.database_dir, 'pdb_mmcif/obsolete.dat'))
 
     if FLAGS.temp_struct_csv is not None:
         template_featurizer = templates_custom.CustomizedMonomerHitFeaturizer(
             input_pdb_dir=FLAGS.struct_atom_dir,
             max_hits=MAX_TEMPLATE_HITS,
-            kalign_binary_path=FLAGS.env_dir + '/kalign')
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'))
         custom_inputs.temp_struct_csv = FLAGS.temp_struct_csv
 
     monomer_data_pipeline = pipeline_custom.DataPipeline(
-        jackhmmer_binary_path=FLAGS.env_dir + '/jackhmmer',
-        hhblits_binary_path=FLAGS.env_dir + '/hhblits',
-        uniref90_database_path=FLAGS.database_dir + '/uniref90/uniref90.fasta',
-        mgnify_database_path=FLAGS.database_dir + '/mgnify/mgy_clusters_2022_05.fa',
-        bfd_database_path=FLAGS.database_dir + '/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt',
-        uniref30_database_path=FLAGS.database_dir + '/uniref30/UniRef30_2021_03',
-        small_bfd_database_path=FLAGS.database_dir + '/small_bfd/bfd-first_non_consensus_sequences.fasta',
+        jackhmmer_binary_path=os.path.join(FLAGS.env_dir, 'jackhmmer'),
+        hhblits_binary_path=os.path.join(FLAGS.env_dir, 'hhblits'),
+        uniref90_database_path=os.path.join(FLAGS.database_dir, 'uniref90/uniref90.fasta'),
+        mgnify_database_path=os.path.join(FLAGS.database_dir, 'mgnify/mgy_clusters_2022_05.fa'),
+        bfd_database_path=os.path.join(FLAGS.database_dir, 'bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt'),
+        uniref30_database_path=os.path.join(FLAGS.database_dir, 'uniref30/UniRef30_2021_03'),
+        small_bfd_database_path=os.path.join(FLAGS.database_dir, 'small_bfd/bfd-first_non_consensus_sequences.fasta'),
         template_searcher=template_searcher,
         template_featurizer=template_featurizer,
         use_small_bfd=False,

@@ -67,12 +67,11 @@ class Monomer_structure_prediction_pipeline_v2:
                 method_out_dir = os.path.join(outdir, "default") 
                 if not complete_result(method_out_dir, 5 * int(self.params['num_monomer_predictions_per_model'])):
                     try:
-                        cmd = f"python {self.params['alphafold_default_program']} " +
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_default_program']} " \
                               f"--bfd_uniref_a3ms={bfd_uniref30_a3m} " \
                               f"--mgnify_stos={mgnify_sto} " \
                               f"--uniref90_stos={uniref90_sto} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:
@@ -107,14 +106,13 @@ class Monomer_structure_prediction_pipeline_v2:
                     try:
                         temp_struct_csv = os.path.join(template_dir, "sequence_templates.csv")
                         struct_atom_dir = os.path.join(template_dir, "templates")
-                        cmd = f"python {self.params['alphafold_program']} " +
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_program']} " \
                               f"--bfd_uniref_a3m={bfd_uniref30_a3m} " \
                               f"--mgnify_sto={mgnify_sto} " \
                               f"--uniref90_sto={uniref90_sto} " \
                               f"--temp_struct_csv={temp_struct_csv} " \
                               f"--struct_atom_dir={struct_atom_dir} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:
@@ -151,13 +149,12 @@ class Monomer_structure_prediction_pipeline_v2:
                 method_out_dir = os.path.join(outdir, "original")
                 if not complete_result(method_out_dir, 5 * int(self.params['num_monomer_predictions_per_model'])):
                     try:
-                        cmd = f"python {self.params['alphafold_program']} " + 
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_program']} " \
                               f"--bfd_uniref_a3m={uniref30_a3m} " \
                               f"--bfd_a3m={bfd_a3m} " \
                               f"--mgnify_sto={mgnify_sto} " \
                               f"--uniref90_sto={uniref90_sto} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:
@@ -196,15 +193,14 @@ class Monomer_structure_prediction_pipeline_v2:
                     try:
                         temp_struct_csv = os.path.join(template_dir, "sequence_templates.csv")
                         struct_atom_dir = os.path.join(template_dir, "templates")
-                        cmd = f"python {self.params['alphafold_program']} " + 
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_program']} " \
                               f"--bfd_uniref_a3m={uniref30_a3m} " \
                               f"--bfd_a3m={bfd_a3m} " \
                               f"--mgnify_sto={mgnify_sto} " \
                               f"--uniref90_sto={uniref90_sto} " \
                               f"--temp_struct_csv={temp_struct_csv} " \
                               f"--struct_atom_dir={struct_atom_dir} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:
@@ -227,11 +223,10 @@ class Monomer_structure_prediction_pipeline_v2:
                 method_out_dir = os.path.join(outdir, "colabfold")
                 if not complete_result(method_out_dir, 5 * int(self.params['num_monomer_predictions_per_model'])):
                     try:
-                        cmd = f"python {self.params['alphafold_program']} " + 
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_program']} " \
                               f"--custom_msa={colabfold_a3m} " \
                               f"--uniref90_sto={uniref90_sto} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:
@@ -256,13 +251,12 @@ class Monomer_structure_prediction_pipeline_v2:
                     try:
                         temp_struct_csv = os.path.join(template_dir, "sequence_templates.csv")
                         struct_atom_dir = os.path.join(template_dir, "templates")
-                        cmd = f"python {self.params['alphafold_program']} " + 
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_program']} " \
                               f"--custom_msa={colabfold_a3m} " \
                               f"--uniref90_sto={uniref90_sto} " \
                               f"--temp_struct_csv={temp_struct_csv} " \
                               f"--struct_atom_dir={struct_atom_dir} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:
@@ -285,11 +279,10 @@ class Monomer_structure_prediction_pipeline_v2:
                 method_out_dir = os.path.join(outdir, "img")
                 if not complete_result(method_out_dir, 5 * int(self.params['num_monomer_predictions_per_model'])):
                     try:
-                        cmd = f"python {self.params['alphafold_program']} " +
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_program']} " \
                               f"--custom_msa={img_a3m} " \
                               f"--uniref90_sto={uniref90_sto} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters 
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:
@@ -314,12 +307,11 @@ class Monomer_structure_prediction_pipeline_v2:
                     try:
                         temp_struct_csv = os.path.join(template_dir, "sequence_templates.csv")
                         struct_atom_dir = os.path.join(template_dir, "templates")
-                        cmd = f"python {self.params['alphafold_program']} " + 
-                              common_parameters + 
+                        cmd = f"python {self.params['alphafold_program']} " \
                               f"--custom_msa={img_a3m} " \
                               f"--uniref90_sto={uniref90_sto} " \
                               f"--temp_struct_csv={temp_struct_csv} " \
-                              f"--output_dir={method_out_dir}"
+                              f"--output_dir={method_out_dir} " + common_parameters
                         print(cmd)
                         os.system(cmd)
                     except Exception as e:

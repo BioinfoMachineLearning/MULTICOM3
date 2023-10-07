@@ -449,7 +449,7 @@ class DataPipeline:
             for monomer_count, chain_id in enumerate(chain_id_map):
                 monomer_template_hits = parsers.convert_values_to_template_hit(temp_seq_pair_df, monomer_count + 1)
 
-                hit_file = custom_inputs.template_hits_files[chain_id_map[chain_id].description]
+                hit_file = custom_inputs.template_hits_files[chain_id]
                 pdb_templates_result = open(hit_file).read()
                 pdb_template_hits = self.template_searcher.get_template_hits(
                     output_string=pdb_templates_result, input_sequence=chain_id_map[chain_id].sequence)
@@ -496,15 +496,15 @@ class DataPipeline:
 
             if complex_template_result is not None:
                 chain_template_result = complex_template_result.monomer_results[chain_id]
-            elif fasta_chain.description in custom_inputs.template_stos:
-                chain_template_sto = custom_inputs.template_stos[fasta_chain.description]
+            elif chain_id in custom_inputs.template_stos:
+                chain_template_sto = custom_inputs.template_stos[chain_id]
 
             chain_features = self._process_single_chain(
                 chain_id=chain_id,
                 sequence=fasta_chain.sequence,
                 description=fasta_chain.description,
-                chain_monomer_msa=custom_inputs.monomer_a3ms[fasta_chain.description],
-                chain_multimer_msa=custom_inputs.multimer_a3ms[fasta_chain.description],
+                chain_monomer_msa=custom_inputs.monomer_a3ms[chain_id],
+                chain_multimer_msa=custom_inputs.multimer_a3ms[chain_id],
                 msa_output_dir=msa_output_dir,
                 chain_template_sto=chain_template_sto,
                 templates_result=chain_template_result,

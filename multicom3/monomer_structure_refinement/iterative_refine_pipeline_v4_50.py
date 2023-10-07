@@ -9,10 +9,58 @@ import dataclasses
 from multicom3.tool.foldseek import *
 import pickle
 import numpy as np
-from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import assess_hhsearch_hit, PrefilterError
-from multicom3.monomer_templates_concatenation.parsers import TemplateHit
+from multicom3.monomer_templates_concatenation import parsers
 from multicom3.monomer_structure_refinement.util import *
 from multicom3.common.protein import complete_result
+
+
+# Prefilter exceptions.
+class PrefilterError(Exception):
+    """A base class for template prefilter exceptions."""
+
+
+class DateError(PrefilterError):
+    """An error indicating that the hit date was after the max allowed date."""
+
+
+class AlignRatioError(PrefilterError):
+    """An error indicating that the hit align ratio to the query was too small."""
+
+
+class DuplicateError(PrefilterError):
+    """An error indicating that the hit was an exact subsequence of the query."""
+
+
+class LengthError(PrefilterError):
+    """An error indicating that the hit was too short."""
+
+def assess_foldseek_hit(
+        hit: parsers.TemplateHit,
+        query_sequence: str,
+        max_subsequence_ratio: float = 0.95,
+        min_align_ratio: float = 0.1) -> bool:
+
+    aligned_cols = hit.aligned_cols
+    align_ratio = aligned_cols / len(query_sequence)
+
+    template_sequence = hit.hit_sequence.replace('-', '')
+    length_ratio = float(len(template_sequence)) / len(query_sequence)
+
+    duplicate = (template_sequence in query_sequence and
+                 length_ratio > max_subsequence_ratio)
+
+    if align_ratio <= min_align_ratio:
+        raise AlignRatioError('Proportion of residues aligned to query too small. '
+                              f'Align ratio: {align_ratio}.')
+
+    if duplicate:
+        raise DuplicateError('Template is an exact subsequence of query with large '
+                             f'coverage. Length ratio: {length_ratio}.')
+
+    if len(template_sequence) < 10:
+        raise LengthError(f'Template too short. Length: {len(template_sequence)}.')
+
+    return True
 
 class Monomer_iterative_refinement_pipeline:
 
@@ -25,7 +73,7 @@ class Monomer_iterative_refinement_pipeline:
         self.max_template_count = max_template_count
 
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def search_templates(self, inpdb, outdir):
@@ -42,7 +90,7 @@ class Monomer_iterative_refinement_pipeline:
 
         evalue_keep_indices = []
         for i in range(len(template_result['local_alignment'])):
-            hit = TemplateHit(index=i,
+            hit = parsers.TemplateHit(index=i,
                               name=template_result['local_alignment'].loc[i, 'target'].split('.')[0],
                               aligned_cols=int(template_result['local_alignment'].loc[i, 'alnlen']),
                               query=template_result['local_alignment'].loc[i, 'qaln'],
@@ -53,7 +101,7 @@ class Monomer_iterative_refinement_pipeline:
                                                                   template_result['local_alignment'].loc[i, 'tstart']),
                               sum_probs=0.0)
             try:
-                assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+                assess_foldseek_hit(hit=hit, query_sequence=query_sequence)
             except PrefilterError as e:
                 msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                 print(msg)
@@ -62,7 +110,7 @@ class Monomer_iterative_refinement_pipeline:
 
         tmscore_keep_indices = []
         for i in range(len(template_result['global_alignment'])):
-            hit = TemplateHit(index=i,
+            hit = parsers.TemplateHit(index=i,
                               name=template_result['global_alignment'].loc[i, 'target'].split('.')[0],
                               aligned_cols=int(template_result['global_alignment'].loc[i, 'alnlen']),
                               query=template_result['global_alignment'].loc[i, 'qaln'],
@@ -74,7 +122,7 @@ class Monomer_iterative_refinement_pipeline:
                                                                   template_result['global_alignment'].loc[i, 'tstart']),
                               sum_probs=0.0)
             try:
-                assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+                assess_foldseek_hit(hit=hit, query_sequence=query_sequence)
             except PrefilterError as e:
                 msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                 print(msg)
@@ -266,7 +314,7 @@ class Monomer_iterative_refinement_pipeline:
                       f"--benchmark={self.params['alphafold_benchmark']} " \
                       f"--use_gpu_relax={self.params['use_gpu_relax']} " \
                       f"--models_to_relax={self.params['models_to_relax']} " \
-                      f"--max_template_date={self.params['max_template_date']} "
+                      f"--max_template_date={self.params['max_template_date']} " \
                       f"--custom_msa={custom_msa} " \
                       f"--temp_struct_csv={temp_struct_csv} " \
                       f"--struct_atom_dir={out_template_dir} " \

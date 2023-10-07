@@ -82,15 +82,6 @@ flags.DEFINE_integer('num_multimer_predictions_per_model', 2, 'How many '
 
 flags.DEFINE_integer('multimer_num_ensemble', 1, 'Number of ensemble for generating multimer models')
 flags.DEFINE_integer('multimer_num_recycle', 20, 'Number of recycles for generating multimer models')
-flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.ALL, ModelsToRelax,
-                        'The models to run the final relaxation step on. '
-                        'If `all`, all models are relaxed, which may be time '
-                        'consuming. If `best`, only the most confident model '
-                        'is relaxed. If `none`, relaxation is not run. Turning '
-                        'off relaxation might result in predictions with '
-                        'distracting stereochemical violations but might help '
-                        'in case you are having issues with the relaxation '
-                        'stage.')
 
 flags.DEFINE_enum('model_preset', 'multimer',
                   ['multimer'],
@@ -125,33 +116,39 @@ RELAX_STIFFNESS = 10.0
 RELAX_EXCLUDE_RESIDUES = []
 RELAX_MAX_OUTER_ITERATIONS = 3
 
+def parse_fasta(fasta_file):
+    fasta_string = open(fasta_file).read()
+    sequences = []
+    descriptions = []
+    index = -1
+    for line in fasta_string.splitlines():
+        line = line.strip()
+        if line.startswith('>'):
+            index += 1
+            descriptions.append(line[1:])  # Remove the '>' at the beginning.
+            sequences.append('')
+            continue
+        elif not line:
+            continue  # Skip blank lines.
+        sequences[index] += line
+    return sequences, descriptions
 
-def read_fasta(fileobj):
-    current_sequence = ""
-    current_id = None
-
-    for line in fileobj:
-        if line.startswith(">"):
-            if current_id is not None:
-                yield current_id, current_sequence
-
-            current_id = line.rstrip()[1:]
-            current_sequence = ""
-
-        elif not line.startswith(";"):
-            current_sequence += line.rstrip()
-
-    yield current_id, current_sequence
 
 def _reorder_chains(pdbstring):
     new_pdbstring = []
-    for line in pdbstring:
-        if line.startswith('ATOM'):
+    first_chain_id = None
+    for line in pdbstring.split('\n'):
+        if line.startswith('ATOM') or line.startswith('TER'):
             chain_id = line[21]
-            new_pdbstring += [line[:21] + PDB_CHAIN_IDS[PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+            if first_chain_id is None:
+                first_chain_id = chain_id
+            if first_chain_id != "A":
+                new_pdbstring += [line[:21] + protein.PDB_CHAIN_IDS[protein.PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+            else:
+                new_pdbstring += [line]
         else:
             new_pdbstring += [line]
-    return new_pdbstring
+    return '\n'.join(new_pdbstring)
 
 def _check_flag(flag_name: str,
                 other_flag_name: str,
@@ -364,50 +361,54 @@ def main(argv):
     if FLAGS.monomer_model_paths is not None:
         custom_inputs.monomer_model_paths += FLAGS.monomer_model_paths
         monomer_template_featurizer = templates_custom.CustomizedComplexMonomerHitFeaturizer(
-            kalign_binary_path=FLAGS.env_dir + '/kalign',
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'),
             monomer_model_paths=FLAGS.monomer_model_paths,
             template_count=FLAGS.monomer_model_count)
         template_max_hits -= FLAGS.monomer_model_count
 
     if FLAGS.template_stos is not None:
+
         template_searcher = hmmsearch.Hmmsearch(
-            binary_path=FLAGS.env_dir + '/hmmsearch',
-            hmmbuild_binary_path=FLAGS.env_dir + '/hmmbuild',
-            database_path=FLAGS.database_dir + '/pdb_seqres/pdb_seqres.txt')
+            binary_path=os.path.join(FLAGS.env_dir, 'hmmsearch'),
+            hmmbuild_binary_path=os.path.join(FLAGS.env_dir, 'hmmbuild'),
+            database_path=os.path.join(FLAGS.database_dir, 'pdb_seqres/pdb_seqres.txt'))
 
         template_featurizer = templates.HmmsearchHitFeaturizer(
-            mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
+            mmcif_dir=os.path.join(FLAGS.database_dir, 'pdb_mmcif/mmcif_files'),
             max_template_date=FLAGS.max_template_date,
             max_hits=template_max_hits,
-            kalign_binary_path=FLAGS.env_dir + '/kalign',
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'),
             release_dates_path=None,
-            obsolete_pdbs_path=FLAGS.database_dir + '/pdb_mmcif/obsolete.dat')
+            obsolete_pdbs_path=os.path.join(FLAGS.database_dir, 'pdb_mmcif/obsolete.dat'))
 
     if FLAGS.temp_seq_pair_file is not None:
+
         template_searcher = hhsearch.HHSearch(
-            binary_path=FLAGS.env_dir + '/hhsearch',
-            databases=[FLAGS.database_dir + '/pdb70/pdb70'])
+            binary_path=os.path.join(FLAGS.env_dir, 'hhsearch'),
+            databases=[os.path.join(FLAGS.database_dir, 'pdb70/pdb70')])
+
         template_featurizer = templates.HhsearchHitFeaturizer(
-            mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
+            mmcif_dir=os.path.join(FLAGS.database_dir, 'pdb_mmcif/mmcif_files'),
             max_template_date=FLAGS.max_template_date,
             max_hits=template_max_hits,
-            kalign_binary_path=FLAGS.env_dir + '/kalign',
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'),
             release_dates_path=None,
-            obsolete_pdbs_path=FLAGS.database_dir + '/pdb_mmcif/obsolete.dat')
+            obsolete_pdbs_path=os.path.join(FLAGS.database_dir, 'pdb_mmcif/obsolete.dat'))
+
         custom_inputs.temp_seq_pair_file = FLAGS.temp_seq_pair_file
 
     if FLAGS.temp_struct_csv is not None:
         template_featurizer = templates_custom.CustomizedComplexHitFeaturizer(
             input_atom_dir=FLAGS.struct_atom_dir,
             max_hits=template_max_hits,
-            kalign_binary_path=FLAGS.env_dir + '/kalign')
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'))
         custom_inputs.temp_struct_csv = FLAGS.temp_struct_csv
 
     if FLAGS.monomer_temp_csvs is not None:
         template_featurizer = templates_custom.CustomizedMonomerHitFeaturizer(
             input_pdb_dir=FLAGS.struct_atom_dir,
             max_hits=template_max_hits,
-            kalign_binary_path=FLAGS.env_dir + '/kalign')
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'))
         custom_inputs.monomer_temp_csvs = FLAGS.monomer_temp_csvs
 
     data_pipeline = pipeline_multimer_custom.DataPipeline(template_searcher=template_searcher,
@@ -416,17 +417,19 @@ def main(argv):
     if FLAGS.msa_pair_file is not None:
         custom_inputs.msa_pair_file = FLAGS.msa_pair_file
 
-    with open(FLAGS.fasta_path, 'r') as fileobj:
-        for i, (seq_id, seq) in enumerate(read_fasta(fileobj)):
-            custom_inputs.monomer_a3ms[seq_id] = FLAGS.monomer_a3ms[i]
-            if custom_inputs.multimer_a3ms is not None:
-                custom_inputs.multimer_a3ms[seq_id] = FLAGS.multimer_a3ms[i]
-            else:
-                custom_inputs.multimer_a3ms[seq_id] = FLAGS.monomer_a3ms[i]
-            if FLAGS.template_stos is not None:
-                custom_inputs.template_stos[seq_id] = FLAGS.template_stos[i]
-            if FLAGS.template_hits_files is not None:
-                custom_inputs.template_hits_files[seq_id] = FLAGS.template_hits_files[i]
+    descs, sequences = parse_fasta(FLAGS.fasta_path)
+
+    for i, seq in enumerate(sequences):
+        seq_id = protein.PDB_CHAIN_IDS[i]
+        custom_inputs.monomer_a3ms[seq_id] = FLAGS.monomer_a3ms[i]
+        if custom_inputs.multimer_a3ms is not None:
+            custom_inputs.multimer_a3ms[seq_id] = FLAGS.multimer_a3ms[i]
+        else:
+            custom_inputs.multimer_a3ms[seq_id] = FLAGS.monomer_a3ms[i]
+        if FLAGS.template_stos is not None:
+            custom_inputs.template_stos[seq_id] = FLAGS.template_stos[i]
+        if FLAGS.template_hits_files is not None:
+            custom_inputs.template_hits_files[seq_id] = FLAGS.template_hits_files[i]
 
     model_runners = {}
     model_names = config.MODEL_PRESETS[FLAGS.model_preset]
@@ -457,21 +460,21 @@ def main(argv):
         max_outer_iterations=RELAX_MAX_OUTER_ITERATIONS,
         use_gpu=FLAGS.use_gpu_relax)
 
-    print(os.path.exists(custom_inputs.temp_struct_csv))
+    # print(os.path.exists(custom_inputs.temp_struct_csv))
     if os.path.exists(custom_inputs.temp_struct_csv):
         if len(custom_inputs.monomer_model_paths) > 0:
-            os.system(f"touch {FLAGS.output_dir}/structure_based_temp_with_alphafold.txt")
+            # os.system(f"touch {FLAGS.output_dir}/structure_based_temp_with_alphafold.txt")
             logging.info('Using structure based templates with alphafold monomer models pipeline')
         else:
-            os.system(f"touch {FLAGS.output_dir}/structure_based_temp.txt")
+            # os.system(f"touch {FLAGS.output_dir}/structure_based_temp.txt")
             logging.info('Using structure based templates pipeline')
 
     if os.path.exists(custom_inputs.temp_seq_pair_file):
-        os.system(f"touch {FLAGS.output_dir}/sequences_based_temp.txt")
+        # os.system(f"touch {FLAGS.output_dir}/sequences_based_temp.txt")
         logging.info('Using sequence based templates pipeline')
 
     if len(custom_inputs.template_stos) > 0:
-        os.system(f"touch {FLAGS.output_dir}/original_temp.txt")
+        # os.system(f"touch {FLAGS.output_dir}/original_temp.txt")
         logging.info('Using original templates pipeline')
 
     fasta_name = pathlib.Path(FLAGS.fasta_path).stem

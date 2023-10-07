@@ -9,10 +9,11 @@ import dataclasses
 from multicom3.tool.foldseek import *
 import pickle
 import numpy as np
-from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import assess_hhsearch_hit, PrefilterError
 from multicom3.monomer_templates_concatenation.parsers import TemplateHit
-from multicom3.multimer_structure_refinement.iterative_refine_pipeline_heteromer_v1_with_monomer import *
-from multicom3.multimer_structure_refinement.util import *
+# from multicom3.multimer_structure_refinement.iterative_refine_pipeline_heteromer_v1_with_monomer import *
+from multicom3.multimer_structure_refinement.util import convert_taln_seq_to_a3m, \
+        check_and_rank_monomer_templates_local_and_global, create_template_df_with_index, \
+        combine_a3ms, assess_complex_templates_homo, assess_complex_templates
 from multicom3.monomer_alignment_generation.alignment import read_a3m
 from multicom3.common.protein import complete_result
 
@@ -27,7 +28,7 @@ class Multimer_iterative_generation_pipeline_monomer_old:
         self.max_template_count = max_template_count
 
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
         
     def search_templates_foldseek(self, inpdb, outdir):
@@ -273,7 +274,7 @@ class Multimer_iterative_generation_pipeline_monomer_old:
                       f"--benchmark={self.params['alphafold_benchmark']} " \
                       f"--use_gpu_relax={self.params['use_gpu_relax']} " \
                       f"--models_to_relax={self.params['models_to_relax']} " \
-                      f"--max_template_date={self.params['max_template_date']} " \                
+                      f"--max_template_date={self.params['max_template_date']} " \
                       f"--multimer_a3ms={','.join(multimer_msa_files)} " \
                       f"--monomer_a3ms={','.join(monomer_msa_files)} " \
                       f"--msa_pair_file={msa_pair_file} " \
@@ -292,7 +293,7 @@ class Multimer_iterative_generation_pipeline_monomer_old:
                       f"--benchmark={self.params['alphafold_benchmark']} " \
                       f"--use_gpu_relax={self.params['use_gpu_relax']} " \
                       f"--models_to_relax={self.params['models_to_relax']} " \
-                      f"--max_template_date={self.params['max_template_date']} " \   
+                      f"--max_template_date={self.params['max_template_date']} " \
                       f"--multimer_a3ms={','.join(multimer_msa_files)} " \
                       f"--monomer_a3ms={','.join(monomer_msa_files)} " \
                       f"--msa_pair_file={msa_pair_file} " \

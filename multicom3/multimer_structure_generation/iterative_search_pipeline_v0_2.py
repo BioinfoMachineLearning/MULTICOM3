@@ -9,10 +9,11 @@ import dataclasses
 from multicom3.tool.foldseek import *
 import pickle
 import numpy as np
-from multicom3.monomer_templates_concatenation.sequence_based_pipeline import assess_hhsearch_hit
 from multicom3.monomer_templates_concatenation.parsers import TemplateHit
-from multicom3.multimer_structure_refinement.iterative_refine_pipeline_heteromer_v1_with_monomer import *
-from multicom3.multimer_structure_refinement.util import *
+# from multicom3.multimer_structure_refinement.iterative_refine_pipeline_heteromer_v1_with_monomer import *
+from multicom3.multimer_structure_refinement.util import convert_taln_seq_to_a3m, \
+    check_and_rank_monomer_templates_local_and_global, combine_a3ms, \
+    create_template_df, assess_complex_templates_homo, assess_complex_templates
 from multicom3.monomer_alignment_generation.alignment import read_a3m
 from multicom3.common.protein import complete_result
 
@@ -28,7 +29,7 @@ class Multimer_iterative_generation_pipeline_monomer:
         self.max_template_count = max_template_count
         
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def search_templates_foldseek(self, inpdb, outdir):

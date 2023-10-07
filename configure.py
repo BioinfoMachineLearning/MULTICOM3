@@ -63,7 +63,7 @@ if __name__ == '__main__':
             newline = newline.replace(keyword, keywords_dict[keyword])
         newlines += [newline]
     
-    with open(os.path.join(install_dir, '/bin/db_option'), 'w') as fw:
+    with open(os.path.join(install_dir, 'bin/db_option'), 'w') as fw:
         fw.writelines(''.join(newlines))
 
     print("\nConfiguration....Done")

@@ -975,8 +975,8 @@ class CustomizedComplexMonomerHitFeaturizer:
                 hits_features = []
                 for n in range(0, self._template_count):
                     hit = CustomizedTemplateHit(query_name=chainid,
-                                                template_name=chain_id_map[chainid].description + f'_{n}',
-                                                template_chain=chain_id_map[chainid].description[4],
+                                                template_name=chainid + f'_{n}',
+                                                template_chain=chainid,
                                                 aligned_length=len(chain_id_map[chainid].sequence),
                                                 aln_temp=chain_id_map[chainid].sequence,
                                                 tstart=1,

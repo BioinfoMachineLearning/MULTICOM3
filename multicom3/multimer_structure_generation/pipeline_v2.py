@@ -13,22 +13,22 @@ def get_complex_alignments_by_method(monomers, concatenate_method, aln_dir):
     a3ms_path = []
     for monomer in monomers:
         if concatenate_method == 'uniclust_oxmatch_a3m':
-            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniclust30.a3m"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniclust30.a3m")
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
         elif concatenate_method.find('_uniref_a3m') > 0:
-            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniref30.a3m"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniref30.a3m")
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
         elif concatenate_method.find('_uniref_sto') > 0:
-            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniref90.sto"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniref90.sto")
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
         elif concatenate_method.find('_uniprot_sto') > 0:
-            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniprot.sto"
+            monomer_a3m = os.path.join(aln_dir, monomer, f"{monomer}_uniprot.sto")
             if not os.path.exists(monomer_a3m):
                 raise Exception(f"Cannot find alignment for {monomer}: {monomer_a3m}")
             a3ms_path += [monomer_a3m]
@@ -46,7 +46,7 @@ class Multimer_structure_prediction_pipeline_v2:
                                 'default+structure_based_template',
                                 'default+sequence_based_template_pdb',
                                 'default+sequence_based_template_complex_pdb',
-                                #'default+alphafold_model_templates',
+                                'default+alphafold_model_templates',
                                 'uniclust_oxmatch_a3m',
                                 'pdb_interact_uniref_a3m',
                                 'species_interact_uniref_a3m',
@@ -54,7 +54,7 @@ class Multimer_structure_prediction_pipeline_v2:
                                 'species_interact_uniref_a3m+structure_based_template',
                                 'species_interact_uniref_a3m+sequence_based_template_pdb',
                                 'species_interact_uniref_a3m+sequence_based_template_complex_pdb',
-                                #'species_interact_uniref_a3m+alphafold_model_templates',
+                                'species_interact_uniref_a3m+alphafold_model_templates',
                                 'uniprot_distance_uniref_a3m',
                                 'string_interact_uniref_a3m',
                                 # 'geno_dist_uniref_a3m',
@@ -66,7 +66,7 @@ class Multimer_structure_prediction_pipeline_v2:
                                 'string_interact_uniref_sto+structure_based_template',
                                 'string_interact_uniref_sto+sequence_based_template_pdb',
                                 'string_interact_uniref_sto+sequence_based_template_complex_pdb',
-                                #'string_interact_uniref_sto+alphafold_model_templates',
+                                'string_interact_uniref_sto+alphafold_model_templates',
                                 # 'geno_dist_uniref_sto',
                                 # 'pdb_interact_uniprot_sto',
                                 'species_interact_uniprot_sto',
@@ -170,13 +170,12 @@ class Multimer_structure_prediction_pipeline_v2:
                         raise Exception(f"Cannot find uniprot sto for {monomer}: {monomer_uniprot_sto}")
                     uniprot_stos += [monomer_uniprot_sto]
 
-                cmd = f"python {self.params['alphafold_default_program']} " +
-                      common_parameters + 
+                cmd = f"python {self.params['alphafold_default_program']} " \
                       f"--bfd_uniref_a3ms={','.join(bfd_uniref_a3ms)} " \
                       f"--mgnify_stos={','.join(mgnify_stos)} " \
                       f"--uniref90_stos={','.join(uniref90_stos)} " \
                       f"--uniprot_stos={','.join(uniprot_stos)} " \
-                      f"--output_dir={outdir} "
+                      f"--output_dir={outdir} " + common_parameters
 
                 if notemplates:
                     cmd += "--notemplates=true"
@@ -253,8 +252,7 @@ class Multimer_structure_prediction_pipeline_v2:
 
                 outdir = os.path.join(output_dir, self.method2dir[method])
 
-                base_cmd = f"python {self.params['alphafold_multimer_program']} " + 
-                           common_parameters + 
+                base_cmd = f"python {self.params['alphafold_multimer_program']} " \
                            f"--monomer_a3ms={','.join(default_alphafold_monomer_a3ms)} " \
                            f"--multimer_a3ms={','.join(a3m_paths)} " \
                            f"--msa_pair_file={msa_pair_file} " \
@@ -322,7 +320,7 @@ class Multimer_structure_prediction_pipeline_v2:
                         monomer_paths += [monomer_path]
                     base_cmd += f"--monomer_model_paths={','.join(monomer_paths)} "
                     
-                base_cmd += f"--output_dir={outdir} "
+                base_cmd += f"--output_dir={outdir} " + common_parameters
 
                 if notemplates:
                     base_cmd += "--notemplates=true"  

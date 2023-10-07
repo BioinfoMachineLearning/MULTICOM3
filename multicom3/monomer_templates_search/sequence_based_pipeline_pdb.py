@@ -9,7 +9,8 @@ from multicom3.monomer_templates_concatenation import parsers
 from multicom3.tool import hhsearch
 from multicom3.tool import hhalign
 import dataclasses
-
+import datetime
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 # Prefilter exceptions.
 class PrefilterError(Exception):
@@ -71,10 +72,10 @@ def assess_hhsearch_hit(
                  length_ratio > max_subsequence_ratio)
 
     if max_template_date is not None and release_dates is not None:
-        if hit.name.lower()[:4] in release_date:
+        if hit.name.lower()[:4] in release_dates:
             hit_release_date = datetime.datetime.strptime(release_dates[hit.name.lower()[:4]], '%Y-%m-%d')
             if hit_release_date > max_template_date:
-                raise DateError(f'Date ({release_dates[hit.name.lower()[:4]}) > max template date '
+                raise DateError(f'Date ({release_dates[hit.name.lower()[:4]]}) > max template date '
                                 f'({max_template_date}).')
         else:
             raise DateError(f'Cannot find release date for ({hit.name.lower()[:4]}).')
@@ -109,7 +110,7 @@ class monomer_sequence_based_template_search_pipeline:
         self.hhmake_program = params['hhmake_program']
 
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def copy_atoms_and_unzip(self, templates, outdir):

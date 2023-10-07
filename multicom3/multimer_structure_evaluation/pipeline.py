@@ -45,7 +45,7 @@ class Multimer_structure_evaluation_pipeline:
             for i in range(model_count):
                 ranked_pdb = os.path.join(model_dir, method, f"ranked_{i}.pdb")
                 trg_pdb = os.path.join(pdbdir, f"{method}_{i}.pdb")
-                os.system(f"cp {ranked_pdb} {trg_pdb})
+                os.system(f"cp {ranked_pdb} {trg_pdb}")
 
                 model_name = list(ranking_json["order"])[i]
                 ranked_pkl = os.path.join(model_dir, method, f"result_{model_name}.pkl")

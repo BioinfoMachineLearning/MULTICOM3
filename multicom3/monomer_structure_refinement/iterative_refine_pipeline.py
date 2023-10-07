@@ -148,8 +148,8 @@ class Monomer_refinement_model_selection:
                 continue
             start_pdb = os.path.join(iteration_dir, 'start.pdb')
             start_pkl = os.path.join(iteration_dir, 'start.pkl') 
-            os.system(f"cp {start_pdb} {os.path.join(outdir, pdb_name + "_ori.pdb")}")
-            os.system(f"cp {start_pkl} {os.path.join(outdir, pdb_name + "_ori.pkl")}")
+            os.system("cp " + start_pdb + " " + os.path.join(outdir, pdb_name + "_ori.pdb"))
+            os.system("cp " + start_pkl + " " + os.path.join(outdir, pdb_name + "_ori.pkl"))
             with open(start_pkl, 'rb') as f:
                 plddt_start = np.mean(pickle.load(f)['plddt'])
 

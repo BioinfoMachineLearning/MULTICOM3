@@ -64,13 +64,13 @@ class Multimer_refinement_model_selection:
         for pdb in os.listdir(indir):
             start_pdb = os.path.join(indir, pdb, 'iteration1/start.pdb')
             start_pkl = os.path.join(indir, pdb, 'iteration1/start.pkl')
-            os.system(f"cp {start_pdb} {os.path.join(outdir, pdb + "_ori.pdb")}")
-            os.system(f"cp {start_pkl} {os.path.join(outdir, pdb + "_ori.pkl")}")
+            os.system("cp " + start_pdb + " " + os.path.join(outdir, pdb + "_ori.pdb"))
+            os.system("cp " + start_pkl + " " + os.path.join(outdir, pdb + "_ori.pkl"))
 
             refine_pdb = os.path.join(indir, pdb, 'final/final.pdb')
             refine_pkl = os.path.join(indir, pdb, 'final/final.pkl')
-            os.system(f"cp {refine_pdb} " + os.path.join(outdir, pdb + "_ref.pdb"))
-            os.system(f"cp {refine_pkl} " + os.path.join(outdir, pdb + "_ref.pkl"))
+            os.system("cp " + refine_pdb + " " + os.path.join(outdir, pdb + "_ref.pdb"))
+            os.system("cp " + refine_pkl + " " + os.path.join(outdir, pdb + "_ref.pkl"))
 
         pdbs = []
         confidences = []

@@ -6,9 +6,9 @@ from multicom3.common.util import makedir_if_not_exists, check_dirs
 import pandas as pd
 import dataclasses
 import numpy as np
-from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import assess_hhsearch_hit, PrefilterError
+from multicom3.monomer_structure_refinement.iterative_refine_pipeline_v4_50 import assess_foldseek_hit, PrefilterError
 from multicom3.monomer_templates_concatenation.parsers import TemplateHit
-from multicom3.monomer_structure_refinement.util import build_alignment_indices, PrefilterError
+from multicom3.monomer_structure_refinement.util import build_alignment_indices
 
 # need to add A if using relaxation in alphafold
 PDB_CHAIN_IDS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -483,7 +483,7 @@ def check_and_rank_monomer_templates_local_or_global(template_result, outfile, q
                                                               templates.loc[i, 'tstart']),
                           sum_probs=0.0)
         try:
-            assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+            assess_foldseek_hit(hit=hit, query_sequence=query_sequence)
         except PrefilterError as e:
             msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
             print(msg)
@@ -514,7 +514,7 @@ def check_and_rank_monomer_templates_local_and_global(template_result, outfile, 
                                                               template_result['local_alignment'].loc[i, 'tstart']),
                           sum_probs=0.0)
         try:
-            assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+            assess_foldseek_hit(hit=hit, query_sequence=query_sequence)
         except PrefilterError as e:
             msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
             print(msg)
@@ -535,7 +535,7 @@ def check_and_rank_monomer_templates_local_and_global(template_result, outfile, 
                                                               template_result['global_alignment'].loc[i, 'tstart']),
                           sum_probs=0.0)
         try:
-            assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+            assess_foldseek_hit(hit=hit, query_sequence=query_sequence)
         except PrefilterError as e:
             msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
             print(msg)
@@ -617,7 +617,7 @@ def check_and_rank_complex_templates(chain_id_map, template_results, max_templat
                                       template_result['local_alignment'].loc[i, 'tstart']),
                                   sum_probs=0.0)
                 try:
-                    assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chain_id].sequence)
+                    assess_foldseek_hit(hit=hit, query_sequence=chain_id_map[chain_id].sequence)
                 except PrefilterError as e:
                     msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                     print(msg)
@@ -641,7 +641,7 @@ def check_and_rank_complex_templates(chain_id_map, template_results, max_templat
                                       template_result['global_alignment'].loc[i, 'tstart']),
                                   sum_probs=0.0)
                 try:
-                    assess_hhsearch_hit(hit=hit, query_sequence=chain_id_map[chain_id].sequence)
+                    assess_foldseek_hit(hit=hit, query_sequence=chain_id_map[chain_id].sequence)
                 except PrefilterError as e:
                     msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                     print(msg)

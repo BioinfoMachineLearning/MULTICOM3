@@ -1,5 +1,5 @@
 # **MULTICOM3**
-MULTICOM3 is an add-on package to improve AlphaFold2- and AlphaFold-Multimer-based prediction of protein tertiary and quaternary structures by diverse multiple sequence alignment sampling, template identification, structural prediction evaluation and structural prediction refinement. It can improve AlphaFold2-based tertiary structure prediction by 8-10% and AlphaFold-Multimer-based quaternary structure prediction by 5-8%. In CASP15, MULTICOM3 used AlphaFold v2.2 as the engine to generate structural predictions. In this release, it is adjusted to run on top of AlphaFold v2.3.2 (https://github.com/deepmind/alphafold/releases/tag/v2.3.2) to leverage the latest improvement on AlphaFold2. You can install MULTICOM3 on top of your AlphaFold2 and AlphaFold-Multimer to improve both the tertiary structure prediction of monomers and the quaternary structure prediction of multimers. 
+MULTICOM3 is an add-on package to improve AlphaFold2- and AlphaFold-Multimer-based prediction of protein tertiary and quaternary structures by diverse multiple sequence alignment sampling, template identification, structural prediction evaluation and structural prediction refinement. It can improve AlphaFold2-based tertiary structure prediction by 8-10% and AlphaFold-Multimer-based quaternary structure prediction by 5-8%. In CASP15, MULTICOM3 used AlphaFold v2.2.0 as the engine to generate structural predictions. In this release, it is adjusted to run on top of AlphaFold v2.3.2 (https://github.com/deepmind/alphafold/releases/tag/v2.3.2) to leverage the latest improvement on AlphaFold2. You can install MULTICOM3 on top of your AlphaFold2 and AlphaFold-Multimer to improve both the tertiary structure prediction of monomers and the quaternary structure prediction of multimers. 
 
 ## **Overall workflow for the MULTICOM Protein tertiary structure prediction system**
 ![CASP15_TS pipeline](imgs/CASP15_TS_pipeline.png)
@@ -79,10 +79,10 @@ subdirectory in the MULTICOM3 repository directory.** If it is, the Docker build
 will be slow as the large databases will be copied during the image creation.
 
 
-7. Download Genetic databases and tools in MULTICOM3
+7. Download additional genetic databases and tools in MULTICOM3
 
    ```
-   python docker/download_database_and_tools.py --dbdir <YOUR_MULTICOM3_DB_DIR>
+   python download_database_and_tools.py --multicom3db_dir <YOUR_MULTICOM3_DB_DIR>
    ```
 
    **Note: The download directory `<YOUR_MULTICOM3_DB_DIR>` should *not* be a
@@ -133,13 +133,16 @@ pip install --upgrade --no-cache-dir jax==0.3.25 jaxlib==0.3.25+cuda11.cudnn805 
 ### **Download chemical properties to the common folder**
 
 ``` bash
+
+# Replace $MULTICOM3_INSTALL_DIR with your MULTICOM3 installation directory
+
 wget -q -P $MULTICOM3_INSTALL_DIR/tools/alphafold-v2.3.2/alphafold/common/ https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
 ```
 
 ### **Apply OpenMM patch**
 
 ``` bash
-# $alphafold_path variable is set to the alphafold git repo directory (absolute path)
+# Replace $MULTICOM3_INSTALL_DIR with your MULTICOM3 installation directory
 
 cd ~/anaconda3/envs/multicom3/lib/python3.8/site-packages/ && patch -p0 < $MULTICOM3_INSTALL_DIR/tools/alphafold-v2.3.2/docker/openmm.patch
 
@@ -158,6 +161,8 @@ conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
 ### **Download Genetic databases in AlphaFold2/AlphaFold-Multimer**
 
 ```
+# Replace $MULTICOM3_INSTALL_DIR with your MULTICOM3 installation directory
+
 bash $MULTICOM3_INSTALL_DIR/tools/alphafold-v2.3.2/scripts/download_all_data.sh <YOUR_ALPHAFOLD_DB_DIR>
 ```
 
@@ -165,17 +170,23 @@ bash $MULTICOM3_INSTALL_DIR/tools/alphafold-v2.3.2/scripts/download_all_data.sh 
 
 ```
 # Note: here the parameters should be the absolute paths
-python setup.py --envdir ~/miniconda3/envs/multicom3 --af_dir $MULTICOM3_INSTALL_DIR/tools/alphafold-v2.3.2 --afdb_dir $YOUR_ALPHAFOLD_DB_DIR
+python download_database_and_tools.py --multicom3db_dir <YOUR_MULTICOM3_DB_DIR>
+
+# Configure the MULTICOM3 system
+# Replace $MULTICOM3_INSTALL_DIR with your MULTICOM3 installation directory
+# Replace $YOUR_ALPHAFOLD_DB_DIR with your downloaded AlphaFold databases directory
+
+python configure.py --envdir ~/miniconda3/envs/multicom3 --multicom3db_dir <YOUR_MULTICOM3_DB_DIR> --afdb_dir <YOUR_ALPHAFOLD_DB_DIR>
 
 # e.g, 
-# python setup.py \
-# --envdir ~/miniconda3/envs/multicom3 \
-# --af_dir /home/multicom3/tools/alphafold-v2.3.2 \
+# python download_database_and_tools.py \
+# --multicom3db_dir /home/multicom3/tools/multicom3_db
+
+# python configure.py \
+# --multicom3db_dir /home/multicom3/tools/multicom3_db \
 # --afdb_dir /home/multicom3/tools/alphafold_databases/
 ```
-The setup.py python script will 
-* Download the additional databases
-* Download the required tools in the system
+The configure.py python script will 
 * Copy the alphafold_addon scripts
 * Create the configuration file (bin/db_option) for running the system
 
@@ -203,21 +214,30 @@ Additional databases will be installed for the MULTICOM system by setup.py:
 
 # **Important parameter values in db_option**
 
-- For Docker version, please change the contents in [docker/.db_option.default](docker/.db_option.default)
-- For non Docker version, please change the contetns in [bin/db_option](bin/db_option) generated by setup.py 
-
 ```
 # AlphaFold2 parameters
 monomer_num_ensemble = 1
 monomer_num_recycle = 3
 num_monomer_predictions_per_model = 1
+monomer_model_preset = monomer
 
 # AlphaFold-Multimer parameters
 multimer_num_ensemble = 1
 multimer_num_recycle = 3
 num_multimer_predictions_per_model = 5
+multimer_model_preset = multimer
+
+# Common parameters
+alphafold_benchmark = True
+use_gpu_relax = True
+models_to_relax = ALL # ALL, BEST, NONE
+max_template_date = 2024-06-01
 ```
-Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the parameters. The parameter values stored in bin/db_option file are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate predictions. The default bin/db_option file is created automatically by setup.py during the installation. The default parameter values above can be changed if needed. 
+Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understand the meaning of the parameters. The parameter values stored in bin/db_option file are applied to all the AlphaFold2/AlphaFold-Multimer variants in the MULTICOM3 system to generate predictions. 
+
+For Docker version installation, you can change the default parameter values in [docker/db_option](docker/db_option).
+
+For non Docker version of installation, the default bin/db_option file is created automatically by configure.py during the installation. The default parameter values above can be changed if needed. 
 
 # **Before running the system for non Docker version**
 
@@ -226,7 +246,7 @@ Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understan
 ```bash
 conda activate multicom3
 
-# Note: here the parameters should be the absolute paths
+# Replace $MULTICOM3_INSTALL_DIR with your MULTICOM3 installation directory (absolute path)
 export PYTHONPATH=$MULTICOM3_INSTALL_DIR
 
 # e.g, 

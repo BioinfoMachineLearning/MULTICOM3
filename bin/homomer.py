@@ -310,7 +310,7 @@ def main(argv):
             os.system("cp " + os.path.join(first_monomer_id_dir, 'pdb', pdb_name) + " " + os.path.join(chain_pdb_dir, pdb_name))
 
             new_contents = []
-            for idx, line in enumerate(open(os.path.join(qa_result_dir, first_monomer_id, 'msa', pdb_name.replace('.pdb', '.a3m')).readlines()):
+            for idx, line in enumerate(open(os.path.join(qa_result_dir, first_monomer_id, 'msa', pdb_name.replace('.pdb', '.a3m'))).readlines()):
                 if idx == 0:
                     new_contents += [f">{monomer_id}\n"]
                 else:

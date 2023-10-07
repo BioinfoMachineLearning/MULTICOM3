@@ -8,9 +8,10 @@ from multiprocessing import Pool
 import dataclasses
 import pathlib
 from multicom3.tool.foldseek import *
-from multicom3.monomer_templates_search.sequence_based_pipeline_pdb import assess_hhsearch_hit, PrefilterError
+from multicom3.monomer_structure_refinement.iterative_refine_pipeline_v4_50 import assess_foldseek_hit, PrefilterError
 from multicom3.monomer_templates_concatenation.parsers import TemplateHit
-from multicom3.monomer_structure_refinement.util import *
+from multicom3.monomer_structure_refinement.util import build_alignment_indices
+import datetime
 
 class Complex_structure_based_template_search_pipeline:
 
@@ -18,7 +19,7 @@ class Complex_structure_based_template_search_pipeline:
 
         self.params = params
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def search_templates_foldseek(self, inpdb, outdir):
@@ -59,7 +60,7 @@ class Complex_structure_based_template_search_pipeline:
 
             if check_hit:
                 try:
-                    assess_hhsearch_hit(hit=hit, query_sequence=query_sequence)
+                    assess_foldseek_hit(hit=hit, query_sequence=query_sequence)
                 except PrefilterError as e:
                     msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                     print(msg)
@@ -196,7 +197,7 @@ class Complex_structure_based_template_search_pipeline:
                                           sum_probs=0.0)
 
                         try:
-                            assess_hhsearch_hit(hit=hit, query_sequence=monomer_sequences[i])
+                            assess_foldseek_hit(hit=hit, query_sequence=monomer_sequences[i])
                         except PrefilterError as e:
                             msg = f'hit {hit.name.split()[0]} did not pass prefilter: {str(e)}'
                             print(msg)

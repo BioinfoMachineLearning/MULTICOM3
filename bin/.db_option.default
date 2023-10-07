@@ -86,10 +86,10 @@ multimer_model_preset = multimer
 alphafold_benchmark = True
 use_gpu_relax = True
 
-# ALL = 0, BEST = 1, NONE = 2
-models_to_relax = 0
+# ALL, BEST, NONE
+models_to_relax = ALL
 
-max_template_date = 9999-06-01
+max_template_date = 2024-06-01
 
 pdb_release_date_file = INSTALLDIR_DATABASES/pdb_release_date_filtered.csv
 

@@ -42,9 +42,9 @@ if [[ "$mode" == "" || "$multicom3_db_dir" == "" || "$af_db_dir" == "" || "$fast
 fi
 
 configure_script="/app/MULTICOM3/docker/configure.py"
-python $configure_script --install_dir /app/MULTICOM3 --multicom3_db_dir $multicom3_db_dir --afdb_dir $af_db_dir --outfile $output_dir/db_option
+python $configure_script --install_dir /app/MULTICOM3 --multicom3_db_dir $multicom3_db_dir --afdb_dir $af_db_dir --outfile $output_dir/db_option_docker
 
-option_file="$output_dir/db_option"
+option_file="$output_dir/db_option_docker"
 monomer_script="/app/MULTICOM3/bin/monomer.py"
 heteromer_script="/app/MULTICOM3/bin/heteromer.py"
 homomer_script="/app/MULTICOM3/bin/homomer.py"

@@ -17,13 +17,13 @@
 import glob
 import os
 import subprocess
-from typing import Sequence
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from absl import logging
 from multicom3.tool import utils
 import pandas as pd
 import pathlib
-
+import datetime
 
 # Internal import (7716).
 
@@ -108,13 +108,13 @@ class Foldseek:
                     target = pdb_df.loc[i, 'target']
                     if target.lower()[:4] in self._release_dates:
                         hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
-                        if hit_release_date < max_template_date:
+                        if hit_release_date < self._max_template_date:
                             keep_indices += [i]
 
                 pdb_df_filtered = pdb_df.iloc[keep_indices]
                 pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
                 pdb_df_filtered.reset_index(inplace=True, drop=True)
-                pdb_df_filtered.to_csv(outfile,, sep='\t')
+                pdb_df_filtered.to_csv(outfile, sep='\t')
 
             evalue_df = evalue_df.append(pd.read_csv(outfile, sep='\t'))
 
@@ -124,7 +124,7 @@ class Foldseek:
 
         if len(evalue_df) < progressive_threshold:
             # search the database using tmalign mode
-            for database in self.databases:
+            for database in databases:
                 database_name = pathlib.Path(database).stem
                 outfile = os.path.join(outdir, f'aln.m8_{database_name}.tm')
                 if not os.path.exists(outfile):
@@ -159,13 +159,13 @@ class Foldseek:
                         target = pdb_df.loc[i, 'target']
                         if target.lower()[:4] in self._release_dates:
                             hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
-                            if hit_release_date < max_template_date:
+                            if hit_release_date < self._max_template_date:
                                 keep_indices += [i]
 
                     pdb_df_filtered = pdb_df.iloc[keep_indices]
                     pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
                     pdb_df_filtered.reset_index(inplace=True, drop=True)
-                    pdb_df_filtered.to_csv(outfile,, sep='\t')
+                    pdb_df_filtered.to_csv(outfile, sep='\t')
 
                 tmscore_df = tmscore_df.append(pd.read_csv(outfile, sep='\t'))
             
@@ -227,13 +227,13 @@ class Foldseek:
                     target = pdb_df.loc[i, 'target']
                     if target.lower()[:4] in self._release_dates:
                         hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
-                        if hit_release_date < max_template_date:
+                        if hit_release_date < self._max_template_date:
                             keep_indices += [i]
 
                 pdb_df_filtered = pdb_df.iloc[keep_indices]
                 pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
                 pdb_df_filtered.reset_index(inplace=True, drop=True)
-                pdb_df_filtered.to_csv(outfile,, sep='\t')
+                pdb_df_filtered.to_csv(outfile, sep='\t')
 
             result_df = result_df.append(pd.read_csv(outfile, sep='\t'))
 
@@ -286,13 +286,13 @@ class Foldseek:
                     target = pdb_df.loc[i, 'target']
                     if target.lower()[:4] in self._release_dates:
                         hit_release_date = datetime.datetime.strptime(self._release_dates[target.lower()[:4]], '%Y-%m-%d')
-                        if hit_release_date < max_template_date:
+                        if hit_release_date < self._max_template_date:
                             keep_indices += [i]
 
                 pdb_df_filtered = pdb_df.iloc[keep_indices]
                 pdb_df_filtered.drop(pdb_df_filtered.filter(regex="Unnamed"), axis=1, inplace=True)
                 pdb_df_filtered.reset_index(inplace=True, drop=True)
-                pdb_df_filtered.to_csv(outfile,, sep='\t')
+                pdb_df_filtered.to_csv(outfile, sep='\t')
 
             result_df = result_df.append(pd.read_csv(outfile, sep='\t'))
 

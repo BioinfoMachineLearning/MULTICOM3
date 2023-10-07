@@ -23,9 +23,9 @@ class Multimer_iterative_refinement_pipeline:
         self.max_template_count = max_template_count
 
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
-        
+
 
     def search_templates_foldseek(self, inpdb, outdir):
         makedir_if_not_exists(outdir)
@@ -344,11 +344,6 @@ class Multimer_iterative_refinement_pipeline:
                           f"--multimer_a3ms={','.join(multimer_msa_files)} " \
                           f"--monomer_a3ms={','.join(monomer_msa_files)} " \
                           f"--msa_pair_file={msa_pair_file} " \
-                          f"--temp_struct_csv={template_files[0]} " \
-                          f"--struct_atom_dir={out_template_dir} " \
-                          f"--multimer_a3ms={','.join(multimer_msa_files)} " \
-                          f"--monomer_a3ms={','.join(monomer_msa_files)} " \
-                          f"--msa_pair_file={msa_pair_file} " \
                           f"--monomer_temp_csvs={','.join(template_files)} " \
                           f"--struct_atom_dir={out_template_dir} " \
                           f"--output_dir={out_model_dir}"
@@ -374,7 +369,7 @@ class Multimer_iterative_refinement_pipeline:
                 ref_start_pkl = os.path.join(out_model_dir, f"result_{model_name}.pkl") 
                 ref_start_msa_paths = {}
                 for chain_id in chain_id_map:
-                    ref_start_msa_paths[chain_id] = dict(paired_msa=os.path.join(out_model_dir, f"msas/{chain_id}.paired.a3m",
+                    ref_start_msa_paths[chain_id] = dict(paired_msa=os.path.join(out_model_dir, f"msas/{chain_id}.paired.a3m"),
                                                          monomer_msa=os.path.join(out_model_dir, "msas", chain_id, "monomer_final.a3m"))
 
                 print('##################################################')
@@ -389,7 +384,7 @@ class Multimer_iterative_refinement_pipeline:
                     ref_start_pkl = os.path.join(out_model_dir, f"result_{model_name}.pkl") 
                     ref_start_msa_paths = {}
                     for chain_id in chain_id_map:
-                        ref_start_msa_paths[chain_id] = dict(paired_msa=os.path.join(out_model_dir, f"msas/{chain_id}.paired.a3m",
+                        ref_start_msa_paths[chain_id] = dict(paired_msa=os.path.join(out_model_dir, f"msas/{chain_id}.paired.a3m"),
                                                          monomer_msa=os.path.join(out_model_dir, "msas", chain_id, "monomer_final.a3m"))
                     model_iteration_scores += [max_lddt_score]
                 break

@@ -11,6 +11,7 @@ from multicom3.tool import hhsearch
 from multicom3.tool import hhalign
 import dataclasses
 import numpy as np
+import datetime
 
 @dataclasses.dataclass(frozen=False)
 class monomer_template_input:
@@ -59,7 +60,7 @@ class Complex_sequence_based_template_search_pipeline:
         self.pdb_seqs_dir = params['pdb_seqs_dir']
 
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def find_matches_between_pdbcodes(self, monomer_code1, monomer_code2):
@@ -137,7 +138,7 @@ class Complex_sequence_based_template_search_pipeline:
                         hit_name = self.find_matches_between_pdbcodes(hit1_name, hit2_name)
                         # print(hit1_name)
                         if len(hit_name) > 0:
-                            fasta_file = os.path.join(self.pdb_seq_dir, hit_name + '.fasta')
+                            fasta_file = os.path.join(self.pdb_seqs_dir, hit_name + '.fasta')
                             if not os.path.exists(fasta_file):
                                 continue
                             hit = self.align_template(monomer_inputs[i].name,

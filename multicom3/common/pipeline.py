@@ -344,7 +344,7 @@ def run_monomer_msas_concatenation_pipeline(multimer, run_methods, monomer_aln_d
                           'uniref30_a3m': os.path.join(chain_aln_dir, f"{chain}_uniref30.a3m"),
                           'uniref90_sto': os.path.join(chain_aln_dir, f"{chain}_uniref90.sto"),
                           'uniprot_sto': os.path.join(chain_aln_dir, f"{chain}_uniprot.sto"),
-                          'uniclust30_a3m': os.path.join(chain_aln_dir, f"{chain}_uniclust30.a3m")
+                          'uniclust30_a3m': os.path.join(chain_aln_dir, f"{chain}_uniclust30.a3m")}
         else:
             chain_a3ms = {'name': chain}
         alignment[f"chain{i + 1}"] = chain_a3ms
@@ -429,7 +429,7 @@ def run_monomer_templates_concatenation_pipeline(multimers, monomer_aln_dir, mon
                 print(f"Cannot find teritary structure for {chain}: {monomer_pdb}")
                 continue
             monomer_trg_pdb = os.path.join(struct_temp_dir, f"{chain}.pdb")
-            os.system(f"cp {monomer_pdb} {smonomer_trg_pdb}")
+            os.system(f"cp {monomer_pdb} {monomer_trg_pdb}")
             monomer_pdbs += [monomer_trg_pdb]
         pipeline = structure_based_pipeline_v2.Complex_structure_based_template_search_pipeline(params)
         pipeline.search(monomer_sequences, monomer_pdbs, struct_temp_dir)

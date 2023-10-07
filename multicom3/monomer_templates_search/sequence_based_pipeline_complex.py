@@ -56,7 +56,7 @@ class monomer_sequence_based_template_search_pipeline:
         self.hhmake_program = params['hhmake_program']
 
         release_date_df = pd.read_csv(params['pdb_release_date_file'])
-        self._release_dates = dict(zip(release_date_df['pdbcode'], pdb_release_date_df['release_date']))
+        self._release_dates = dict(zip(release_date_df['pdbcode'], release_date_df['release_date']))
         self._max_template_date = datetime.datetime.strptime(params['max_template_date'], '%Y-%m-%d')
 
     def copy_atoms_and_unzip(self, templates, outdir):

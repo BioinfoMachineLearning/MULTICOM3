@@ -75,12 +75,6 @@ flags.DEFINE_string('database_dir', None, 'AlphaFold database directory')
 flags.DEFINE_string('max_template_date', '9999-06-01', 'Maximum template release date '
                                                'to consider. Important if folding historical test sets.')
 
-flags.DEFINE_boolean('run_relax', True, 'Whether to run the final relaxation '
-                                        'step on the predicted models. Turning relax off might '
-                                        'result in predictions with distracting stereochemical '
-                                        'violations but might help in case you are having issues '
-                                        'with the relaxation stage.')
-
 flags.DEFINE_boolean('use_gpu_relax', False, 'Whether to relax on GPU. '
                                              'Relax on GPU can be much faster than CPU, so it is '
                                              'recommended to enable if possible. GPUs must be available'
@@ -103,8 +97,8 @@ flags.DEFINE_integer('monomer_num_recycle', 3, 'Number of recycles for generatin
 flags.DEFINE_integer('multimer_num_ensemble', 1, 'Number of ensemble for generating multimer models')
 flags.DEFINE_integer('multimer_num_recycle', 20, 'Number of recycles for generating multimer models')
 
-flags.DEFINE_enum('model_preset', 'multimer',
-                  ['multimer'],
+flags.DEFINE_enum('model_preset', 'monomer',
+                  ['monomer', 'monomer_casp14', 'monomer_ptm', 'multimer'],
                   'Choose preset model configuration - the monomer model, '
                   'the monomer model with extra ensembling, monomer model with '
                   'pTM head, or multimer model')
@@ -121,10 +115,6 @@ flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.ALL, ModelsToRelax,
                         'distracting stereochemical violations but might help '
                         'in case you are having issues with the relaxation '
                         'stage.')
-flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
-                     'Relax on GPU can be much faster than CPU, so it is '
-                     'recommended to enable if possible. GPUs must be available'
-                     ' if this setting is enabled.')
 
 FLAGS = flags.FLAGS
 
@@ -135,30 +125,39 @@ RELAX_STIFFNESS = 10.0
 RELAX_EXCLUDE_RESIDUES = []
 RELAX_MAX_OUTER_ITERATIONS = 3
 
-def read_fasta(fastafile):
-    seqs = {}
-    current_sequence = ""
-    current_id = None
-    for line in open(fastafile):
-        if line.startswith(">"):
-            if current_id is not None:
-                seqs[current_id] = current_sequence
-            current_id = line.rstrip()[1:]
-            current_sequence = ""
-        elif not line.startswith(";"):
-            current_sequence += line.rstrip()
-    seqs[current_id] = current_sequence
-    return seqs
+def parse_fasta(fasta_file):
+    fasta_string = open(fasta_file).read()
+    sequences = []
+    descriptions = []
+    index = -1
+    for line in fasta_string.splitlines():
+        line = line.strip()
+        if line.startswith('>'):
+            index += 1
+            descriptions.append(line[1:])  # Remove the '>' at the beginning.
+            sequences.append('')
+            continue
+        elif not line:
+            continue  # Skip blank lines.
+        sequences[index] += line
+    return sequences, descriptions
+
 
 def _reorder_chains(pdbstring):
     new_pdbstring = []
-    for line in pdbstring:
-        if line.startswith('ATOM'):
+    first_chain_id = None
+    for line in pdbstring.split('\n'):
+        if line.startswith('ATOM') or line.startswith('TER'):
             chain_id = line[21]
-            new_pdbstring += [line[:21] + PDB_CHAIN_IDS[PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+            if first_chain_id is None:
+                first_chain_id = chain_id
+            if first_chain_id != "A":
+                new_pdbstring += [line[:21] + protein.PDB_CHAIN_IDS[protein.PDB_CHAIN_IDS.find(chain_id)-1] + line[22:]]
+            else:
+                new_pdbstring += [line]
         else:
             new_pdbstring += [line]
-    return new_pdbstring
+    return '\n'.join(new_pdbstring)
 
 def _check_flag(flag_name: str,
                 other_flag_name: str,
@@ -270,7 +269,7 @@ def predict_structure(
             with open(unrelaxed_pdb_path, 'w') as f:
                 f.write(unrelaxed_pdbs[model_name])
         else:
-            logging.info('%s has been generated!', model_name)
+            logging.info(f'{model_name} has been generated!')
 
             with open(result_output_path, 'rb') as f:
                 prediction_result = pickle.load(f)
@@ -310,7 +309,7 @@ def predict_structure(
         relaxed_output_path = os.path.join(output_dir, f'relaxed_{model_name}.pdb')
         if os.path.exists(relaxed_output_path):
             relaxed_pdbs[model_name] = ''.join(open(relaxed_output_path).readlines())
-            print('%s has been generated!', relaxed_output_path)
+            print(f'{relaxed_output_path} has been generated!')
         else:
             t_0 = time.time()
             relaxed_pdb_str, _, violations = amber_relaxer.process(prot=unrelaxed_proteins[model_name])
@@ -354,44 +353,44 @@ def main(argv):
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
 
-    run_multimer_system = len(read_fasta(FLAGS.fasta_path)) > 1
+    run_multimer_system = 'multimer' in FLAGS.model_preset
 
     if run_multimer_system:
-        model_preset = 'multimer'
+        # model_preset = 'multimer'
         template_searcher = hmmsearch.Hmmsearch(
-            binary_path=FLAGS.env_dir + '/hmmsearch',
-            hmmbuild_binary_path=FLAGS.env_dir + '/hmmbuild',
-            database_path=FLAGS.database_dir + '/pdb_seqres/pdb_seqres.txt')
+            binary_path=os.path.join(FLAGS.env_dir, 'hmmsearch'),
+            hmmbuild_binary_path=os.path.join(FLAGS.env_dir, 'hmmbuild'),
+            database_path=os.path.join(FLAGS.database_dir, 'pdb_seqres/pdb_seqres.txt'))
 
         template_featurizer = templates.HmmsearchHitFeaturizer(
-            mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
+            mmcif_dir=os.path.join(FLAGS.database_dir, 'pdb_mmcif/mmcif_files'),
             max_template_date=FLAGS.max_template_date,
             max_hits=MAX_TEMPLATE_HITS,
-            kalign_binary_path=FLAGS.env_dir + '/kalign',
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'),
             release_dates_path=None,
-            obsolete_pdbs_path=FLAGS.database_dir + '/pdb_mmcif/obsolete.dat')
+            obsolete_pdbs_path=os.path.join(FLAGS.database_dir, 'pdb_mmcif/obsolete.dat'))
     else:
-        model_preset = 'monomer'
+        # model_preset = 'monomer'
         template_searcher = hhsearch.HHSearch(
-            binary_path=FLAGS.env_dir + '/hhsearch',
-            databases=[FLAGS.database_dir + '/pdb70/pdb70'])
+            binary_path=os.path.join(FLAGS.env_dir, 'hhsearch'),
+            databases=[os.path.join(FLAGS.database_dir, 'pdb70/pdb70')])
 
         template_featurizer = templates.HhsearchHitFeaturizer(
-            mmcif_dir=FLAGS.database_dir + '/pdb_mmcif/mmcif_files',
+            mmcif_dir=os.path.join(FLAGS.database_dir, 'pdb_mmcif/mmcif_files'),
             max_template_date=FLAGS.max_template_date,
             max_hits=MAX_TEMPLATE_HITS,
-            kalign_binary_path=FLAGS.env_dir + '/kalign',
+            kalign_binary_path=os.path.join(FLAGS.env_dir, 'kalign'),
             release_dates_path=None,
-            obsolete_pdbs_path=FLAGS.database_dir + '/pdb_mmcif/obsolete.dat')
+            obsolete_pdbs_path=os.path.join(FLAGS.database_dir, 'pdb_mmcif/obsolete.dat'))
 
     monomer_data_pipeline = pipeline.DataPipeline(
-        jackhmmer_binary_path=FLAGS.env_dir + '/jackhmmer',
-        hhblits_binary_path=FLAGS.env_dir + '/hhblits',
-        uniref90_database_path=FLAGS.database_dir + '/uniref90/uniref90.fasta',
-        mgnify_database_path=FLAGS.database_dir + '/mgnify/mgy_clusters_2022_05.fa',
-        bfd_database_path=FLAGS.database_dir + '/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt',
-        uniref30_database_path=FLAGS.database_dir + '/uniref30/UniRef30_2021_03',
-        small_bfd_database_path=FLAGS.database_dir + '/small_bfd/bfd-first_non_consensus_sequences.fasta',
+        jackhmmer_binary_path=os.path.join(FLAGS.env_dir, 'jackhmmer'),
+        hhblits_binary_path=os.path.join(FLAGS.env_dir, 'hhblits'),
+        uniref90_database_path=os.path.join(FLAGS.database_dir, 'uniref90/uniref90.fasta'),
+        mgnify_database_path=os.path.join(FLAGS.database_dir, 'mgnify/mgy_clusters_2022_05.fa'),
+        bfd_database_path=os.path.join(FLAGS.database_dir, 'bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt'),
+        uniref30_database_path=os.path.join(FLAGS.database_dir, 'uniref30/UniRef30_2021_03'),
+        small_bfd_database_path=os.path.join(FLAGS.database_dir, 'small_bfd/bfd-first_non_consensus_sequences.fasta'),
         template_searcher=template_searcher,
         template_featurizer=template_featurizer,
         use_small_bfd=False,
@@ -403,8 +402,8 @@ def main(argv):
         num_predictions_per_model = FLAGS.num_multimer_predictions_per_model
         data_pipeline = pipeline_multimer.DataPipeline(
             monomer_data_pipeline=monomer_data_pipeline,
-            jackhmmer_binary_path=FLAGS.env_dir + '/jackhmmer',
-            uniprot_database_path=FLAGS.database_dir + '/uniprot/uniprot.fasta',
+            jackhmmer_binary_path=os.path.join(FLAGS.env_dir, 'jackhmmer'),
+            uniprot_database_path=os.path.join(FLAGS.database_dir, 'uniprot/uniprot.fasta'),
             use_precomputed_msas=True)
     else:
         num_ensemble = FLAGS.monomer_num_ensemble
@@ -413,7 +412,7 @@ def main(argv):
         data_pipeline = monomer_data_pipeline
 
     model_runners = {}
-    model_names = config.MODEL_PRESETS[model_preset]
+    model_names = config.MODEL_PRESETS[FLAGS.model_preset]
     for model_name in model_names:
         model_config = config.model_config(model_name)
         if run_multimer_system:
@@ -429,38 +428,49 @@ def main(argv):
     logging.info('Have %d models: %s', len(model_runners),
                  list(model_runners.keys()))
 
-    if FLAGS.run_relax:
-        amber_relaxer = relax.AmberRelaxation(
+    amber_relaxer = relax.AmberRelaxation(
             max_iterations=RELAX_MAX_ITERATIONS,
             tolerance=RELAX_ENERGY_TOLERANCE,
             stiffness=RELAX_STIFFNESS,
             exclude_residues=RELAX_EXCLUDE_RESIDUES,
             max_outer_iterations=RELAX_MAX_OUTER_ITERATIONS,
             use_gpu=FLAGS.use_gpu_relax)
-    else:
-        amber_relaxer = None
 
     random_seed = random.randrange(sys.maxsize // len(model_runners))
     logging.info('Using random seed %d for the data pipeline', random_seed)
 
     fasta_name = pathlib.Path(FLAGS.fasta_path).stem
     if run_multimer_system:
-        for chain_id, (i, fastaname) in zip(protein.PDB_CHAIN_IDS, enumerate(read_fasta(FLAGS.fasta_path))):
+        sequences, descs = parse_fasta(FLAGS.fasta_path)
+        for chain_id, (i, fastaname) in zip(protein.PDB_CHAIN_IDS, enumerate(sequences)):
             msa_output_dir = os.path.join(FLAGS.output_dir, 'msas', chain_id)
             if not os.path.exists(msa_output_dir):
                 os.makedirs(msa_output_dir)
             # copy the msas to the output directory so we don't need to run them again
-            os.system(f"cp {FLAGS.mgnify_stos[i]} {msa_output_dir}/mgnify_hits.sto")
-            os.system(f"cp {FLAGS.uniref90_stos[i]} {msa_output_dir}/uniref90_hits.sto")
-            os.system(f"cp {FLAGS.bfd_uniref_a3ms[i]} {msa_output_dir}/bfd_uniref_hits.a3m")
-            os.system(f"cp {FLAGS.uniprot_stos[i]} {msa_output_dir}/uniprot_hits.sto")
+            trg_msa = os.path.join(msa_output_dir, "mgnify_hits.sto")
+            os.system(f"cp {FLAGS.mgnify_stos[i]} {trg_msa}")
+
+            trg_msa = os.path.join(msa_output_dir, "uniref90_hits.sto")
+            os.system(f"cp {FLAGS.uniref90_stos[i]} {trg_msa}")
+
+            trg_msa = os.path.join(msa_output_dir, "bfd_uniref_hits.a3m")
+            os.system(f"cp {FLAGS.bfd_uniref_a3ms[i]} {trg_msa}")
+
+            trg_msa = os.path.join(msa_output_dir, "uniprot_hits.sto")
+            os.system(f"cp {FLAGS.uniprot_stos[i]} {trg_msa}")
     else:
         msa_output_dir = os.path.join(FLAGS.output_dir, 'msas')
         if not os.path.exists(msa_output_dir):
             os.makedirs(msa_output_dir)
-        os.system(f"cp {FLAGS.mgnify_stos[0]} {msa_output_dir}/mgnify_hits.sto")
-        os.system(f"cp {FLAGS.uniref90_stos[0]} {msa_output_dir}/uniref90_hits.sto")
-        os.system(f"cp {FLAGS.bfd_uniref_a3ms[0]} {msa_output_dir}/bfd_uniref_hits.a3m")
+        
+        trg_msa = os.path.join(msa_output_dir, "mgnify_hits.sto")
+        os.system(f"cp {FLAGS.mgnify_stos[0]} {trg_msa}")
+
+        trg_msa = os.path.join(msa_output_dir, "uniref90_hits.sto")
+        os.system(f"cp {FLAGS.uniref90_stos[0]} {trg_msa}")
+
+        trg_msa = os.path.join(msa_output_dir, "bfd_uniref_hits.a3m")
+        os.system(f"cp {FLAGS.bfd_uniref_a3ms[0]} {trg_msa}")
 
 
     predict_structure(
