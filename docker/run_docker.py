@@ -27,6 +27,7 @@ from docker import types
 
 flags.DEFINE_string('mode', None, 'Monomer, heteromer or homomer')
 flags.DEFINE_string('fasta_path', None, 'Path to fasta')
+flags.DEFINE_string('option_file', None, 'Path to option file')
 flags.DEFINE_string('output_dir', '/tmp/multicom3',
                     'Path to a directory that will store the results.')     
 flags.DEFINE_string('af_db_dir', None,
@@ -91,6 +92,7 @@ def main(argv):
   command_args.append(f"-a {target_path}")
 
   os.makedirs(FLAGS.output_dir, exist_ok=True)
+  os.system(f"cp {FLAGS.option_file} {FLAGS.output_dir}")
   output_target_path = os.path.join(_ROOT_MOUNT_DIRECTORY, 'output')
   mounts.append(types.Mount(output_target_path, FLAGS.output_dir, type='bind'))
 
@@ -98,7 +100,7 @@ def main(argv):
 
   client = docker.from_env()
   device_requests = [docker.types.DeviceRequest(driver='nvidia', capabilities=[['gpu']])]
-  print(command_args)
+  # print(command_args)
   container = client.containers.run(
       image=FLAGS.docker_image_name,
       command=command_args,

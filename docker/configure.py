@@ -42,11 +42,11 @@ if __name__ == '__main__':
     parser.add_argument('--install_dir', type=str, required=True)
     parser.add_argument('--multicom3_db_dir', type=str, required=True)
     parser.add_argument('--afdb_dir', type=str, required=True)
-    parser.add_argument('--outfile', type=str, required=True)
+    parser.add_argument('--option_file', type=str, required=True)
     args = parser.parse_args()
 
     # configure db_option file
-    db_option_file_template = os.path.join(args.install_dir, 'docker/db_option')
+    db_option_file_template = args.option_file
     newlines = []
     keywords_dict = {'INSTALLDIR_DATABASES': args.multicom3_db_dir.rstrip('/'),
                     'AFDB_DIR': args.afdb_dir.rstrip('/')}
@@ -57,7 +57,7 @@ if __name__ == '__main__':
             newline = newline.replace(keyword, keywords_dict[keyword])
         newlines += [newline]
     
-    with open(args.outfile, 'w') as fw:
+    with open(args.option_file, 'w') as fw:
         fw.writelines(''.join(newlines))
 
     print("\nConfiguration....Done")
