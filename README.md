@@ -35,7 +35,7 @@ git clone --recursive https://github.com/BioinfoMachineLearning/MULTICOM3
     [NVIDIA Docker issue](https://github.com/NVIDIA/nvidia-docker/issues/1447#issuecomment-801479573).
 
     If you wish to run AlphaFold using Singularity (a common containerization
-    platform on HPC systems) we recommend using some of the third party Singularity
+    platform on HPC systems) we recommend using some of the third-party Singularity
     setups as linked in https://github.com/deepmind/alphafold/issues/10 or
     https://github.com/deepmind/alphafold/issues/24.
 
@@ -237,7 +237,7 @@ Please refer to [AlphaFold2](https://github.com/deepmind/alphafold) to understan
 
 For Docker version installation, you can change the default parameter values in [docker/db_option](docker/db_option).
 
-For non Docker version of installation, the default bin/db_option file is created automatically by configure.py during the installation. The default parameter values above can be changed if needed. 
+For non Docker version of the installation, the default bin/db_option file is created automatically by configure.py during the installation. The default parameter values above can be changed if needed. 
 
 # **Before running the system for non Docker version**
 
@@ -270,9 +270,11 @@ Note: It is recommended that the name of the sequence file in FASTA format shoul
 Then run the following command:
 
 ```bash
+# Please provide absolute path for the input parameters
 # docker version
 python3 docker/run_docker.py \
     --mode=monomer \
+    --option_file=docker/db_option \
     --fasta_path=$YOUR_FASTA \
     --run_img=False \
     --af_db_dir=$YOUR_ALPHAFOLD_DB_DIR \ 
@@ -332,9 +334,11 @@ Say we have a homomer with 4 copies of the same sequence
 Then run the following command:
 
 ```bash
+# Please provide absolute path for the input parameters
 # docker version
 python3 docker/run_docker.py \
     --mode=homomer \
+    --option_file=docker/db_option \
     --fasta_path=$YOUR_FASTA \
     --run_img=False \
     --af_db_dir=$YOUR_ALPHAFOLD_DB_DIR \ 
@@ -370,9 +374,11 @@ Say we have an A2B3 heteromer, i.e. with 2 copies of
 Then run the following command:
 
 ```bash
+# Please provide absolute path for the input parameters
 # docker version
 python3 docker/run_docker.py \
     --mode=heteromer \
+    --option_file=docker/db_option \
     --fasta_path=$YOUR_FASTA \
     --run_img=False \
     --af_db_dir=$YOUR_ALPHAFOLD_DB_DIR \ 
