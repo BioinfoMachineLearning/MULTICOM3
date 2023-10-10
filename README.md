@@ -12,7 +12,7 @@ MULTICOM3 is an add-on package to improve AlphaFold2- and AlphaFold-Multimer-bas
 ```
 git clone --recursive https://github.com/BioinfoMachineLearning/MULTICOM3 
 ```
-Note: ideally, a computer with a NVIDIA V100 or better GPU, 40 or more GB GPU memory, and 80GB RAM is needed to run the system. 
+Note: ideally, a computer with a NVIDIA V100 or better GPU, 40 or more GB GPU memory, and 85 GB RAM is needed to run the system. 
 
 # **Installation (Docker version, modified from [alphafold v2.3.2](https://github.com/google-deepmind/alphafold/blob/v2.3.2))**
 
