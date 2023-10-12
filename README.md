@@ -62,6 +62,8 @@ Note: ideally, a computer with a NVIDIA V100 or better GPU, 40 or more GB GPU me
     to prevent conflicts with your system's Python environment.
 
     ```bash
+    conda create -n docker python=3.8
+    conda activate docker
     pip3 install -r docker/requirements.txt
     conda install -c conda-forge -c bioconda mmseqs2=14.7e284 -y
     ```
