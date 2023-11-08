@@ -464,7 +464,7 @@ $OUTPUT_DIR/                                   # Your output directory
 
 Jumper, J., Evans, R., Pritzel, A., Green, T., Figurnov, M., Ronneberger, O., ... & Hassabis, D. (2021). Highly accurate protein structure prediction with AlphaFold. Nature, 596(7873), 583-589.
 
-Liu, J., Guo, Z., Wu, T., Roy, R. S., Chen, C., & Cheng, J. (2023). Improving AlphaFold2-based Protein Tertiary Structure Prediction with MULTICOM in CASP15. bioRxiv, 2023-05-01. (https://www.biorxiv.org/content/10.1101/2023.05.01.538929v1) 
+Liu, J., Guo, Z., Wu, T., Roy, R. S., Chen, C., & Cheng, J. (2023). Improving AlphaFold2-based protein tertiary structure prediction with MULTICOM in CASP15. Communications Chemistry, 6(1), 188. (https://www.nature.com/articles/s42004-023-00991-6)
 
 **Quaternary (multimer) structure prediction**
 
