@@ -23,7 +23,7 @@ flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fasta')
 flags.DEFINE_string('output_dir', None, 'Output directory')
 flags.DEFINE_boolean('run_img', False, 'Whether to use IMG alignment to generate models')
-flags.DEFINE_boolean('run_refinement', True, 'Whether run model refinement')
+flags.DEFINE_boolean('run_refinement', True, 'Whether to run model refinement')
 FLAGS = flags.FLAGS
 
 
@@ -361,7 +361,7 @@ def main(argv):
 
     # if len(chain_id_map) <= 5:
     if FLAGS.run_refinement:
-        
+
         N9_outdir = os.path.join(FLAGS.output_dir, 'N9_multimer_structure_refinement')
 
         makedir_if_not_exists(N9_outdir)

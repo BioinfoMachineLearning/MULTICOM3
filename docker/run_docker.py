@@ -37,6 +37,7 @@ flags.DEFINE_string('multicom3_db_dir', None,
                     'Path to directory with additional data for MULTICOM3')          
 flags.DEFINE_string('docker_image_name', 'multicom3', 'Name of the MULTICOM3 Docker image.')
 flags.DEFINE_boolean('run_img', False, 'Whether to use IMG alignment to generate models')    
+flags.DEFINE_boolean('run_refinement', True, 'Whether to run model refinement')   
 flags.DEFINE_string('docker_user', f'{os.geteuid()}:{os.getegid()}',
                     'UID:GID with which to run the Docker container. The output directories '
                     'will be owned by this user:group. By default, this is the current user. '
@@ -78,6 +79,7 @@ def main(argv):
   mounts = []
   command_args = [f"-m {FLAGS.mode}"]
   command_args.append(f"-i {FLAGS.run_img}")
+  command_args.append(f"-r {FLAGS.run_refinement}")
 
   mount, target_path = _create_mount('fasta_path', FLAGS.fasta_path)
   mounts.append(mount)

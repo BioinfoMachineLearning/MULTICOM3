@@ -14,6 +14,7 @@ usage() {
         echo "-f <fasta_path>                       Path to fasta file" 
         echo "-o <output_dir>                       output directory"
         echo "-i <run_img>                        Option, whether to use IMG alignment to generate models"
+        echo "-r <run_refinement>                 Option, whether to run model refinement"
         echo ""
         exit 1
 }
@@ -26,6 +27,7 @@ while getopts "m:d:a:f:o:i:" arg; do
             f) fasta_path=$OPTARG;;
             o) output_dir=$OPTARG;;
             i) run_img=$OPTARG;;
+            r) run_refinement=$OPTARG;;
         esac
 done
 
@@ -35,6 +37,7 @@ af_db_dir=$(echo "$af_db_dir" | xargs)
 fasta_path=$(echo "$fasta_path" | xargs)
 output_dir=$(echo "$output_dir" | xargs)
 run_img=$(echo "$run_img" | xargs)
+run_refinement=$(echo "$run_refinement" | xargs)
 
 # Parse input and set defaults
 if [[ "$mode" == "" || "$multicom3_db_dir" == "" || "$af_db_dir" == "" || "$fasta_path" == "" || "$output_dir" == "" ]] ; then
@@ -53,17 +56,17 @@ export PYTHONPATH=/app/MULTICOM3
 
 if [[ "$mode" =~ "monomer" ]] ; then
     echo "Predicting structure for monomer"
-    python $monomer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img
+    python $monomer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img --run_refinement=$run_refinement
 fi
 
 if [[ "$mode" =~ "heteromer" ]] ; then
     echo "Predicting structure for heteromer"
-    python $heteromer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img
+    python $heteromer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img --run_refinement=$run_refinement
 fi
 
 if [[ "$mode" =~ "homomer" ]] ; then
     echo "Predicting structure for homomer"
-    python $homomer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img
+    python $homomer_script --option_file=$option_file --fasta_path=$fasta_path --output_dir=$output_dir --run_img=$run_img --run_refinement=$run_refinement
 fi
 
 
