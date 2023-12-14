@@ -23,6 +23,7 @@ flags.DEFINE_string('option_file', None, 'option file')
 flags.DEFINE_string('fasta_path', None, 'Path to multimer fasta')
 flags.DEFINE_string('output_dir', None, 'Output directory')
 flags.DEFINE_boolean('run_img', False, 'Whether to use IMG alignment to generate models')
+flags.DEFINE_boolean('run_refinement', True, 'Whether run model refinement')
 FLAGS = flags.FLAGS
 
 
@@ -334,36 +335,38 @@ def main(argv):
 
     print("#################################################################################################")
 
-    print("10. Start to refine multimer models based on the qa rankings")
+    if FLAGS.run_refinement:
 
-    N9_outdir = os.path.join(FLAGS.output_dir, 'N9_multimer_structure_refinement')
+        print("10. Start to refine multimer models based on the qa rankings")
 
-    makedir_if_not_exists(N9_outdir)
-    ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
+        N9_outdir = os.path.join(FLAGS.output_dir, 'N9_multimer_structure_refinement')
 
-    refine_inputs = []
-    for i in range(5):
-        pdb_name = ref_ranking.loc[i, 'model']
-        msa_paths = {}
-        for chain_id in chain_id_map:
-            msa_paths[chain_id] = dict(paired_msa=os.path.join(N8_outdir, 'msa', chain_id, pdb_name.replace('.pdb', '') + ".paired.a3m"),
-                                       monomer_msa=os.path.join(N8_outdir, 'msa', chain_id, pdb_name.replace('.pdb', '') + ".monomer.a3m"))
+        makedir_if_not_exists(N9_outdir)
+        ref_ranking = pd.read_csv(multimer_qa_result['pairwise_af_avg'])  # apollo or average ranking or the three qas
 
-        refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
-                                                                                    fasta_path=FLAGS.fasta_path,
-                                                                                    pdb_path=os.path.join(N8_outdir, 'pdb', pdb_name),
-                                                                                    pkl_path=os.path.join(N8_outdir, 'pkl', pdb_name.replace('.pdb', '.pkl')),
-                                                                                    msa_paths=msa_paths)
-        refine_inputs += [refine_input]
+        refine_inputs = []
+        for i in range(5):
+            pdb_name = ref_ranking.loc[i, 'model']
+            msa_paths = {}
+            for chain_id in chain_id_map:
+                msa_paths[chain_id] = dict(paired_msa=os.path.join(N8_outdir, 'msa', chain_id, pdb_name.replace('.pdb', '') + ".paired.a3m"),
+                                        monomer_msa=os.path.join(N8_outdir, 'msa', chain_id, pdb_name.replace('.pdb', '') + ".monomer.a3m"))
 
-    final_dir = N9_outdir + '_final'
-    stoichiometry = "heteromer"
+            refine_input = iterative_refine_pipeline_multimer.refinement_input_multimer(chain_id_map=chain_id_map,
+                                                                                        fasta_path=FLAGS.fasta_path,
+                                                                                        pdb_path=os.path.join(N8_outdir, 'pdb', pdb_name),
+                                                                                        pkl_path=os.path.join(N8_outdir, 'pkl', pdb_name.replace('.pdb', '.pkl')),
+                                                                                        msa_paths=msa_paths)
+            refine_inputs += [refine_input]
 
-    run_multimer_refinement_pipeline(chain_id_map=chain_id_map,
-                                     params=params, refinement_inputs=refine_inputs, outdir=N9_outdir,
-                                     finaldir=final_dir, stoichiometry=stoichiometry)
+        final_dir = N9_outdir + '_final'
+        stoichiometry = "heteromer"
 
-    print("The refinement for the top-ranked multimer models has been finished!")
+        run_multimer_refinement_pipeline(chain_id_map=chain_id_map,
+                                        params=params, refinement_inputs=refine_inputs, outdir=N9_outdir,
+                                        finaldir=final_dir, stoichiometry=stoichiometry)
+
+        print("The refinement for the top-ranked multimer models has been finished!")
 
 
 if __name__ == '__main__':
